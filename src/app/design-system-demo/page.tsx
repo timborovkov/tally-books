@@ -1,15 +1,21 @@
 "use client";
 
 import {
+  AlarmClock,
+  Archive,
   Bell,
   Calendar,
+  CheckCircle2,
   ChevronDown,
   CircleAlert,
   CircleCheck,
   CircleDollarSign,
+  CircleSlash,
   FileText,
   Info,
+  Inbox,
   Lock,
+  MoveRight,
   Plus,
   RefreshCw,
   Scale,
@@ -159,7 +165,9 @@ const semanticTokens = [
   "sidebar-border",
 ];
 
-const statusBadges: Array<{ label: string; className: string; icon: React.ReactNode }> = [
+type StatusBadge = { label: string; className: string; icon: React.ReactNode };
+
+const thingStateBadges: StatusBadge[] = [
   {
     label: "DRAFT",
     className: "bg-muted text-muted-foreground border-border",
@@ -189,6 +197,57 @@ const statusBadges: Array<{ label: string; className: string; icon: React.ReactN
     label: "IN PERIOD LOCK",
     className: "bg-destructive/10 text-destructive border-destructive/30",
     icon: <Lock className="size-3" />,
+  },
+];
+
+const intakeStatusBadges: StatusBadge[] = [
+  {
+    label: "NEW",
+    className: "bg-sky-500/10 text-sky-700 border-sky-500/30 dark:text-sky-400",
+    icon: <Inbox className="size-3" />,
+  },
+  {
+    label: "NEEDS REVIEW",
+    className: "bg-amber-500/10 text-amber-700 border-amber-500/30 dark:text-amber-400",
+    icon: <CircleAlert className="size-3" />,
+  },
+  {
+    label: "ROUTED",
+    className: "bg-primary/10 text-primary border-primary/30",
+    icon: <MoveRight className="size-3" />,
+  },
+  {
+    label: "CONFIRMED",
+    className: "bg-emerald-500/10 text-emerald-700 border-emerald-500/30 dark:text-emerald-400",
+    icon: <CheckCircle2 className="size-3" />,
+  },
+  {
+    label: "REJECTED",
+    className: "bg-muted text-muted-foreground border-border",
+    icon: <CircleSlash className="size-3" />,
+  },
+];
+
+const complianceStatusBadges: StatusBadge[] = [
+  {
+    label: "OPEN",
+    className: "bg-amber-500/10 text-amber-700 border-amber-500/30 dark:text-amber-400",
+    icon: <CircleAlert className="size-3" />,
+  },
+  {
+    label: "DONE",
+    className: "bg-emerald-500/10 text-emerald-700 border-emerald-500/30 dark:text-emerald-400",
+    icon: <CheckCircle2 className="size-3" />,
+  },
+  {
+    label: "SNOOZED",
+    className: "bg-sky-500/10 text-sky-700 border-sky-500/30 dark:text-sky-400",
+    icon: <AlarmClock className="size-3" />,
+  },
+  {
+    label: "WAIVED",
+    className: "bg-muted text-muted-foreground border-border",
+    icon: <Archive className="size-3" />,
   },
 ];
 
@@ -853,11 +912,61 @@ export default function DesignSystemDemoPage() {
               <SectionHeading
                 id="status"
                 title="Status badges"
-                description="Reserved state vocabulary for versioned entities. See PROJECT_BRIEF §7.3."
+                description="Reserved state vocabularies. Three independent taxonomies — don't mix their palettes."
               />
+
               <Card>
-                <CardContent className="flex flex-wrap gap-3 py-8">
-                  {statusBadges.map((b) => (
+                <CardHeader>
+                  <CardTitle className="text-base">Thing state · versioned entities</CardTitle>
+                  <CardDescription>
+                    Applies to invoices, expenses, declarations, trips, mileage claims, benefit
+                    enrollments, etc. Per PROJECT_BRIEF §7.3.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="flex flex-wrap gap-3">
+                  {thingStateBadges.map((b) => (
+                    <span
+                      key={b.label}
+                      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-medium tracking-wide uppercase ${b.className}`}
+                    >
+                      {b.icon}
+                      {b.label}
+                    </span>
+                  ))}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Intake queue · cross-entity inbox</CardTitle>
+                  <CardDescription>
+                    Status of each item in the unified intake inbox before it routes into a
+                    downstream flow (expense / mileage claim / benefit evidence / …).
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="flex flex-wrap gap-3">
+                  {intakeStatusBadges.map((b) => (
+                    <span
+                      key={b.label}
+                      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-medium tracking-wide uppercase ${b.className}`}
+                    >
+                      {b.icon}
+                      {b.label}
+                    </span>
+                  ))}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Compliance task · obligation tracker</CardTitle>
+                  <CardDescription>
+                    Status of jurisdiction-driven employment / tax / reporting tasks generated by
+                    the obligation evaluator.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="flex flex-wrap gap-3">
+                  {complianceStatusBadges.map((b) => (
                     <span
                       key={b.label}
                       className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-medium tracking-wide uppercase ${b.className}`}

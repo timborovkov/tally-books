@@ -22,7 +22,7 @@ const spaceGrotesk = Space_Grotesk({
 
 export const metadata: Metadata = {
   title: "Tally",
-  description: "Self-hosted, single-tenant accounting & finance for solo entrepreneurs.",
+  description: "Self-hosted business and personal finance, in one private instance.",
   robots: { index: false, follow: false },
 };
 
