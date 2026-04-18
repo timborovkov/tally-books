@@ -30,7 +30,7 @@ Both the toggle AND a non-empty DSN must be present for events to flow. The togg
 | ------------------------------------------------ | ------------- | ---------- | ------------------------------------------------ |
 | `NEXT_PUBLIC_SENTRY_ENABLED`                     | client+server | `false`    | Master toggle; must be `"true"` to arm the SDK.  |
 | `NEXT_PUBLIC_SENTRY_DSN`                         | all three     | empty      | Single DSN for client + server + edge.           |
-| `SENTRY_ENVIRONMENT`                             | server + edge | `NODE_ENV` | Deploy tag (dev / staging / production).         |
+| `NEXT_PUBLIC_SENTRY_ENVIRONMENT`                 | all three     | `NODE_ENV` | Deploy tag (dev / staging / production).         |
 | `NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE`          | client        | `0.15`     | Browser tracing.                                 |
 | `NEXT_PUBLIC_SENTRY_REPLAYS_SESSION_SAMPLE_RATE` | client        | `0.1`      | Session replay.                                  |
 | `NEXT_PUBLIC_SENTRY_REPLAYS_ERROR_SAMPLE_RATE`   | client        | `1.0`      | Replay on error.                                 |
@@ -110,7 +110,7 @@ Three classes of Sentry env need to reach `pnpm build` in the `build` stage of `
 | Class                 | Vars                                                                                       | Why at build time                                            | How to pass         |
 | --------------------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------ | ------------------- |
 | Client runtime config | `NEXT_PUBLIC_SENTRY_ENABLED`, `NEXT_PUBLIC_SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_*_SAMPLE_RATE` | Inlined into the client bundle — must be literal at build.   | `--build-arg`       |
-| Upload plugin config  | `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_URL`, `SENTRY_ENVIRONMENT`                         | Read by the Sentry webpack plugin during `next build`.       | `--build-arg`       |
+| Upload plugin config  | `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_URL`, `NEXT_PUBLIC_SENTRY_ENVIRONMENT`             | Read by the Sentry webpack plugin during `next build`.       | `--build-arg`       |
 | Secret                | `SENTRY_AUTH_TOKEN`                                                                        | Authorises source-map upload — must not be baked into image. | BuildKit `--secret` |
 
 Example build with source-map upload:
@@ -135,7 +135,7 @@ With every arg absent, `NEXT_PUBLIC_SENTRY_ENABLED` defaults to `false` → the 
 
 ### Runtime env
 
-Server-only vars (`SENTRY_ENVIRONMENT`, `SENTRY_TRACES_SAMPLE_RATE`, `SENTRY_PROFILES_SAMPLE_RATE`) are needed at **runtime** only — set them in the container's runtime environment (Railway dashboard, docker-compose env, systemd unit). The server is safe to start with these unset: defaults come from zod.
+Server-only vars (`SENTRY_TRACES_SAMPLE_RATE`, `SENTRY_PROFILES_SAMPLE_RATE`) are needed at **runtime** only — set them in the container's runtime environment (Railway dashboard, docker-compose env, systemd unit). The server is safe to start with these unset: defaults come from zod. `NEXT_PUBLIC_SENTRY_ENVIRONMENT` is `NEXT_PUBLIC_` because the browser SDK needs the same tag to keep events from splitting across two environments in the Sentry dashboard.
 
 ### Sentry project metadata
 

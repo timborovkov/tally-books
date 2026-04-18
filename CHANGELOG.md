@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Sentry fully env-driven: added `NEXT_PUBLIC_SENTRY_ENABLED` master toggle, per-runtime sampling rates (`*_TRACES_SAMPLE_RATE`, `*_REPLAYS_*_SAMPLE_RATE`, `SENTRY_PROFILES_SAMPLE_RATE`), `SENTRY_ENVIRONMENT`, and `SENTRY_URL` for self-hosted / EU instances. Collapsed duplicate `SENTRY_DSN` into the single `NEXT_PUBLIC_SENTRY_DSN` (used across client + server + edge). Client vars now validated via new `src/lib/env.client.ts`. Node profiling wired via `@sentry/profiling-node`.
+- Sentry fully env-driven: added `NEXT_PUBLIC_SENTRY_ENABLED` master toggle, per-runtime sampling rates (`*_TRACES_SAMPLE_RATE`, `*_REPLAYS_*_SAMPLE_RATE`, `SENTRY_PROFILES_SAMPLE_RATE`), `NEXT_PUBLIC_SENTRY_ENVIRONMENT`, and `SENTRY_URL` for self-hosted / EU instances. Collapsed duplicate `SENTRY_DSN` into the single `NEXT_PUBLIC_SENTRY_DSN` (used across client + server + edge). Client vars now validated via new `src/lib/env.client.ts`. Node profiling wired via `@sentry/profiling-node`.
 
 ### Added
 

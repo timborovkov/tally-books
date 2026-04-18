@@ -32,9 +32,9 @@ const serverSchema = z.object({
   //
   // Every Sentry var below is optional: the SDK must start cleanly with an
   // empty `.env`. Zod applies defaults (sampling rates) or normalizes empty
-  // strings to `undefined` (tags, slugs, URLs) so downstream `??` fallbacks
-  // work. The master toggle (client-side) gates the whole thing.
-  SENTRY_ENVIRONMENT: optionalString,
+  // strings to `undefined` (slugs, URLs) so downstream `??` fallbacks work.
+  // The master toggle (client-side) gates the whole thing. Environment tag
+  // lives in `NEXT_PUBLIC_SENTRY_ENVIRONMENT` so client + server agree.
   SENTRY_TRACES_SAMPLE_RATE: sampleRate(0.1),
   SENTRY_PROFILES_SAMPLE_RATE: sampleRate(0.1),
   // ── Sentry build-time (source-map upload; all optional) ───────────────

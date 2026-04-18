@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { booleanFlag, optionalUrl, sampleRate } from "@/lib/env.shared";
+import { booleanFlag, optionalString, optionalUrl, sampleRate } from "@/lib/env.shared";
 
 /**
  * Client-safe environment schema.
@@ -28,6 +28,13 @@ const clientSchema = z.object({
   // Sentry" knob — see docs/architecture/sentry.md.
   NEXT_PUBLIC_SENTRY_ENABLED: booleanFlag,
   NEXT_PUBLIC_SENTRY_DSN: optionalUrl,
+  // Deploy tag shown in the Sentry dashboard. Lives here (not in the
+  // server schema) so the browser SDK can tag events with the same
+  // environment as the server — otherwise staging client events would
+  // show up under "production" (the browser's NODE_ENV fallback) while
+  // server events correctly say "staging", splitting the same deployment
+  // across two environments. Falls back to NODE_ENV at read time.
+  NEXT_PUBLIC_SENTRY_ENVIRONMENT: optionalString,
   NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE: sampleRate(0.15),
   NEXT_PUBLIC_SENTRY_REPLAYS_SESSION_SAMPLE_RATE: sampleRate(0.1),
   NEXT_PUBLIC_SENTRY_REPLAYS_ERROR_SAMPLE_RATE: sampleRate(1.0),
@@ -39,6 +46,7 @@ export type ClientEnv = z.infer<typeof clientSchema>;
 const parsed = clientSchema.safeParse({
   NEXT_PUBLIC_SENTRY_ENABLED: process.env.NEXT_PUBLIC_SENTRY_ENABLED,
   NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN,
+  NEXT_PUBLIC_SENTRY_ENVIRONMENT: process.env.NEXT_PUBLIC_SENTRY_ENVIRONMENT,
   NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE: process.env.NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE,
   NEXT_PUBLIC_SENTRY_REPLAYS_SESSION_SAMPLE_RATE:
     process.env.NEXT_PUBLIC_SENTRY_REPLAYS_SESSION_SAMPLE_RATE,

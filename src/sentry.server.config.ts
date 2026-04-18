@@ -18,7 +18,7 @@ const enabled = clientEnv.NEXT_PUBLIC_SENTRY_ENABLED && dsn !== "";
 Sentry.init({
   dsn,
   enabled,
-  environment: env.SENTRY_ENVIRONMENT ?? env.NODE_ENV,
+  environment: clientEnv.NEXT_PUBLIC_SENTRY_ENVIRONMENT ?? env.NODE_ENV,
   // `sendDefaultPii` attaches request metadata to events: client IP, cookies,
   // Authorization/other headers, and request body fragments. Defaulted to
   // `false` because `.env.example` ships the real Tally DSN; a self-hoster

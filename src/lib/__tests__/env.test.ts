@@ -23,7 +23,6 @@ describe("env", () => {
     expect(env.SENTRY_PROJECT).toBeUndefined();
     expect(env.SENTRY_AUTH_TOKEN).toBeUndefined();
     expect(env.SENTRY_URL).toBeUndefined();
-    expect(env.SENTRY_ENVIRONMENT).toBeUndefined();
   });
 });
 
