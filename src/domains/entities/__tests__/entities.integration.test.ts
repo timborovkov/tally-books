@@ -115,6 +115,20 @@ describe("createEntity", () => {
 });
 
 describe("listEntities & archive", () => {
+  it("returns each row with a nested jurisdiction object (id, code, name)", async () => {
+    // The settings list page renders `row.jurisdiction.name` / `.code`
+    // directly — this test locks the joined shape so a future refactor
+    // that drops the inner join would fail here instead of crashing
+    // server-rendered pages.
+    const j = await h.seedJurisdiction("EE");
+    await makeEntity(j, "Demo");
+
+    const [row] = await listEntities(h.db);
+    expect(row).toBeDefined();
+    expect(row?.jurisdiction).toMatchObject({ id: j, code: "EE" });
+    expect(typeof row?.jurisdiction.name).toBe("string");
+  });
+
   it("excludes archived by default and includes them when asked", async () => {
     const j = await h.seedJurisdiction("EE");
     const a = await makeEntity(j, "Active");
