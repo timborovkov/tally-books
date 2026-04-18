@@ -55,18 +55,46 @@ See [`PROJECT_BRIEF.md` §3](./PROJECT_BRIEF.md#3-technical-stack) for details o
 
 ## Getting started
 
-> Local dev setup will be documented here once the foundation milestone (v0.1) is complete. Watch [`TODO.md`](./TODO.md) for progress.
+> Status: foundation scaffolding (v0.1) is in place — Next.js, strict TypeScript, Tailwind v4, shadcn/ui, ESLint, Prettier, Knip, Vitest, Husky, GitHub Actions CI, and the Docker stack for `postgres`, `minio`, and `qdrant`. Most product features are still on the roadmap; see [`TODO.md`](./TODO.md).
 
-Roughly:
+### Prerequisites
+
+- Node.js `>=20.11` (use `.nvmrc` → `nvm use`)
+- pnpm `>=10` (`corepack enable && corepack prepare pnpm@latest --activate`)
+- Docker + Docker Compose v2
+
+### Local development
 
 ```bash
 git clone https://github.com/timborovkov/tally-books.git
 cd tally-books
-cp .env.example .env
-# Fill in OPENAI_API_KEY, RESEND_API_KEY, etc.
-docker compose up
-# Open http://localhost:3000 → setup wizard
+pnpm install
+cp .env.example .env       # fill in OPENAI_API_KEY, RESEND_API_KEY, secrets
+docker compose up -d       # starts postgres, minio, qdrant
+pnpm dev                   # http://localhost:3000
 ```
+
+Useful scripts (full list in [`CONTRIBUTING.md`](./CONTRIBUTING.md)):
+
+| Command                 | What it does                               |
+| ----------------------- | ------------------------------------------ |
+| `pnpm dev`              | Next.js dev server (Turbopack)             |
+| `pnpm build` / `start`  | Production build / serve the build         |
+| `pnpm lint`             | ESLint (zero warnings allowed)             |
+| `pnpm typecheck`        | `tsc --noEmit` against the strict config   |
+| `pnpm format`           | Prettier write (`format:check` for CI)     |
+| `pnpm knip`             | Dead-code / unused dependency scan         |
+| `pnpm test`             | Vitest unit tests (`test:watch` for watch) |
+| `pnpm test:integration` | Integration tests (placeholder until v0.2) |
+
+Health endpoints once the dev server is up:
+
+- `GET /api/health` — liveness probe (process is up)
+- `GET /api/ready` — readiness probe (will check Postgres/MinIO/Qdrant once wired)
+
+### Self-hosting (production)
+
+[`docker-compose.prod.yml`](./docker-compose.prod.yml) is a starting reference. Run behind a reverse proxy (Caddy, Traefik, nginx) that terminates TLS and forwards to the `app` service. Never expose `postgres`, `minio`, or `qdrant` ports publicly.
 
 ## Documentation
 
@@ -84,7 +112,7 @@ Tally is open source and built primarily for the author's own use, but contribut
 - Bug reports and reproductions
 - Documentation improvements
 
-See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for the workflow once it's written. For now: open an issue first to discuss.
+See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for the workflow. Open an issue first to discuss anything non-trivial.
 
 ## Self-hosting
 
@@ -94,7 +122,7 @@ If you deploy Tally for yourself, your data stays on your infrastructure. The on
 
 ## License
 
-License TBD — see [`PROJECT_BRIEF.md` §12.2](./PROJECT_BRIEF.md#122-still-open--to-decide-during-build). Leaning toward AGPL to prevent SaaS resale of a self-hosted-only project; MIT remains an option.
+[MIT](./LICENSE) © 2026 Tim Borovkov.
 
 ## Acknowledgments
 

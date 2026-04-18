@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Roadmap & milestones
+    url: https://github.com/timborovkov/tally-books/blob/main/TODO.md
+    about: Check the roadmap before opening a feature request — it might already be planned.
+  - name: Project brief
+    url: https://github.com/timborovkov/tally-books/blob/main/PROJECT_BRIEF.md
+    about: Read the full vision and architectural principles.

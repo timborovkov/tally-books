@@ -1,0 +1,65 @@
+name: Bug report
+description: Something is broken or behaving unexpectedly.
+title: "bug: <short summary>"
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug. Please fill in as much as you can.
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: One- or two-sentence description of the bug.
+      placeholder: VAT declaration totals don't update after editing an expense.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Numbered steps so we can reliably trigger the bug.
+      placeholder: |
+        1. Create an expense in entity X for €100 with 24% VAT.
+        2. Generate a draft VAT declaration for the period.
+        3. Edit the expense to €200 and save.
+        4. Reopen the declaration.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Include error messages, stack traces, screenshots if helpful.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Tally version / commit
+      placeholder: "v0.1.0 or commit SHA"
+    validations:
+      required: true
+  - type: dropdown
+    id: deployment
+    attributes:
+      label: Deployment
+      options:
+        - Local dev (pnpm dev)
+        - Docker compose (local)
+        - Docker compose (prod / self-hosted)
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: env
+    attributes:
+      label: Environment details
+      description: OS, browser (if UI bug), Postgres version, Node version, anything else relevant.
