@@ -15,8 +15,11 @@ RUN npm install -g corepack@latest \
  && corepack prepare pnpm@${PNPM_VERSION} --activate
 
 COPY package.json pnpm-lock.yaml* pnpm-workspace.yaml* ./
+# HUSKY=0 disables the husky lifecycle script during install: there's no
+# git or .husky/ in the build context, and we don't need git hooks in
+# the final image anyway.
 RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
-    pnpm install --frozen-lockfile --prod=false
+    HUSKY=0 pnpm install --frozen-lockfile --prod=false
 
 # ─── build ──────────────────────────────────────────────────────────────────────
 FROM node:${NODE_VERSION} AS build
