@@ -10,7 +10,8 @@
 
 - **IDs.** `cuid2` strings. No serial integers. Referenced as `text` in every table.
 - **Time.** All timestamps are `timestamptz`, treated as UTC on read and write. UI never localizes entry/exit.
-- **Money.** `numeric(20, 4)` for amounts, `numeric(6, 4)` for rates and percentages. **Never `text`.** Every monetary amount travels with its `currency` (ISO 4217) and, where relevant, an `amount_in_base` mirror in the entity's base currency.
+- **Money.** `numeric(20, 4)` for amounts. **Never `text`.** Every monetary amount travels with its `currency` (ISO 4217) and, where relevant, an `amount_in_base` mirror in the entity's base currency.
+- **Rates vs percentages.** A **rate** is stored as a decimal fraction (VAT 24% → `0.2400`) in `numeric(6, 4)` — max 9.9999, more than enough. A **percentage** is stored as 0–100 (ownership 100% → `100.0000`) in `numeric(7, 4)` — max 999.9999. Six-four cannot hold 100, which is why the two are separate.
 - **JSON.** `jsonb`. Every jsonb field has a named shape in the sibling `*.types.ts` when code lands. If the shape is unknown, say so explicitly in this doc.
 - **Foreign keys.** Declared wherever the ORM can express them, including self-references (via lazy callbacks). The only FKs we omit are ones that form a circular init dependency with `current_version_id`; those are enforced via a `DEFERRABLE INITIALLY DEFERRED` constraint (see §3.1).
 - **Indexes.** Every table declares its indexes inline (see §16 for the summary). Zero-index tables are a footgun; adding them after the first million rows is surgery.
@@ -252,7 +253,7 @@ BetterAuth owns the shape. Mirrored here so Drizzle can join:
 | `entity_id` | `text`, NOT NULL, FK → `entities.id` | |
 | `person_id` | `text`, NOT NULL, FK → `persons.id` | |
 | `role` | `text`, NOT NULL | `board`, `ceo`, `shareholder`, `cfo`, … |
-| `share_percent` | `numeric(6, 4)`, nullable | **Numeric**, not text — 0.0000 to 100.0000. Resolves **I1**. Null for non-equity roles. |
+| `share_percent` | `numeric(7, 4)`, nullable | **Numeric**, not text — 0.0000 to 100.0000. `numeric(7,4)` because `numeric(6,4)` caps at 99.9999 and a sole shareholder holds 100.0000. Resolves **I1**. Null for non-equity roles. |
 | `valid_from` | `timestamptz`, NOT NULL | |
 | `valid_to` | `timestamptz`, nullable | |
 | `metadata` | `jsonb`, NOT NULL, default `{}` | |
@@ -456,7 +457,7 @@ Domain columns plus the `versioned` mixin from §3.1, with a companion `receipt_
 | … `versioned` mixin | | |
 
 **Constraints** (resolves **I10**):
-- CHECK: `state = 'draft' OR number IS NOT NULL` — no filed/sent invoice without a number.
+- CHECK: `state IN ('draft', 'void') OR number IS NOT NULL` — only filed/sent/ready invoices need a number. A draft voided before it reaches `ready` legitimately has no number (brief §6.4 lets voids happen from `draft` or `ready`).
 - `UNIQUE(entity_id, number) WHERE number IS NOT NULL` — invoice numbers are unique per entity.
 - CHECK: `filed_ref IS NULL OR state IN ('filed','sent')`.
 
