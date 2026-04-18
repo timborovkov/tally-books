@@ -12,26 +12,29 @@ Status legend: `[ ]` not started · `[~]` in progress · `[x]` done · `[-]` def
 The minimum scaffolding needed to start building features safely.
 
 ### Repo & tooling
-- [ ] Initialize Next.js (App Router) + TypeScript (strict)
-- [ ] Tailwind + shadcn/ui set up
-- [ ] ESLint (strict config) + Prettier + Knip configured
-- [ ] Vitest configured for unit tests
-- [ ] GitHub Actions CI: lint, typecheck, knip, unit, integration
-- [ ] Husky + lint-staged commit hooks
-- [ ] `.gitignore` includes `.claude/`, `CLAUDE.md`, `internal-docs/`, `.env`
-- [ ] `internal-docs/` folder created (gitignored)
-- [ ] `README.md`, `CHANGELOG.md`, `CONTRIBUTING.md`, `LICENSE` (decide MIT vs AGPL)
-- [ ] Issue templates (bug, feature) in `.github/ISSUE_TEMPLATE/`
-- [ ] PR template
+
+- [x] Initialize Next.js (App Router) + TypeScript (strict)
+- [x] Tailwind + shadcn/ui set up
+- [x] ESLint (strict config) + Prettier + Knip configured
+- [x] Vitest configured for unit tests
+- [x] GitHub Actions CI: lint, typecheck, knip, unit, integration
+- [x] Husky + lint-staged commit hooks
+- [x] `.gitignore` includes `.claude/`, `CLAUDE.md`, `internal-docs/`, `.env`
+- [x] `internal-docs/` folder created (gitignored)
+- [x] `README.md`, `CHANGELOG.md`, `CONTRIBUTING.md`, `LICENSE` (decide MIT vs AGPL)
+- [x] Issue templates (bug, feature) in `.github/ISSUE_TEMPLATE/`
+- [x] PR template
 
 ### Containers & local dev
-- [ ] `Dockerfile` (multi-stage: deps → build → runtime)
-- [ ] `docker-compose.yml` for local dev (`app`, `postgres`, `minio`, `qdrant`)
-- [ ] `docker-compose.prod.yml` reference
-- [ ] `.env.example` with all required env keys documented
-- [ ] Health + readiness endpoints
+
+- [x] `Dockerfile` (multi-stage: deps → build → runtime)
+- [x] `docker-compose.yml` for local dev (`app`, `postgres`, `minio`, `qdrant`)
+- [x] `docker-compose.prod.yml` reference
+- [x] `.env.example` with all required env keys documented
+- [x] Health + readiness endpoints
 
 ### Database & ORM
+
 - [ ] Drizzle installed and configured
 - [ ] Migration tooling working (`drizzle-kit`)
 - [ ] Versioning primitives schema (the `_version` pattern, edit_sessions, audit_log)
@@ -39,6 +42,7 @@ The minimum scaffolding needed to start building features safely.
 - [ ] Seed scripts for dev (admin user, example entities)
 
 ### Auth & IAM
+
 - [ ] BetterAuth integrated
 - [ ] 2FA mandatory (TOTP)
 - [ ] Strong password policy enforced
@@ -49,6 +53,7 @@ The minimum scaffolding needed to start building features safely.
 - [ ] Permission scope model (resource × access) wired into services
 
 ### Entities & jurisdictions
+
 - [ ] `entity` table + CRUD
 - [ ] `jurisdiction` table + CRUD
 - [ ] Prefilled jurisdiction configs: Estonia, Finland, Delaware (US)
@@ -58,6 +63,7 @@ The minimum scaffolding needed to start building features safely.
 - [ ] Entity management UI
 
 ### Cross-cutting
+
 - [ ] UTC date handling everywhere — no local timezone leaks
 - [ ] Sentry integrated (client + server)
 - [ ] `robots.txt` disallow all + `X-Robots-Tag: noindex` headers
@@ -67,6 +73,7 @@ The minimum scaffolding needed to start building features safely.
 - [ ] Quick-add `+` button modal (skeleton, even if entries are stubs)
 
 ### Versioning engine
+
 - [ ] `versioned<T>.update()` helper with diff computation
 - [ ] Version timeline UI component (Google Docs-style history)
 - [ ] State machine helper for `draft → ready → filed → amended`
@@ -74,6 +81,7 @@ The minimum scaffolding needed to start building features safely.
 - [ ] Period lock model + enforcement at service layer
 
 ### Docs (started in v0.1, kept current as we build)
+
 - [ ] `docs/architecture/overview.md`
 - [ ] `docs/architecture/versioning.md`
 - [ ] `docs/architecture/auto-refresh.md`
@@ -90,11 +98,13 @@ The minimum scaffolding needed to start building features safely.
 Get the inputs in: receipts, expenses, invoices, clients, categories.
 
 ### Files & storage
+
 - [ ] MinIO client wired up
 - [ ] `blob` table + upload service (streaming, no base64 in DB)
 - [ ] Buckets: `receipts/`, `invoices/`, `legal-docs/`, `exports/`
 
 ### Receipts
+
 - [ ] `receipt` table with versioning
 - [ ] Single + bulk upload UI (drag and drop)
 - [ ] OCR/vision job queued via pg-boss on upload
@@ -104,6 +114,7 @@ Get the inputs in: receipts, expenses, invoices, clients, categories.
 - [ ] Mass actions: bulk re-extract, bulk assign entity/category, bulk delete
 
 ### Expenses
+
 - [ ] `expense` table with versioning
 - [ ] CRUD UI with entity column visible across all entities
 - [ ] Filters: entity, category, date range, paid-by, vendor
@@ -113,6 +124,7 @@ Get the inputs in: receipts, expenses, invoices, clients, categories.
 - [ ] Mass actions on the list page
 
 ### Invoices (drafts + PDF)
+
 - [ ] `invoice` table with versioning
 - [ ] Line-item composer
 - [ ] PDF generation (basic, branded per entity)
@@ -122,27 +134,32 @@ Get the inputs in: receipts, expenses, invoices, clients, categories.
 - [ ] Drafts versioned, deletable
 
 ### Clients & suppliers
+
 - [ ] `client`, `supplier`, `contractor`, `employee` tables (one model with kind discriminator)
 - [ ] CRUD UI
 - [ ] Contracts attached as documents
 
 ### Categories
+
 - [ ] `category` table (hierarchical, scoped per jurisdiction or global)
 - [ ] Category management UI
 - [ ] Default category sets shipped with each jurisdiction
 
 ### Bookkeeping core (basic)
+
 - [ ] Income statement view (overall + per entity, by month and FY)
 - [ ] Expense statement with category breakdowns
 - [ ] Cash flow view
 - [ ] Basic ledger / transaction journal
 
 ### pg-boss
+
 - [ ] pg-boss installed and running in dev compose
 - [ ] Job queue conventions documented
 - [ ] Worker process boots alongside app
 
 ### Tests
+
 - [ ] Integration test: upload receipt → OCR → user confirms → expense created
 - [ ] Integration test: create internal invoice toiminimi → OÜ → both sides booked
 
@@ -153,17 +170,20 @@ Get the inputs in: receipts, expenses, invoices, clients, categories.
 Where the system stops being a glorified database and starts being useful: VAT declarations, balance sheets, and the editor-safety rules that keep them sane.
 
 ### Event bus
+
 - [ ] In-process event bus + pg_notify cross-worker
 - [ ] Domain events emitted from all source-data mutations
 - [ ] Dependency registry implemented (which derived artifacts depend on which sources)
 
 ### Recalculation worker
+
 - [ ] pg-boss queue for recalc jobs
 - [ ] Worker respects: filed lock, period lock, `auto_refresh_locked`, active edit session
 - [ ] Sets `underlying_data_changed` flag on filed Things when sources change
 - [ ] System actor for auto-refresh writes (clearly attributed in version history)
 
 ### Editor-safety
+
 - [ ] `edit_sessions` table + soft lock acquisition on editor entry
 - [ ] Heartbeat + TTL garbage collection
 - [ ] Controlled refresh on editor entry: diff vs. last save, accept/discard
@@ -172,12 +192,14 @@ Where the system stops being a glorified database and starts being useful: VAT d
 - [ ] Period lock UI (lock FY 2024, etc.)
 
 ### Versioning timeline
+
 - [ ] Timeline panel on every versioned Thing
 - [ ] View any prior version
 - [ ] Show actor (user vs system), reason, diff
 - [ ] Badge system: DRAFT / READY / FILED / UNDERLYING DATA CHANGED / AUTO-REFRESH LOCKED / IN PERIOD LOCK
 
 ### VAT declarations
+
 - [ ] `vat_declaration` table with versioning
 - [ ] Estonia monthly VAT calculation logic
 - [ ] Finland VAT calculation logic (cadence per registration)
@@ -187,6 +209,7 @@ Where the system stops being a glorified database and starts being useful: VAT d
 - [ ] Portal links + guide links visible on the declaration page
 
 ### Balance sheets
+
 - [ ] `balance_sheet` table with versioning
 - [ ] Per-entity (real) balance sheets
 - [ ] Personal balance sheet (informational)
@@ -194,6 +217,7 @@ Where the system stops being a glorified database and starts being useful: VAT d
 - [ ] Auto-build from underlying data + manual entries
 
 ### Tests
+
 - [ ] Integration test: create expense → VAT declaration updates → file → modify expense → flag set
 - [ ] Integration test: lock period → mutation rejected
 - [ ] Integration test: edit session blocks auto-refresh, controlled refresh on entry shows diff
@@ -205,11 +229,13 @@ Where the system stops being a glorified database and starts being useful: VAT d
 The integrations highest on the priority list.
 
 ### Integration catalog framework
+
 - [ ] `integrations/` folder structure with typed catalogs
 - [ ] Base interfaces: `InvoicingProvider`, `DataSourceProvider`, `TimeTrackingProvider`
 - [ ] Catalog rendering in settings UI (shows enabled/disabled based on env)
 
 ### Finnish e-invoice (P0 integration)
+
 - [ ] Pick provider (Maventa, Apix, or similar — research)
 - [ ] Implement `InvoicingProvider` for chosen vendor
 - [ ] Send-via-e-invoice button on invoice detail page
@@ -217,6 +243,7 @@ The integrations highest on the priority list.
 - [ ] Docs: `docs/integrations/finnish-e-invoice.md`
 
 ### Paperless-ngx
+
 - [ ] Implement `DataSourceProvider` for Paperless-ngx
 - [ ] Initial bulk import flow
 - [ ] Ongoing sync via pg-boss cron job
@@ -224,6 +251,7 @@ The integrations highest on the priority list.
 - [ ] Docs: `docs/integrations/paperless-ngx.md`
 
 ### Clockify
+
 - [ ] Implement `TimeTrackingProvider` for Clockify
 - [ ] `time_entry` table + sync
 - [ ] Per-client / per-project breakdown view
@@ -236,17 +264,20 @@ The integrations highest on the priority list.
 The first fully usable agent: chat surface with a useful tool set.
 
 ### Provider abstraction
+
 - [ ] `ChatProvider`, `VisionProvider`, `EmbeddingProvider` interfaces
 - [ ] OpenAI implementations of all three
 - [ ] No OpenAI SDK types leak into app code
 
 ### Agent framework
+
 - [ ] Vercel AI SDK integrated (server + UI kit)
 - [ ] Agent folder structure: `src/lib/ai/agents/<name>/`
 - [ ] `AgentConfig` type + loader
 - [ ] First agent: `general-chat` (config, system prompt, README)
 
 ### Tools (initial set)
+
 - [ ] `read.queryExpenses`, `read.queryInvoices`, `read.getDeclaration`, `read.listCategories`, …
 - [ ] `write.createExpense`, `write.createInvoiceDraft`, `write.suggestCategory`
 - [ ] `calc.evaluateExpression` (small expression evaluator, no full sandbox yet)
@@ -256,11 +287,13 @@ The first fully usable agent: chat surface with a useful tool set.
 - [ ] Destructive tool calls render a UI confirmation card
 
 ### Conversation storage
+
 - [ ] `agent_thread`, `agent_message`, `agent_action` tables
 - [ ] Per-agent thread lists
 - [ ] Search across threads
 
 ### Embeddings & Qdrant (basic)
+
 - [ ] Qdrant in docker-compose
 - [ ] Qdrant client + collection definitions in `src/lib/search/`
 - [ ] `embedding_index` table
@@ -269,11 +302,13 @@ The first fully usable agent: chat surface with a useful tool set.
 - [ ] ACL filter on every query
 
 ### Context injection
+
 - [ ] Big "business structure" markdown field in settings
 - [ ] Always injected into agent system prompt
 - [ ] Jurisdiction summary auto-built and injected
 
 ### Docs
+
 - [ ] `docs/architecture/ai-agents.md` (index, conventions, how to add an agent)
 - [ ] `docs/architecture/embeddings-and-search.md`
 - [ ] Per-agent README in each agent folder
@@ -283,6 +318,7 @@ The first fully usable agent: chat surface with a useful tool set.
 ## v0.6 — Payroll, trips, budgets
 
 ### Payroll & payouts
+
 - [ ] `payroll_run` table with versioning
 - [ ] Calculate net from gross (Estonia, Finland)
 - [ ] Calculate gross from net (the "I want €1000 net" flow)
@@ -292,11 +328,13 @@ The first fully usable agent: chat surface with a useful tool set.
 - [ ] Books update on payroll run
 
 ### Contractors & employees
+
 - [ ] CRUD with all the metadata fields from §5.4
 - [ ] Contract attachments
 - [ ] Contractor vs employee scenario comparison
 
 ### Trips & per diem
+
 - [ ] `trip` table with versioning
 - [ ] Multi-country destination tracking
 - [ ] Per-diem calculation per jurisdiction rules
@@ -305,10 +343,12 @@ The first fully usable agent: chat surface with a useful tool set.
 - [ ] `trip_report` derived artifact
 
 ### Meetings
+
 - [ ] `meeting` table
 - [ ] Link to expenses for justification
 
 ### Budgets
+
 - [ ] `budget` table with versioning
 - [ ] Business budgets (travel, SaaS, hardware, etc.)
 - [ ] Personal budgets (rent, food, etc.)
@@ -316,6 +356,7 @@ The first fully usable agent: chat surface with a useful tool set.
 - [ ] Income-based personal budget estimation
 
 ### Agents
+
 - [ ] `budget-helper` agent
 - [ ] `receipt-categorizer` agent (suggest categories, accept/reject UI pattern)
 
@@ -324,23 +365,27 @@ The first fully usable agent: chat surface with a useful tool set.
 ## v0.7 — Annual reports, personal tax, debts
 
 ### Annual reports
+
 - [ ] `annual_report` table with versioning
 - [ ] Estonia annual report generation
 - [ ] Finland annual report (where applicable for toiminimi)
 - [ ] Disclaimer banner on every generated report
 
 ### Personal income tax
+
 - [ ] `income_tax_return` table with versioning
 - [ ] Finland personal income tax prep
 - [ ] Estonia personal income tax prep
 - [ ] Personal income from external sources (stock options, exits, dividends, etc.)
 
 ### Debt tracking
+
 - [ ] Tax debt tracking
 - [ ] Other debts + payoff plans
 - [ ] Surfaced on dashboard
 
 ### Agents
+
 - [ ] `tax-advisor` agent
 - [ ] `proofreader` agent (gaps, missing items, logical errors in reports)
 
@@ -349,6 +394,7 @@ The first fully usable agent: chat surface with a useful tool set.
 ## v0.8 — Scenarios & analytics
 
 ### Scenarios
+
 - [ ] `scenario` table with versioning
 - [ ] Residency switcher (Estonia, Finland, others)
 - [ ] Company jurisdiction switcher
@@ -357,6 +403,7 @@ The first fully usable agent: chat surface with a useful tool set.
 - [ ] Side-by-side comparison UI
 
 ### Analytics
+
 - [ ] Revenue / profit / personal income trends
 - [ ] Tax burden trends
 - [ ] Predictions (basic — moving averages, simple projections)
@@ -364,6 +411,7 @@ The first fully usable agent: chat surface with a useful tool set.
 - [ ] Money sink detection
 
 ### Currency handling
+
 - [ ] FX rate sync (ECB or similar)
 - [ ] Store amounts in original + entity-base currency
 - [ ] Backfill historical FX where missing
@@ -373,25 +421,30 @@ The first fully usable agent: chat surface with a useful tool set.
 ## v0.9 — AI agent full
 
 ### Scripting sandbox
+
 - [ ] Decide: Daytona vs vm2 vs containerized Python
 - [ ] Implement `calc.runScript` properly
 - [ ] Streaming status to chat UI
 
 ### Bulk data entry via agent
+
 - [ ] `invoice-composer` agent: text → many invoice draft tool calls
 - [ ] Bulk receipt upload with agent-driven categorization
 
 ### Proactive recommender
+
 - [ ] Nightly cron job runs `proactive-recommender` agent
 - [ ] Outputs surfaced as dashboard cards
 - [ ] Suggest/accept/reject UI
 
 ### RAG expansion
+
 - [ ] All collections from §6.10 ingested
 - [ ] Hybrid search (Qdrant + SQL exact match) on dashboard top-bar
 - [ ] Tax guides ingested (Vero, EMTA, PWC summaries)
 
 ### Agent UX polish
+
 - [ ] Per-agent invocation surfaces (right place, right agent)
 - [ ] Confirmation card design polish
 - [ ] Agent suggestion review queue
@@ -401,32 +454,38 @@ The first fully usable agent: chat surface with a useful tool set.
 ## v1.0 — Polish & hardening
 
 ### Exports
+
 - [ ] CSV / XLSX export for any list
 - [ ] Receipt ZIP export by period
 - [ ] PDF export for reports, declarations, invoices
 - [ ] Full-backup export (DB dump + blobs + Qdrant snapshot)
 
 ### Reminders & calendar
+
 - [ ] Email reminders for deadlines
 - [ ] ICS calendar feed (subscribable)
 - [ ] In-app notifications
 
 ### Email-forwarding intake
+
 - [ ] Set up dedicated forwarding address
 - [ ] Inbound webhook → blob → receipt + expense draft
 
 ### Performance
+
 - [ ] DB query review (N+1 hunt)
 - [ ] List page virtualization for large datasets
 - [ ] Cache strategy for derived artifacts
 
 ### Security review
+
 - [ ] Auth flow audit
 - [ ] CSP headers
 - [ ] Rate limiting on auth endpoints
 - [ ] Backup/restore tested end-to-end
 
 ### Docs complete
+
 - [ ] All `docs/processes/*.md` written
 - [ ] All `docs/usage/*.md` written
 - [ ] Screenshots in README
@@ -439,6 +498,7 @@ The first fully usable agent: chat surface with a useful tool set.
 Lower priority, nice-to-haves, and aspirational items.
 
 ### Integrations
+
 - [ ] SaaS receipt auto-sync (OpenAI billing, Anthropic billing, server providers)
 - [ ] Stripe income sync
 - [ ] Polar income sync
@@ -447,6 +507,7 @@ Lower priority, nice-to-haves, and aspirational items.
 - [ ] Additional jurisdictions (Spain, Portugal, Germany, etc.)
 
 ### Other
+
 - [ ] Mobile-friendly receipt upload (PWA)
 - [ ] Tesseract OCR fallback (only if requested by self-hosters)
 - [ ] Multi-base-currency reporting consolidation

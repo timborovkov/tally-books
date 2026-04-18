@@ -1,0 +1,16 @@
+#!/usr/bin/env sh
+
+remote="$1"
+
+# Determine the diff range: from the remote tracking branch to HEAD if it exists,
+# otherwise lint everything that's about to land for the first time.
+upstream="$(git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null || true)"
+
+if [ -n "$upstream" ]; then
+  range="$upstream...HEAD"
+else
+  range="HEAD~1...HEAD"
+fi
+
+echo "→ Running lint-staged on diff: $range"
+pnpm exec lint-staged --diff="$range" || exit 1

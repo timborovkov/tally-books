@@ -1,0 +1,12 @@
+.next
+out
+build
+coverage
+node_modules
+pnpm-lock.yaml
+public
+*.svg
+
+# Spec / reference docs — author-owned, no prettier reformatting.
+PROJECT_BRIEF.md
+data-structure.md
