@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { notFound } from "next/navigation";
 
+import { Logo } from "@/components/logo";
 import { findUsableInvite, tryParseInviteScope } from "@/lib/iam/invites";
 
 import { AcceptInviteForm } from "./AcceptInviteForm";
@@ -25,7 +26,8 @@ export default async function AcceptInvitePage({ params }: { params: Promise<{ t
   if (!scope) notFound();
 
   return (
-    <main className="flex min-h-screen items-center justify-center p-6">
+    <main className="flex min-h-dvh flex-col items-center justify-center gap-8 p-6 sm:p-12">
+      <Logo type="full" orientation="vertical" size="lg" align="center" as="h2" />
       <AcceptInviteForm email={invite.email} scope={scope} />
     </main>
   );

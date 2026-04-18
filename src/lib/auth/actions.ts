@@ -7,7 +7,7 @@ import { and, eq, isNull } from "drizzle-orm";
 import { getDb } from "@/db/client";
 
 const db = getDb();
-import { accounts, twoFactors, users } from "@/db/schema";
+import { accounts, sessions, twoFactors, users } from "@/db/schema";
 import { auth } from "@/lib/auth/auth";
 import { adminExists } from "@/lib/iam/bootstrap";
 import { recordAudit } from "@/lib/audit";
@@ -163,11 +163,12 @@ export async function markTwoFactorEnabledAction(): Promise<ActionResult> {
 // Atomicity: signUpEmail and finalizeInviteAcceptance run in separate
 // transactions. If finalize fails after signup succeeds (concurrent
 // acceptor wins the accepted_at IS NULL race, malformed scope jsonb,
-// DB glitch), we compensate by deleting the freshly-created user row.
-// `accounts` and `two_factors` FK to users with `ON DELETE CASCADE`, so
-// BetterAuth's linked rows go with it. Without this the user can't
-// retry — signUpEmail rejects the duplicate email and there's no UI to
-// recover.
+// DB glitch), we compensate by deleting the freshly-created rows so
+// the invitee can retry. `sessions.user_id` is ON DELETE NO ACTION per
+// data-structure.md §4.2 — BetterAuth may have issued a session even
+// with `autoSignIn: false` (the request headers drive cookie setup),
+// so we must delete sessions explicitly before users to avoid an FK
+// violation that would leave the orphan in place.
 export async function acceptInviteAction(input: {
   token: string;
   name: string;
@@ -202,8 +203,17 @@ export async function acceptInviteAction(input: {
     // can try again.
     if (createdUserId) {
       try {
-        await db.delete(accounts).where(eq(accounts.userId, createdUserId));
-        await db.delete(users).where(eq(users.id, createdUserId));
+        // Order matters: delete everything that FKs back to users first
+        // (sessions has ON DELETE NO ACTION; accounts + two_factors
+        // cascade but we delete them explicitly so failures surface
+        // close to their cause). Wrap in a tx so a partial rollback
+        // doesn't leave us in a worse state than before.
+        await db.transaction(async (tx) => {
+          await tx.delete(sessions).where(eq(sessions.userId, createdUserId!));
+          await tx.delete(twoFactors).where(eq(twoFactors.userId, createdUserId!));
+          await tx.delete(accounts).where(eq(accounts.userId, createdUserId!));
+          await tx.delete(users).where(eq(users.id, createdUserId!));
+        });
       } catch {
         // If rollback fails, the orphan survives. The accept-invite
         // retry will fail with "email in use" until an admin cleans
