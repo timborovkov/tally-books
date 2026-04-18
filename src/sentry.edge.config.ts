@@ -18,6 +18,8 @@ Sentry.init({
   dsn,
   enabled,
   environment: env.SENTRY_ENVIRONMENT ?? env.NODE_ENV,
-  sendDefaultPii: true,
+  // See `sentry.server.config.ts` for the full rationale. Same default
+  // applies: don't leak request PII to the default shared Sentry project.
+  sendDefaultPii: false,
   tracesSampleRate: env.SENTRY_TRACES_SAMPLE_RATE,
 });

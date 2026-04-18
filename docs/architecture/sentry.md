@@ -58,6 +58,27 @@ Upload runs only when `SENTRY_AUTH_TOKEN` is set. Local builds and CI without th
 
 All vars are validated by zod at boot (see `src/lib/env.ts` and `src/lib/env.client.ts`). Out-of-range sampling rates, malformed DSN URLs, or bad `SENTRY_URL` values fail fast instead of silently breaking.
 
+## Integrations
+
+Explicit integration set across the three runtimes:
+
+| Runtime | Integration                   | Purpose                                                     |
+| ------- | ----------------------------- | ----------------------------------------------------------- |
+| browser | `browserTracingIntegration()` | Page navigations, fetch/XHR spans, Web Vitals (LCP/CLS/INP) |
+| browser | `replayIntegration()`         | Session replay (DOM + pointer/keyboard), gated by sampling  |
+| node    | `nodeProfilingIntegration()`  | CPU profiling via `@sentry/profiling-node` native bindings  |
+| edge    | _(defaults only)_             | No profiling — native bindings aren't available on edge     |
+
+Browser tracing is part of the `@sentry/nextjs` default set, but it's listed explicitly in `instrumentation-client.ts` so the intent is visible. Node profiling is **not** a default — `@sentry/nextjs` alone won't pull it in.
+
+## PII handling (`sendDefaultPii`)
+
+All three configs hardcode `sendDefaultPii: false`. When `true`, Sentry attaches: client IP, cookies, request headers (incl. Authorization — partially masked), request body fragments, and the browser's `document.cookie`.
+
+Default is `false` because `.env.example` ships the real Tally DSN (`irmin-dw/tally-books`). A self-hoster who flips the master toggle without swapping the DSN would pipe their operators' PII into a shared project — a privacy footgun we don't want by default. Stack traces + breadcrumbs still capture ~90% of the debug value.
+
+If you run your own Sentry project and want the full payload, edit the three `sentry.*.config.ts` files to flip it. We kept it hardcoded (not env-driven) so the tradeoff is a deliberate, reviewed change rather than a silent env flip.
+
 ## Tunnel route
 
 `withSentryConfig` is set to `tunnelRoute: "/monitoring"` so browser events route through a same-origin proxy. This bypasses ad-blockers that commonly block `*.ingest.sentry.io`. The route is created automatically by the Sentry build plugin; no manual route handler is needed.
