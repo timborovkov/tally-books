@@ -10,7 +10,9 @@
 
 **Tally** is a self-hosted, single-tenant accounting, bookkeeping, finance, and tax management application for solo entrepreneurs who run one or more legal entities across multiple jurisdictions. It is designed to replace spreadsheet-based bookkeeping with a system that understands multi-entity structures, cross-border tax obligations, personal and business finance side-by-side, versioning of all financial artifacts, and an integrated AI agent that can read, reason about, and help modify the user's financial state.
 
-The app is built primarily to serve the author's own needs — an Estonian OÜ and a Finnish toiminimi, with cross-invoicing between them — but **nothing in the code is hardcoded to that setup**. All jurisdiction-specific behavior (entity types, tax rates, declaration schedules, per diem rules, payout mechanisms, filing portals) is configuration, loaded at setup and editable from the dashboard. Tally ships with prefilled configs for Estonia, Finland, and Delaware (US) to validate that the abstractions work outside the EU.
+At micro scale, **expense capture and trip reporting** are often harder than they look: the same receipt may be ambiguously business or personal, a trip may touch multiple entities or jurisdictions, and “which company does this belong to?” collides with **parallel receipt workflows per legal entity** instead of one coherent inbox. Tally treats that attribution and evidence problem as first-class, not a bolt-on after single-entity bookkeeping.
+
+The app is built primarily to serve the author's own needs — an Estonian OÜ and a Finnish toiminimi, with cross-invoicing between them — but **nothing in the code is hardcoded to that setup**. All jurisdiction-specific behavior (entity types, tax rates, declaration schedules, per diem and other travel-compensation rules, mileage and commute schemes, employer benefit and allowance catalogs, **jurisdiction obligation checklists** (employment, tax/payment, and reporting duties), payout mechanisms, filing portals) is configuration, loaded at setup and editable from the dashboard. Tally ships with prefilled configs for Estonia, Finland, and Delaware (US) to validate that the abstractions work outside the EU.
 
 **Deployment model:** one instance = one admin = one person's books. Not SaaS. Self-hosted via Docker, typically at a private subdomain (e.g. `books.example.dev`). No search engine indexing. No multi-tenancy. The admin may invite scoped collaborators (accountant, lawyer, spouse) with per-resource read/write permissions.
 
@@ -35,6 +37,7 @@ The app is built primarily to serve the author's own needs — an Estonian OÜ a
 
 - Not a SaaS. No billing, no tenant isolation, no marketing site.
 - Not a replacement for a professional accountant where one is legally required — it's a tool that makes their job easier.
+- Not a substitute for **employment lawyers, tax advisors, or compliance audits** — jurisdiction obligation checklists and `compliance_task` prompts are **guided memory aids from configuration**, not proof that every legal duty is satisfied.
 - Not a real-time trading or banking platform.
 - Not a CRM, project management tool, or time tracker (though it integrates with Clockify).
 
@@ -131,8 +134,8 @@ Each catalog entry declares: `id`, `name`, `requiredEnv[]`, `capabilities[]`, an
 Before diving into features, fix the vocabulary.
 
 - **Entity** — a legal entity the user owns or operates (OÜ, toiminimi, Delaware LLC, etc.) OR the special pseudo-entity `"Personal"`.
-- **Jurisdiction** — a country-level config bundle: entity types available, tax types, VAT rules, per diem rules, filing schedules, portal links, guide links.
-- **Thing** — shorthand for any versioned, lockable business object: invoice, expense, receipt, VAT declaration, annual report, balance sheet, budget, trip report, etc. All Things share versioning, lock, and audit behavior.
+- **Jurisdiction** — a country-level config bundle: entity types available, tax types, VAT rules, **per diem and other travel-compensation rules** (overnight allowances, **mileage / kilometre reimbursement tables**, commute-specific schemes where they differ), **employer benefit & allowance catalogs** (caps, taxability, social-charge treatment, carry-forward), **obligation templates** (employment + tax/payment + reporting) as structured checklist items with links to official guidance, filing schedules, portal links, guide links.
+- **Thing** — shorthand for any versioned, lockable business object: invoice, expense, receipt, VAT declaration, annual report, balance sheet, budget, trip report, **compliance task** (jurisdiction-guided obligation item), etc. All Things share versioning, lock, and audit behavior.
 - **Period** — a time window (month, quarter, financial year). Periods can be locked; locked periods reject mutations to their Things.
 - **Derived artifact** — a Thing whose contents are computed from other Things (declarations, reports, statements). Versus **source artifact** (receipt, invoice, bank transaction) which is entered directly.
 - **Auto-refresh** — the background process that rebuilds derived artifacts when source data changes. Subject to lock flags and the editor-safety rules in §7.
@@ -160,7 +163,7 @@ Priorities: **P0** = must ship in v1. **P1** = v1.1 / shortly after. **P2** = ni
 #### 5.1.3 Authentication & IAM
 - First boot: create admin. Setup wizard follows.
 - Admin can invite users via email + scope (read/write × resource type).
-- Scoped resources: invoices, expenses, payouts, taxes, filings, legal documents, estimates, budgets, reports, trips, AI agent, business/personal details.
+- Scoped resources: invoices, expenses, payouts, taxes, filings, legal documents, estimates, budgets, reports, trips, **benefit enrollments / commute & mileage claims**, **compliance tasks** (jurisdiction-guided obligations: employment + tax/payment + reporting), AI agent, business/personal details.
 - Outstanding invites + existing users removable by admin.
 - 2FA mandatory, strong password policy, no SSO.
 - No public signup. Invite-only.
@@ -183,6 +186,13 @@ Priorities: **P0** = must ship in v1. **P1** = v1.1 / shortly after. **P2** = ni
 - Mark expenses paid by personal card as "reimbursable by entity" so the books handle it correctly.
 - Assign receipts to card transactions when bank sync exists.
 - Category taxonomy configurable per jurisdiction (real accounting categories).
+
+#### 5.1.5.1 Unified intake inbox & routing queue (P1)
+- A **single cross-entity intake inbox** is first-class: every new receipt/document/claim draft lands in one queue with status (`new`, `needs_review`, `routed`, `confirmed`, `rejected`).
+- Queue supports high-friction routing decisions explicitly: **business vs personal**, **which entity**, and **which flow** (expense, trip evidence, mileage/commute claim, benefit evidence, compliance evidence).
+- Triage fields are explicit and auditable: classifier confidence, routing reason, chosen entity/flow, who confirmed, when.
+- Bulk triage is supported for real-world inbox floods (mass route, mass mark personal, mass attach to trip/claim, mass request missing evidence).
+- Wrong-route recovery is first-class: move an item between entity/flow without losing audit trail; dependent drafts get `underlying_data_changed` and re-evaluation signals.
 
 #### 5.1.6 Invoicing
 - Create, draft, send invoices from any entity.
@@ -268,7 +278,7 @@ The agent is not optional. It's the second primary interaction surface after the
 - **Conversation history** — threads, searchable, re-openable.
 - **Tools** (exposed to the agent):
   - Read: query any Thing, any list, any report, any metadata.
-  - Write: create invoices, expenses, receipts, budgets, trips (confirmed via UI for destructive changes).
+  - Write: create invoices, expenses, receipts, budgets, trips, **commute/mileage claims**, **benefit enrollments**, **resolve or snooze compliance tasks** (confirmed via UI for destructive changes).
   - Calculator / scripting: safe Python or JS sandbox for ad-hoc estimates. Daytona or similar for isolated execution as P2.
   - Web search: generic public search for tax info, guides, docs.
   - Browser/fetch: scrape specific pages for context.
@@ -278,10 +288,12 @@ The agent is not optional. It's the second primary interaction surface after the
   - Budgeting help — build good budgets from history.
   - Category & explainer suggestions on receipts.
   - Personal vs business / which-entity recommendations.
-  - Pay-structure advice (salary vs dividends vs board comp, YEL optimization, Estonian social security).
+  - Pay-structure advice (salary vs dividends vs board comp, YEL optimization, Estonian social security)—including **owner-granted benefits vs dividend extraction** when the admin pays themselves through their own entity’s payroll and benefit catalogs.
+  - **Benefits, commute & mileage:** compare options (e.g. company car vs kilometrikorvaukset vs net salary) using **jurisdiction rule packs** and the user’s enrollments, distances, and structure—surfacing trade-offs in cash, tax, and admin burden; still **not** a substitute for a tax advisor where sign-off is required.
   - Cost optimization — find money sinks, suggest deductions.
   - Proofreading of reports, declarations, balance sheets.
   - Tax prep sanity check — did you miss a deduction / income item?
+  - **Employment obligation gaps** — summarize open `compliance_task` items, explain what jurisdiction config expects, never present as legal sign-off.
   - Proactive recommendations.
   - Summaries of financial state.
   - Bulk data entry: "here are last year's invoices as text, create them" → agent calls create-invoice tool repeatedly.
@@ -304,13 +316,45 @@ The agent is not optional. It's the second primary interaction surface after the
 - Expense reports for employees/contractors.
 - Subcontractor vs employee modeling help via agent.
 
-### 5.5 Trips & per diem (P1)
+#### 5.4.1 Employer benefits, allowances & in-kind compensation (P1)
+
+- **Jurisdiction-configurable catalogs** describe what exists in a given country’s “benefit culture”: e.g. meal, sports-and-culture, massage/wellness, commute subsidy, employer-paid healthcare / therapy / dental, phone and connectivity, home-office allowance, work equipment (phones, laptops, headsets), company or pool car vs private use, e-bike or other mobility schemes, and similar. **Names, caps, eligibility, taxability, and social-security treatment differ by jurisdiction**; configs store rate tables, annual limits, carry-forward rules, and **links to statute / official guidance / common practice notes** so the agent and UI can stay grounded.
+- **Enrollments and elections** (who receives what, paid by which entity, effective dates) are versioned Things, not free-text only.
+- **Owner as benefit recipient:** the controlling entrepreneur may grant **themselves** benefits through an entity they own (same `employer_benefit_enrollment` model as for any employee on that payroll—founder–employee, director salary + perks, etc.). The app does **not** try to automate corporate-law “substance” judgments; where relevant, jurisdictions may attach **warning flags or doc links** for the agent and user. It **does** support **numerical comparison** of that path against **taking comparable value as dividends** (or salary-only, or mixed) via §5.8 scenarios and pay-structure tools (§5.2)—net to the household, employer cost, retained earnings / distributable capacity **as modeled by configs**, not legal advice on what resolutions are permitted.
+- Every enrolled benefit or recurring allowance **flows through accounting**: employer cost, employee taxable benefit valuation where applicable, capitalization vs expense, and **downstream artifacts**—payslips, income statements, VAT / payroll withholding where relevant, annual reports, personal tax packs, budgets, and **scenario models** (§5.8). No “decorative HR checkbox” that does not touch the ledger.
+- **Comparative what-ifs** belong in the same product surface as payroll and travel (§5.8): e.g. *private car + salary vs company car with entity-paid running costs vs mileage reimbursement (e.g. Finnish kilometrikorvaukset-style) vs gross salary bump*; and **owner-manager extraction**: *more through enrolled benefits + payroll vs more through dividends* (holding “cost to entity” or pretax bundles comparable where the scenario UI allows)—including **how answers change if tax residency or employer jurisdiction moves** (Finland ↔ Estonia is an explicit design-time acceptance case).
+
+#### 5.4.2 Jurisdiction-guided employment & employer obligations (P1)
+
+- Each **Jurisdiction** ships (and allows editing of) a **declarative catalog of employer-side obligations** that commonly apply when someone is an **employee** under local rules—not a full labour-law simulator, but a **guided checklist** the product can evaluate: e.g. mandatory employee health coverage where required, **pension / social insurance registration** (Tyel in Finland and analogues elsewhere), **minimum wage / minimum pay** references, **working time, overtime, and record-keeping** expectations, occupational health or other mandated programs—each item keyed, human-readable, and linked to **statute or official guidance URLs** for the agent and the user.
+- **The entrepreneur counts:** when the admin is formally on the payroll of an entity they control (CEO salary, employee-founder, director–employee, etc.), **the same obligation templates apply** as for any other employee on that payroll relationship. The app must not silently scope “HR compliance” to *other* hires only.
+- **Evaluator → tasks:** on **new or changed employment records** (hire date, jurisdiction, employment type, entity), and when jurisdiction configs change, the system **diffs required checklist items vs evidence already stored** (policy IDs, enrollment records, registration flags, attached documents). Missing items become **`compliance_task`** rows (or equivalent first-class objects): visible on the **dashboard**, snoozable, completable with evidence, and **eligible for reminders and calendar fan-out** (§5.13, §9.4).
+- **Disclaimers:** this layer is **configuration-driven guidance** to reduce “forgot to set up Tyel”-class mistakes; it is **not** a guarantee of legal compliance and **not** a substitute for counsel where statute requires it.
+
+#### 5.4.3 Jurisdiction-guided tax, payment & reporting obligations (P1)
+
+- The same obligation framework is **not employment-only**. Jurisdictions define additional templates for **tax/payment/reporting duties** by entity type and registration status: e.g. periodic tax remits, prepayments, contribution payments, recurring declarations, and required supporting reports where applicable.
+- **Evaluator → tasks:** on period rollovers, filing/payment state changes, entity registration changes, and jurisdiction-config updates, the system checks required obligations against known state (created declarations, mark-filed refs, payment records, uploaded evidence, waivers) and creates or reopens `compliance_task` rows when something is missing or stale.
+- **Task lifecycle & evidence:** tasks stay first-class with status (`open`, `done`, `waived`, `snoozed`), due hints, evidence links, and clear rationale text from config so the user can understand *why this exists* and what data point would satisfy it.
+- **Payment satisfaction precision:** obligation templates define `satisfaction_mode` (e.g. `bank_match`, `filing_ref`, `doc_evidence`, or combinations). For payment duties specifically, closing logic must be deterministic and explainable: either (a) matched payment event(s) satisfy expected amount/date window tolerances, or (b) explicit manual evidence/override is attached with actor + reason. No hidden heuristics that silently close tasks.
+- **Scope:** this is a guided “required-but-missing” memory system for operations. It complements declarations/reports generation and reminders; it does not claim statutory sufficiency in edge cases where professional sign-off is required.
+
+### 5.5 Trips, per diem, mileage & commute compensation (P1)
+
+#### Overnight trips & per diem
 
 - Trip records: destination, dates, number of days per country, purpose, people met, events attended.
-- Per diem calculation per jurisdiction rules.
+- **Per diem** (overnight / away-from-home allowances) per jurisdiction rules.
 - Related expenses linked to trip.
 - Trip reports: days per country, per diem payable, total spend, categories.
 - Business-justification narrative field (the "I was in Vietnam for a month but I was working" case).
+
+#### Mileage, commute & other travel compensation
+
+- **Mileage and distance-based reimbursement** using jurisdiction **rate tables** (year, vehicle type, passenger supplements, electric vs ICE where differentiated)—the Finnish **kilometrikorvaukset** pattern is one concrete instance; other countries expose their own tables via the same abstraction.
+- **Commute vs business travel** are modeled as **different compensation kinds** where rules diverge (e.g. habitual home ↔ workplace vs client site vs overnight assignment)—eligibility, caps, and taxation are **not** collapsed into a single “travel” bucket.
+- **Evidence**: distance logs, route exports, odometer notes, or jurisdiction-accepted equivalents; link generated **expense lines** (and benefit interactions when a trip mixes personal and business use).
+- **Agent + scenario support**: answer “which structure is cheaper / simpler this year?” using stored rules + user facts (see §5.2, §5.8), always with the same **not professional advice** posture as the rest of the app.
 
 ### 5.6 Meetings & business events (P1)
 
@@ -319,7 +363,7 @@ The agent is not optional. It's the second primary interaction surface after the
 
 ### 5.7 Budgeting (P1)
 
-- Business budgets: travel, per diem, SaaS, servers, AI/agentic coding, hardware, misc, retained-earnings allocation, debt paydown, tax/pension reserves.
+- Business budgets: travel, per diem, **mileage & commute compensation**, **employer benefit costs** (cash + imputed), SaaS, servers, AI/agentic coding, hardware, misc, retained-earnings allocation, debt paydown, tax/pension reserves.
 - Personal budget: rent, food, utilities, partying, clothes, gym, subs, savings.
 - Budgets are versioned Things.
 - **Budget vs reality comparison always uses the budget version that was active at the time** (critical: don't retcon).
@@ -333,7 +377,11 @@ The agent is not optional. It's the second primary interaction surface after the
   - Company jurisdiction change (Cayman, Ireland, etc.).
   - Income restructuring (more salary vs more dividends).
   - Expense reclassification (personal → business or vice versa).
-- Scenarios are saved, named, versioned Things.
+  - **Vehicle & mobility:** private car + out-of-pocket vs entity-paid running costs vs **mileage reimbursement** (kilometrikorvaukset-style and analogues) vs salary gross-up; **company car / e-bike / pooled benefit** packages vs cash.
+  - **Benefit package mixes:** toggling enrollments (lunch, sports/culture, healthcare, phone, home office, equipment, etc.) and seeing effects on **net cash, employer cost, and personal tax / social** side-by-side.
+  - **Dividends vs benefits (owner-manager):** for the **same controlling owner**, compare routing value as **dividends (or other distributions modeled in config)** vs **payroll + benefit enrollments** (and mixed slides), including **retained earnings / distributable reserves** hooks where jurisdiction configs expose them—**numerical** trade-offs from rule packs, not board resolutions or anti-avoidance legal conclusions.
+  - **Cross-jurisdiction deltas:** same facts under Finland vs Estonia (or other configured pairs) to surface *what moves* when residency or employing entity moves—not legal advice, but **numerical comparison** from configured rules.
+- Scenarios are saved, named, versioned Things. Scenario engines read **jurisdiction rule packs** + user structure; outputs feed comparison UI and **agent explanations** grounded in the same data.
 
 ### 5.9 Debt tracking (P1)
 
@@ -359,6 +407,7 @@ The agent is not optional. It's the second primary interaction surface after the
 ### 5.13 Calendar & reminders (P1)
 
 - Automatic reminders for deadlines (file VAT, pay invoice, send invoice).
+- **Compliance tasks** from §5.4.2–§5.4.3 appear here too: e.g. “arrange employee health insurance”, “complete Tyel (or equivalent) registration”, or “missing periodic remit/reporting evidence for this entity type”—with optional due hints from jurisdiction config and **completion** when the user attaches evidence or links the required record.
 - Calendar invites (ICS export or subscription feed).
 
 ### 5.14 Integrations
@@ -426,7 +475,7 @@ The agent is not optional. It's the second primary interaction surface after the
 
 ### 6.2 Domain services
 
-Each domain (entities, invoices, expenses, receipts, declarations, reports, budgets, trips, payroll, scenarios, documents, agent) is a module under `src/domains/<name>/` with:
+Each domain (entities, invoices, expenses, receipts, declarations, reports, budgets, trips, travel_compensation, benefits, payroll, **compliance**, scenarios, documents, agent) is a module under `src/domains/<name>/` with:
 
 - `schema.ts` — Zod schemas for inputs/outputs
 - `service.ts` — pure business logic
@@ -660,6 +709,10 @@ Each point in Qdrant carries a payload with: `entity_id`, `kind`, `period`, `cre
   2. Create internal invoice toiminimi → OÜ → verify booking on both sides.
   3. Upload receipt → OCR → user confirms → appears in declaration.
   4. Generate annual report → lock period → attempt mutation → rejected.
+  5. Intake queue routing: upload same-day receipts for multiple entities + personal → triage business/personal/entity/flow → verify audit trail and correct downstream draft creation.
+  6. Employment obligation evaluator: create founder-as-employee relation without required evidence → `compliance_task` opens; attach evidence → task closes.
+  7. Non-employment obligation evaluator: simulated due period with missing payment/reporting evidence → task opens; satisfy via configured `satisfaction_mode` path (`bank_match` or manual evidence) → task closes with rationale trail.
+  8. Reminder fan-out: due `compliance_task` (employment and tax/payment domain) produces dashboard/in-app reminder and ICS event once, then suppresses on close/snooze.
 - Test DB via ephemeral Postgres container (Testcontainers).
 - AI provider mocked in tests — no live calls. Qdrant runs in CI as a service container.
 
@@ -809,7 +862,7 @@ invoice_version
   actor_id, actor_kind ('user' | 'system'), reason, created_at
 ```
 
-Same pattern for: `expense`, `receipt`, `vat_declaration`, `annual_report`, `income_tax_return`, `balance_sheet`, `budget`, `trip`, `trip_report`, `payroll_run`, `scenario`, `legal_document` metadata.
+Same pattern for: `expense`, `receipt`, `vat_declaration`, `annual_report`, `income_tax_return`, `balance_sheet`, `budget`, `trip`, `trip_report`, `commute_mileage_claim`, `employer_benefit_enrollment`, `compliance_task`, `payroll_run`, `scenario`, `legal_document` metadata.
 
 ### 8.4 Source artifacts
 
@@ -876,6 +929,27 @@ trip
 trip_report
   id, trip_id, per_diem_total, expense_total, breakdown (jsonb),
   state, + versioning columns
+
+commute_mileage_claim                    -- km tables, fixed commute allowances, etc.
+  id, entity_id, person_id, claim_kind ('business_mileage' | 'commute' | ...),
+  period, jurisdiction_rule_ref, evidence (jsonb), rates_snapshot (jsonb),
+  computed_totals (jsonb), linked_expense_ids (jsonb),
+  + versioning columns
+
+employer_benefit_enrollment
+  id, entity_id, person_id, benefit_type_id, effective_from, effective_to,
+  parameters (jsonb), valuation_snapshot (jsonb),
+  linked_payroll_line_ids (jsonb), linked_expense_ids (jsonb),
+  + versioning columns
+
+compliance_task                          -- jurisdiction-guided obligation item
+  id, entity_id, jurisdiction_id,
+  obligation_domain ('employment' | 'tax_payment' | 'reporting' | ...),
+  subject_type ('entity' | 'employment_relation' | 'person' | 'filing' | ...),
+  subject_id nullable, employment_relation_id nullable, person_id nullable,
+  obligation_key, status ('open'|'done'|'waived'|'snoozed'),
+  due_at nullable, snooze_until nullable, resolution_note, evidence (jsonb),
+  + versioning columns (or audit trail equivalent)
 
 meeting
   id, entity_id, counterparty (jsonb), when, where, purpose, expense_ids (jsonb)
@@ -1007,6 +1081,23 @@ time_entry ──► invoice estimator for arrangement-based billing
 
 trip ──► per_diem calc ──► expense(s) ──► (chains as above)
 
+commute_mileage_claim ──► expense(s) ──► (chains as above)
+
+employer_benefit_enrollment ──┬──► payroll_run (taxable benefit / contribution lines)
+                              ├──► expense or accrual rows (per jurisdiction rules)
+                              ├──► annual_report, income_tax_return (where imputed)
+                              └──► scenarios, budget vs reality
+
+employee / employment_relation + jurisdiction obligation catalog
+      ──► compliance_task (open until evidence or waiver)
+      ──► reminders, calendar (§5.13), dashboard, agent summaries
+
+entity + jurisdiction tax/payment/reporting obligation catalog
+      ──► compliance_task (open until declaration/payment/evidence state matches rules)
+      ──► reminders, calendar (§5.13), dashboard, agent summaries
+
+compliance_task.done ──► clears fan-out for that item; evidence may link blob or enrollment
+
 meeting ──► provides justification context on linked expenses
 
 personal_balance_sheet_entry ──► personal_balance_sheet ──► personal_tax_return
@@ -1023,6 +1114,8 @@ scenario.changes ──► isolated re-run of the relevant calculations using a
 - Adding an expense to a locked period **is rejected** at the service layer, with an actionable error.
 - Budget-vs-reality comparisons for a given month use the **budget version that was current during that month**, not today's version.
 - Scenario runs are **pure**: they read real data as a base and compute what-ifs without writing to real artifacts.
+- Obligation evaluators are **idempotent**: reruns do not duplicate equivalent active `compliance_task` rows for the same obligation subject.
+- A payment/reporting obligation cannot close without a satisfier path that matches config (`bank_match`, `filing_ref`, `doc_evidence`, or explicit manual override with actor + reason).
 
 ### 9.3 Agent-triggered changes
 
@@ -1032,6 +1125,7 @@ The AI agent is a peer to the user, not a privileged channel. Its writes go thro
 
 - Scheduled draft generation runs on cron → creates draft Things → emits `deadline_upcoming` → notification + calendar invite.
 - State transitions emit notifications (e.g. `invoice.sent`, `declaration.filed`).
+- Due `compliance_task` rows (employment + tax/payment + reporting domains) emit reminder events with dedupe keys so repeated evaluator runs do not spam.
 - Proactive agent run (nightly) surfaces recommendations as dashboard cards.
 
 ### 9.5 Cross-entity flows
@@ -1068,6 +1162,10 @@ Kept in `docs/` and updated as we build.
 - `docs/processes/file-annual-report.md`
 - `docs/processes/pay-yourself.md`
 - `docs/processes/plan-trip-and-per-diem.md`
+- `docs/processes/mileage-commute-and-kilometrikorvaukset.md` (pattern: jurisdiction rate tables → claims → expenses)
+- `docs/processes/employer-benefits-and-allowances.md` (enrollment → ledger → tax packs)
+- `docs/processes/jurisdiction-employment-obligations.md` (catalog schema, evaluator, compliance_task lifecycle)
+- `docs/processes/jurisdiction-tax-payment-reporting-obligations.md` (catalog schema, evaluator, compliance_task lifecycle for non-employment duties)
 - `docs/guides/deployment.md`
 - `docs/guides/cron-and-jobs.md`
 - `docs/guides/backup-and-restore.md`
@@ -1084,7 +1182,7 @@ Kept in `docs/` and updated as we build.
 - Repo, CI, Docker, auth, setup wizard, entities, jurisdictions (EE, FI, US-DE configs), versioning engine, UTC date handling, Sentry.
 
 **v0.2 — Source data**
-- Expenses, receipts (with OCR), invoices (drafts + PDF), clients, categories, basic bookkeeping views.
+- Expenses, receipts (with OCR), invoices (drafts + PDF), clients, categories, **single cross-entity intake inbox + routing queue**, basic bookkeeping views.
 
 **v0.3 — Derivations**
 - VAT declarations, income statements, balance sheets, versioning timeline, period locks, editor-safety rules.
@@ -1096,13 +1194,13 @@ Kept in `docs/` and updated as we build.
 - Chat surface, tool registry (read + safe writes), conversation history, structure-context field, basic RAG.
 
 **v0.6 — Payroll, trips, budgets**
-- Payout planning, payroll runs, trip & per-diem, budgets with historical comparison.
+- Payout planning, payroll runs, trips (per diem + **mileage / commute claims**), **employer benefits & allowance enrollments** wired into expenses/payroll, **jurisdiction employment-obligation catalogs + `compliance_task` surfacing** (including founder-as-employee), budgets with historical comparison.
 
 **v0.7 — Annual reports & personal tax**
-- Annual report generation, personal income tax prep, debt tracking.
+- Annual report generation, personal income tax prep, debt tracking, and **jurisdiction-guided tax/payment/reporting obligation catalogs + task surfacing** for non-employment duties.
 
 **v0.8 — Scenarios & analytics**
-- Residency/jurisdiction what-ifs, revenue/profit/tax trends, predictions.
+- Residency/jurisdiction what-ifs, **vehicle / mileage / benefit-package comparisons**, revenue/profit/tax trends, predictions.
 
 **v0.9 — AI agent full**
 - Scripting sandbox, bulk data entry via agent, proactive recommendations, proofreading, suggest/accept patterns everywhere.
