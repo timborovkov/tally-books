@@ -28,8 +28,7 @@ The minimum scaffolding needed to start building features safely.
 ### Containers & local dev
 
 - [x] `Dockerfile` (multi-stage: deps → build → runtime)
-- [x] `docker-compose.yml` for local dev (`app`, `postgres`, `minio`, `qdrant`)
-- [x] `docker-compose.prod.yml` reference
+- [x] `docker-compose.yml` for local dev (`app`, `postgres`, `minio`, `qdrant`) — doubles as infra shape reference for self-hosters; no separate prod compose shipped
 - [x] `.env.example` with all required env keys documented
 - [x] Health + readiness endpoints
 
@@ -57,6 +56,7 @@ The minimum scaffolding needed to start building features safely.
 - [x] `entity` table + CRUD
 - [x] `jurisdiction` table + CRUD
 - [x] Prefilled jurisdiction configs: Estonia, Finland, Delaware (US)
+- [x] Config schema reserves **`obligations` catalog shape** with domains (`employment`, `tax_payment`, `reporting`) (stubs ship in v0.1 — empty arrays in EE/FI/US-DE configs; seeds arrive in v0.6/v0.7)
 - [x] Personal pseudo-entity handling
 - [x] Entity ↔ person links (board, CEO, shareholder)
 - [x] `person` table + CRUD (legal name, tax residency, country IDs)
@@ -112,6 +112,10 @@ Get the inputs in: receipts, expenses, invoices, clients, categories.
 - [ ] Confidence highlighting in UI for low-confidence fields
 - [ ] User review/edit/confirm flow
 - [ ] Mass actions: bulk re-extract, bulk assign entity/category, bulk delete
+- [ ] **Unified intake inbox** (cross-entity queue) with status: `new`, `needs_review`, `routed`, `confirmed`, `rejected`
+- [ ] Routing fields in queue: business vs personal, entity, target flow (expense/trip/mileage/benefit/compliance evidence)
+- [ ] Bulk triage actions: mass route, mass mark personal, mass attach to trip/claim, mass request missing evidence
+- [ ] Wrong-route recovery flow with audit trail and downstream re-evaluation signals
 
 ### Expenses
 
@@ -162,6 +166,7 @@ Get the inputs in: receipts, expenses, invoices, clients, categories.
 
 - [ ] Integration test: upload receipt → OCR → user confirms → expense created
 - [ ] Integration test: create internal invoice toiminimi → OÜ → both sides booked
+- [ ] Integration test: cross-entity intake queue routing (business/personal/entity/flow) creates the correct downstream draft artifacts + audit entries
 
 ---
 
@@ -342,6 +347,38 @@ The first fully usable agent: chat surface with a useful tool set.
 - [ ] Trip narrative / business justification field
 - [ ] `trip_report` derived artifact
 
+### Mileage, commute & non–per-diem travel compensation
+
+- [ ] `commute_mileage_claim` (or equivalent) table with versioning
+- [ ] Jurisdiction **rate tables** and rule refs (Finnish kilometrikorvaukset-style + hooks for other countries)
+- [ ] Distinct flows for **commute** vs **business trip** vs **overnight per diem** where rules diverge
+- [ ] Evidence capture (distance log, route export, odometer notes—configurable per jurisdiction)
+- [ ] Generated **expense lines** + linkage into declarations / reports where applicable
+
+### Employer benefits & allowances
+
+- [ ] `employer_benefit_enrollment` (or equivalent) table with versioning
+- [ ] Jurisdiction **benefit catalogs** (types, caps, taxability, social-charge treatment, carry-forward)—seed EE + FI patterns (lunch, sports/culture, massage, commute subsidy, healthcare, therapy, dental, phone, home office, equipment, company car / e-bike, etc.) as **examples**, not hardcoded logic spread through the app
+- [ ] Enrollment UI (who, which entity, effective dates, parameters)
+- [ ] **Accounting integration:** posts through payroll lines, expenses, or accruals per rules; updates income statements, annual reports, personal tax drafts, budgets, and `underlying_data_changed` on dependents
+- [ ] Agent-readable **rule pack** excerpts (statute / guide URLs + structured fields) for grounded Q&A
+
+### Employment obligations & compliance tasks
+
+- [ ] `compliance_task` (or equivalent) with versioning / audit trail: `open` → `done` | `waived` | `snoozed`, evidence attachments, link to `employment_relation` / `employee` + `jurisdiction_id` + `obligation_key`
+- [ ] Jurisdiction config: **employer–employee obligation catalog** (structured checklist items: e.g. health insurance where mandatory, **Tyel** / pension–social registration, minimum pay references, working-time & record-keeping expectations—each with official guide URLs). Seed **FI + EE** as data-driven examples, not scattered conditionals in app code
+- [ ] **Evaluator:** on hire / employment update / jurisdiction config change → diff catalog vs stored evidence (enrollments, policy refs, registration flags) → create or reopen tasks (e.g. “no health insurance on file for new employee”)
+- [ ] **Founder-as-employee:** same rules when the admin is on payroll of an entity they control (salary, director–employee, etc.)—no “only other hires” blind spot
+- [ ] Dashboard surfacing + filters (entity, person, obligation kind); optional due hints from config
+- [ ] Minimal **in-app reminders** for open tasks in v0.6 (full email/ICS integration can follow **Reminders & calendar** in v1.0)
+- [ ] Agent: list / explain open compliance tasks using jurisdiction rule excerpts (not legal sign-off)
+
+### Obligation engine foundation (shared model)
+
+- [ ] Extend `compliance_task` shape to support **domain-scoped obligations** (`employment`, `tax_payment`, `reporting`, …) and generic `subject_type`/`subject_id` (entity, filing, employment relation, etc.)
+- [ ] Shared evaluator framework: declarative rule input + current-state snapshot -> open/reopen/close tasks (idempotent; safe to rerun)
+- [ ] Task rationale payload from config (`why_required`, `how_to_satisfy`, guide links) visible in UI and agent responses
+
 ### Meetings
 
 - [ ] `meeting` table
@@ -350,7 +387,7 @@ The first fully usable agent: chat surface with a useful tool set.
 ### Budgets
 
 - [ ] `budget` table with versioning
-- [ ] Business budgets (travel, SaaS, hardware, etc.)
+- [ ] Business budgets (travel, per diem, **mileage/commute**, **employer benefit costs**, SaaS, hardware, etc.)
 - [ ] Personal budgets (rent, food, etc.)
 - [ ] Budget vs reality view — uses budget version active in that period
 - [ ] Income-based personal budget estimation
@@ -359,6 +396,7 @@ The first fully usable agent: chat surface with a useful tool set.
 
 - [ ] `budget-helper` agent
 - [ ] `receipt-categorizer` agent (suggest categories, accept/reject UI pattern)
+- [ ] Tools + prompts for **benefit / mileage / commute** comparisons grounded in jurisdiction configs and user enrollments (same disclaimers as tax-advisor: not professional advice)
 
 ---
 
@@ -377,6 +415,26 @@ The first fully usable agent: chat surface with a useful tool set.
 - [ ] Finland personal income tax prep
 - [ ] Estonia personal income tax prep
 - [ ] Personal income from external sources (stock options, exits, dividends, etc.)
+- [ ] **Taxable benefits & imputed income** from `employer_benefit_enrollment` / payroll flows rolled into personal return drafts where jurisdiction requires
+
+### Tax/payment/reporting obligations (non-employment)
+
+- [ ] Jurisdiction config: **tax/payment/reporting obligation catalogs** keyed by entity type + registration status (examples: periodic remits, prepayments, recurring declarations, supporting reports)
+- [ ] Evaluator triggers: period rollover, filing state changes, payment state changes, entity registration changes, and jurisdiction-config updates
+- [ ] Required-but-missing checks: compare obligation catalog vs available evidence (`mark filed` refs, payment records, generated declarations/reports, linked docs)
+- [ ] Create/reopen `compliance_task` items for non-employment obligations with due hints and rationale text
+- [ ] Dashboard grouping/filtering by obligation domain (`employment` vs `tax_payment` vs `reporting`)
+- [ ] Agent: summarize open non-employment obligations and explain which state/evidence would close each task (still non-advisory)
+- [ ] Configurable obligation `satisfaction_mode` support (`bank_match`, `filing_ref`, `doc_evidence`, manual override-with-reason)
+- [ ] Payment-match policy documented + implemented (amount/date tolerance, split payments, partial satisfaction handling)
+- [ ] Evaluator idempotency guard (no duplicate active tasks for same obligation subject)
+
+### Tests (obligation engine precision)
+
+- [ ] Integration test: founder-as-employee missing evidence opens task; attaching evidence closes task
+- [ ] Integration test: non-employment obligation opens on due period; closes via configured satisfier (`bank_match` or `filing_ref`)
+- [ ] Integration test: evaluator rerun does not create duplicate active `compliance_task` rows
+- [ ] Integration test: reminder/calendar fan-out dedupes repeated evaluator runs and stops after task close/snooze
 
 ### Debt tracking
 
@@ -399,6 +457,10 @@ The first fully usable agent: chat surface with a useful tool set.
 - [ ] Residency switcher (Estonia, Finland, others)
 - [ ] Company jurisdiction switcher
 - [ ] Income restructuring scenarios
+- [ ] **Vehicle & mobility what-ifs:** own car + salary vs company car + entity-paid costs vs mileage reimbursement (kilometrikorvaukset-style) vs gross-up—using stored jurisdiction rules + user distances / enrollments
+- [ ] **Benefit package toggles:** turn enrollments on/off and compare employer cost, net cash, and personal tax / social side-by-side
+- [ ] **Owner-manager extraction:** side-by-side **dividends (distributions) vs payroll + self-granted benefit enrollments** (and mixes), with **retained earnings / distributable capacity** inputs where configs model them—numerical only, disclaimers for substance / anti-avoidance rules not encoded
+- [ ] **Cross-jurisdiction compare:** same facts under two configured countries (e.g. FI vs EE) for “what moves if I move?”—numerical only, with strong non-advice disclaimers in UI
 - [ ] Pure: never writes to real artifacts
 - [ ] Side-by-side comparison UI
 
@@ -465,6 +527,8 @@ The first fully usable agent: chat surface with a useful tool set.
 - [ ] Email reminders for deadlines
 - [ ] ICS calendar feed (subscribable)
 - [ ] In-app notifications
+- [ ] **Compliance tasks** (`compliance_task` from §5.4.2/§5.4.3) included in reminder + calendar streams where `due_at` / obligation hints apply (employment + tax/payment/reporting domains)
+- [ ] Reminder dedupe keys for compliance events (avoid notification spam on evaluator reruns)
 
 ### Email-forwarding intake
 
