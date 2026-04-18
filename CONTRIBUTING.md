@@ -39,7 +39,7 @@ CI runs `lint`, `typecheck`, `knip`, `test`, and `test:integration` in parallel 
 ## Git workflow
 
 - Branch off `main`. Conventional Commits (`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`, `ci:`).
-- A `pre-push` hook runs `lint-staged` on the diff you're pushing — it auto-fixes lint and formatting on staged files. If it can't auto-fix, the push is rejected.
+- A `pre-push` hook runs `lint-staged` on the files in the diff you're pushing — `eslint --max-warnings=0` + `prettier --check`. The hook rejects the push on any violation; fix locally with `pnpm lint:fix` and `pnpm format`, commit, retry.
 - Open a PR against `main`. The PR template walks you through the checklist.
 - Update `CHANGELOG.md` (`## [Unreleased]`) in the same PR. Update relevant `docs/*.md` in the same PR — never "later".
 
