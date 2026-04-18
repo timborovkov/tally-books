@@ -59,6 +59,18 @@ internal-docs/         # Personal notes, NOT committed (gitignored)
 
 This folder is **gitignored** by design — it's where contributors keep personal notes that should not land in the repo (drafts, scratch markdown, sketches of one's actual financial setup as a reference). The folder doesn't exist in git; create it locally when you need it (`mkdir internal-docs`).
 
+## Environment variables
+
+All env access goes through [`src/lib/env.ts`](./src/lib/env.ts), which is a zod-validated schema parsed once at startup (via [`src/instrumentation.ts`](./src/instrumentation.ts)). Misconfigured deploys fail fast at boot, not on first request.
+
+When you need a new env var:
+
+1. Add it to the schema in `src/lib/env.ts` (with a `.default(...)` if it's optional in dev).
+2. Add it to `.env.example` with a sensible placeholder and a one-line comment.
+3. Read it via `import { env } from "@/lib/env"` — never `process.env.X` directly.
+
+`.env.example` only contains keys that some code in `main` actually reads. We do not pre-emptively scaffold env keys for features that haven't been built yet.
+
 ## Code style notes
 
 - TypeScript `strict` + `noUncheckedIndexedAccess`. No `any` (lint-error). No `// @ts-ignore` without a comment explaining why.
