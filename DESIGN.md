@@ -21,22 +21,43 @@ This document is the canonical reference for Tally's visual language. The **live
 
 ## 2. Brand
 
+The brand lives in one place: [`<Logo />`](src/components/logo.tsx). It renders three ways, picked via the `type` prop:
+
+| `type`       | Renders                | Use for                                                    |
+| ------------ | ---------------------- | ---------------------------------------------------------- |
+| `"wordmark"` | `TALLY` text only      | Sidebar, top nav, auth header, loading splash (default).   |
+| `"icon"`     | Tally-marks glyph only | Compact toolbars, favicons-in-UI, collapsed sidebar.       |
+| `"full"`     | Icon + wordmark lockup | Landing hero, marketing-adjacent screens, onboarding card. |
+
+For `type="full"`, pass `orientation="horizontal"` (icon beside wordmark — nav bars) or `orientation="vertical"` (icon above wordmark — hero). Use `align="center"` when the parent centers it; default `"start"` keeps things left-aligned.
+
 ### Wordmark
 
-- Text: `TALLY` — always uppercase.
-- Font: **Space Grotesk**, weight `600`, `tracking-tight`.
-- Shipped as the reusable [`<Logo />`](src/components/logo.tsx) component. Sizes: `sm` · `md` · `lg` · `xl`.
-- No icon mark. Do not pair the wordmark with a lockup mark.
+- Text: `TALLY` — always uppercase, always `translate="no"`.
+- Font: **Unbounded**, weight `800`, `tracking-[-0.02em]` (Unbounded 800 is wide — negative tracking tightens it without distorting the strokes).
+- Sizes via the `size` prop: `sm` · `md` · `lg` · `xl` (scales wordmark text, icon glyph, and spacing together).
+- Semantic element via the `as` prop: `"h1"` for landing hero (one per document), `"h2"` for auth headers, `"span"` _(default)_ elsewhere.
+
+### Icon mark
+
+- Tally marks: four vertical strokes + one diagonal (the traditional group-of-five count). Renders inline as SVG in `currentColor`, so theme + invert just work.
+- **Do not** add a background tile to the inline icon — that's reserved for the favicon (see below).
 
 ### Tagline
 
 - Copy: `Self-hosted finance for solo operators.`
-- Rendered below the wordmark via `<Logo tagline />`. Uses body font, `text-muted-foreground`.
+- Rendered below the wordmark via `<Logo tagline />` (or a string for custom copy). Body font, muted color.
 - Use on auth screens, the unauthenticated landing surface, and the loading splash — **not** inside the app chrome.
 
-### Icon (favicon / app icon)
+### Inverting for opposite-theme surfaces
 
-- [`src/app/icon.svg`](src/app/icon.svg) — a stylized scale (lucide `Scale`) inside a deep-navy rounded square. Next.js picks this up automatically via the App Router file convention.
+Pass `invert` when the logo sits on a surface that's the opposite of the current theme (e.g. a dark hero in light mode). The mark flips to `text-background` so it stays legible without toggling `.dark` on an ancestor.
+
+### Favicon / app icon
+
+- [`src/app/icon.svg`](src/app/icon.svg) — the tally-marks glyph on a deep-navy rounded tile. Next.js App Router picks it up automatically.
+- Kept visually in sync with the inline `<Logo type="icon" />`, but always carries its own background tile (browser tab chrome is an unknown color).
+- Mobile PWA / `apple-touch-icon` rasters are deferred — see §12.
 
 ---
 
@@ -46,7 +67,7 @@ This document is the canonical reference for Tally's visual language. The **live
 | ------------------ | --------------------------------- | ------------- | ---------------------------------------------------------------------------- |
 | Body / UI          | `--font-sans` → `font-sans`       | Geist Sans    | Everything prose and UI by default                                           |
 | Numeric / tabular  | `--font-mono` → `font-mono`       | Geist Mono    | Currency, IDs, dates in tables (`tabular-nums` helper when aligning columns) |
-| Display / wordmark | `--font-display` → `font-display` | Space Grotesk | `<Logo />`, marketing-y headlines only                                       |
+| Display / wordmark | `--font-display` → `font-display` | Unbounded 800 | `<Logo />` wordmark **only** — not for general headlines                     |
 
 **Scale** (Tailwind defaults, no custom overrides): `text-xs` (0.75rem) → `text-6xl` (3.75rem). Pairings:
 
@@ -97,7 +118,32 @@ Use these — never raw colors.
 
 ---
 
-## 6. Motion
+## 6. Responsive
+
+Tally runs on everything from a phone held one-handed at a jobsite to a 32" monitor on a second desk. The design stays honest across all of them.
+
+| Name       | Range         | Tailwind prefix | Target devices                 |
+| ---------- | ------------- | --------------- | ------------------------------ |
+| Phone      | `< 640px`     | (default)       | iPhone SE → Pro Max, Android   |
+| Tablet     | `640–1024px`  | `sm:` / `md:`   | iPad portrait / landscape      |
+| Desktop    | `1024–1440px` | `lg:`           | 13–15" laptops                 |
+| Wide       | `1440–1920px` | `xl:`           | 24–27" monitors                |
+| Ultra-wide | `≥ 1920px`    | `2xl:`          | 32" monitors, TVs, ultra-wides |
+
+### Rules
+
+- **Mobile-first.** Author at phone; add `sm:` / `md:` / `lg:` utilities only to widen. Avoid `max-*:` queries unless there's no alternative.
+- **No fixed pixel widths.** Constrain with `max-w-*` tokens (§5): `max-w-7xl` for app chrome, `max-w-2xl` for forms, `max-w-md` for auth.
+- **Full-height.** Use `min-h-dvh` (dynamic viewport) — **not** `min-h-screen` — so mobile browser chrome collapsing doesn't break vertical centering.
+- **Safe areas.** Full-bleed surfaces (landing hero, splash, auth) pad with `env(safe-area-inset-*)` so iOS notch + home indicator don't clip content.
+- **Touch targets.** Minimum `h-11 w-11` (44 px) on anything tappable below `sm:`. Icon buttons promote from `size-8` → `size-11` at phone widths.
+- **Tables.** Wrap data tables in `overflow-x-auto` with a sticky first column below `md:`. **Do not** reflow financial rows into stacked cards — it destroys column scanning.
+- **Ultra-wide guard.** App chrome caps at `max-w-7xl mx-auto` so content doesn't stretch to 32" monitors. Sidebar splits use `grid-cols-[auto_1fr]`, not percentage widths.
+- **Testing matrix.** Every component in `/design-system-demo` must be verified at **375 · 768 · 1280 · 1920** in both themes before ship.
+
+---
+
+## 7. Motion
 
 - Theme swap uses `disableTransitionOnChange` to avoid a visible flash.
 - Interactive surfaces: `transition-colors` on hover, `transition-all` for size/opacity changes.
@@ -106,20 +152,20 @@ Use these — never raw colors.
 
 ---
 
-## 7. Components
+## 8. Components
 
 See the live catalog at [`/design-system-demo`](src/app/design-system-demo/page.tsx) for every component in use. Notes:
 
 - **Button** — 6 variants (`default`, `secondary`, `destructive`, `outline`, `ghost`, `link`) × 8 sizes. `default` is the CTA — at most one per screen.
 - **Input / Textarea / Select** — always paired with a `<Label>`. Error state: `aria-invalid` on the input + small `text-destructive` helper below.
 - **Card** — grouping container. Prefer `Card` over ad-hoc `div` wrappers for every listing block.
-- **Badge** — Status vocabulary is reserved (see §8). Don't repurpose badge variants as generic accents.
+- **Badge** — Status vocabulary is reserved (see §9). Don't repurpose badge variants as generic accents.
 - **Dialog / Sheet** — Dialog for confirmations and short forms; Sheet for longer edit flows (think: "edit invoice").
 - **Sonner (Toaster)** — mounted once in `app/layout.tsx`. Use `toast.success`, `toast.error`, or `toast(title, { description })`.
 - **Sidebar** — uses dedicated `sidebar-*` palette tokens so it can feel distinct. Provider must wrap the entire shell. Canonical nav groups: **Workspace** (Dashboard, Intake, Obligations) · **Books** (Invoices, Expenses, Declarations) · **Compensation** (Trips, Mileage, Benefits) · **Personal** (Personal finance) · **Account** (Settings, Members).
 - **Skeleton** — render table-shaped skeletons on list pages and card-shaped on detail pages. Never use a spinner for page-level loads. Sets `role="status"` + `aria-busy="true"` for screen readers.
 
-### 7.1 Canonical patterns
+### 8.1 Canonical patterns
 
 These aren't single components — they're compositions that recur across features. Live examples at `/design-system-demo#patterns`.
 
@@ -131,11 +177,11 @@ These aren't single components — they're compositions that recur across featur
 
 ---
 
-## 8. Status & versioning affordances
+## 9. Status & versioning affordances
 
 Three independent status taxonomies. **Don't mix their palettes** — each family owns its own semantic meaning.
 
-### 8.1 Thing state (versioned entities)
+### 9.1 Thing state (versioned entities)
 
 Applies to every versioned Thing — invoices, expenses, declarations, trips, mileage claims, benefit enrollments, compliance tasks, etc. From `PROJECT_BRIEF.md §7.3`:
 
@@ -150,7 +196,7 @@ Applies to every versioned Thing — invoices, expenses, declarations, trips, mi
 
 Always render uppercase, `text-[11px] font-medium tracking-wide`, with a leading lucide icon (`FileText`, `CircleCheck`, `RefreshCw`, `Lock`).
 
-### 8.2 Intake queue (unified cross-entity inbox)
+### 9.2 Intake queue (unified cross-entity inbox)
 
 Status of each item in the unified intake inbox (`intake_items`) before it routes into a downstream flow (expense / mileage claim / benefit evidence / trip evidence / compliance evidence). See `PROJECT_BRIEF.md §5.1.5.1` and `data-structure.md §8.2.1`.
 
@@ -164,7 +210,7 @@ Status of each item in the unified intake inbox (`intake_items`) before it route
 
 Leading icons: `Inbox`, `CircleAlert`, `MoveRight`, `CheckCircle2`, `CircleSlash`.
 
-### 8.3 Compliance task (obligation tracker)
+### 9.3 Compliance task (obligation tracker)
 
 Status of the jurisdiction-driven employment / tax / reporting tasks generated by the obligation evaluator (`compliance_tasks`). See `PROJECT_BRIEF.md §5.4.2` and `data-structure.md §9.8.3`.
 
@@ -179,24 +225,94 @@ Leading icons: `CircleAlert`, `CheckCircle2`, `AlarmClock`, `Archive`.
 
 Obligation **domain** (`employment` / `tax_payment` / `reporting` / `other`) renders as a separate secondary badge next to the status, using `variant="outline"`.
 
-### 8.4 Notes
+### 9.4 Notes
 
 Timeline panel + edit-session indicator: documented TBD in a future revision once those screens ship.
 
 ---
 
-## 9. Accessibility
+## 10. Accessibility
 
-- **Focus:** all interactive elements get a visible `ring-ring` focus ring (shadcn defaults handle this).
-- **Hit target:** minimum `h-9` / `size-9` for clickable controls.
-- **Labels:** every `Input`, `Select`, `Checkbox`, `Switch`, `RadioGroupItem` gets a `<Label htmlFor>`. Never rely on placeholder-as-label.
-- **Errors:** set `aria-invalid` on inputs in error state; provide a text description in an adjacent node.
-- **Semantic HTML:** `<main>`, `<nav>`, `<section>`, `<header>`. Heading levels reflect structure.
-- **Color-blind safe:** status is always label + icon + color — never color alone.
+Accessibility is a ship blocker, not a follow-up. The contract below is the Vercel Web-Interface Guidelines subset Tally commits to — every component must meet it before landing.
+
+### Focus
+
+- Every interactive element gets a visible focus ring — `focus-visible:ring-2 ring-ring ring-offset-2`. Shadcn primitives already do this; preserve it when wrapping.
+- Never `outline-none` without a replacement. Prefer `:focus-visible` over `:focus` so mouse clicks don't show rings.
+- Compound controls (input groups, combined pickers) use `:focus-within` to ring the group as one unit.
+
+### Keyboard
+
+- Every pointer interaction has a keyboard equivalent. Custom interactive elements carry `onKeyDown` handlers for Enter + Space.
+- Modals and sheets trap focus and restore it to the trigger on close (shadcn Dialog / Sheet handle this).
+- Use `autoFocus` sparingly — desktop only, one input per surface (the landing hero CTA, the first field of a focused form). Never on mobile.
+
+### Semantic HTML first
+
+- `<main>`, `<nav>`, `<section>`, `<header>`, `<footer>` define landmarks.
+- Headings `<h1>`–`<h6>` reflect document structure, in order. One `<h1>` per page. Use `<Logo as="h1" />` on the landing hero — everywhere else, use semantic heading tags or `<Logo as="span" />`.
+- `<button>` for actions, `<a>` (Next `<Link>`) for navigation. Never dress up a `<div>` with a click handler.
+- Reach for ARIA only when semantic HTML can't carry the meaning.
+
+### Labels & icon-only controls
+
+- Every form control has a `<Label htmlFor>` or `aria-label`. Never rely on placeholder-as-label.
+- Icon-only buttons carry an `aria-label` that describes the action.
+- Decorative icons (next to a text label) carry `aria-hidden="true"` — the tally-marks icon inside `<Logo />` already does.
+
+### Async state & errors
+
+- Loading regions set `aria-busy="true"` + `role="status"`. Skeletons already do this.
+- Toast-style updates use `aria-live="polite"`. Critical alerts use `"assertive"` sparingly.
+- Errors: `aria-invalid="true"` on the input + a sibling `text-destructive` message. Submit focuses the first error field.
+
+### Hit target & touch
+
+- Minimum `h-9` (36 px) desktop, `h-11` (44 px) mobile. Checkboxes / radios extend the hit target to the whole label via `<Label>` wrapping.
+- `touch-action: manipulation` on interactive elements to remove the 300 ms tap delay.
+- Modals + drawers set `overscroll-behavior: contain` so scroll doesn't leak to the page.
+
+### Color & contrast
+
+- Status is always **label + icon + color** — never color alone. Color-blind users must be able to read every state.
+- AA contrast minimum: 4.5:1 body, 3:1 large text + UI chrome. Check both themes at `/design-system-demo`.
+- `color-scheme` declared on `:root` and `.dark` (in [`globals.css`](src/app/globals.css)) so native form controls, scrollbars, and `<select>` match the theme.
+
+### Motion
+
+- Respect `prefers-reduced-motion` — all transitions must gate on it (shadcn primitives already do). When adding custom motion, wrap in `motion-safe:` utilities.
+- Animate `transform` and `opacity` only. Never `transition: all`.
+- Animations must be interruptible — a user cancelling an interaction mid-animation snaps to the end state.
+- Theme swap uses `disableTransitionOnChange` to avoid a jarring flash.
+
+### Internationalization
+
+- Format dates via `Intl.DateTimeFormat` and numbers via `Intl.NumberFormat`. Never hardcoded locale strings.
+- Wrap brand / product names in `translate="no"` — the `<Logo />` wordmark already does.
+- Dates and datetimes are stored UTC, displayed in the user's locale (see `PROJECT_BRIEF` for the UTC rule).
+
+### Typography polish
+
+- Use `…` not `...`, curly quotes not straight quotes, non-breaking space before units (`10&nbsp;MB`).
+- `text-wrap: balance` on headings and short hero copy. `font-variant-numeric: tabular-nums` on number columns.
+- Loading labels end with an ellipsis: `Saving…`.
+
+### Images & media
+
+- `<img>` requires explicit `width` + `height` — or use Next `<Image>` — to prevent CLS.
+- Below-fold images use `loading="lazy"`; above-fold hero images use `priority`.
+- Decorative images get `alt=""`; meaningful images get descriptive `alt` text.
+
+### Scroll & anchor targets
+
+- Headings that are anchor-linked set `scroll-margin-top` so they clear any sticky header on jump.
+- Full-bleed surfaces (landing, auth, splash) use `min-h-dvh` + safe-area insets per §6.
+
+Every PR that touches a component must be verified against this checklist. A Lighthouse a11y score ≥ 95 is the floor, not the goal.
 
 ---
 
-## 10. Adding a new component
+## 11. Adding a new component
 
 1. Check [`/design-system-demo`](src/app/design-system-demo/page.tsx) — is it already there?
 2. If it's a shadcn primitive: `pnpm dlx shadcn@latest add <name>`.
@@ -204,11 +320,11 @@ Timeline panel + edit-session indicator: documented TBD in a future revision onc
 4. Add an example section to the demo page.
 5. If it introduces a new pattern (new token, new motion, new status), document it here.
 6. If knip flags it as unused (because it's pre-built), add its path to `knip.json` `entry` array.
-7. Before building a bespoke pattern, check §7.1 — many patterns (triage, mass actions, evidence chips, rationale popovers) are already canonical. Reuse them.
+7. Before building a bespoke pattern, check §8.1 — many patterns (triage, mass actions, evidence chips, rationale popovers) are already canonical. Reuse them.
 
 ---
 
-## 11. Non-goals / deliberately not designed (yet)
+## 12. Non-goals / deliberately not designed (yet)
 
 Things intentionally outside the v0.1–v1.0 design system scope, to keep the surface honest:
 
@@ -216,13 +332,13 @@ Things intentionally outside the v0.1–v1.0 design system scope, to keep the su
 - **Bank reconciliation UI** — P3 feature (`PROJECT_BRIEF.md §5.14`). Don't design this until the spec lands.
 - **Mobile PWA receipt capture** — post-v1.0. Responsive web works; no separate mobile design.
 - **Agent chat sidebar** — the AI agent surface (`§5.2`) arrives in v0.5. Patterns TBD once that work starts.
-- **Version-diff rendering** — versioning exists in the DB (`§5.3`), but the Google-Docs-style timeline UI is a v0.3 deliverable. Until then, DESIGN.md §8.4 stays a stub.
+- **Version-diff rendering** — versioning exists in the DB (`§5.3`), but the Google-Docs-style timeline UI is a v0.3 deliverable. Until then, DESIGN.md §9.4 stays a stub.
 - **Public marketing site** — Tally is self-hosted; there's no sign-up funnel, no indexed pages. `robots.txt` disallows all.
 
 If a PR proposes designing one of these, it's either scope creep or the roadmap has moved. Check `TODO.md` before committing.
 
 ---
 
-## 12. Route isolation
+## 13. Route isolation
 
 The demo page has its own nested [`layout.tsx`](src/app/design-system-demo/layout.tsx). When we add navbar / sidebar / auth gating to the root `app/layout.tsx`, the demo page stays untouched — it remains a pristine visual reference as the app evolves.
