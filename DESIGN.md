@@ -23,11 +23,11 @@ This document is the canonical reference for Tally's visual language. The **live
 
 The brand lives in one place: [`<Logo />`](src/components/logo.tsx). It renders three ways, picked via the `type` prop:
 
-| `type`       | Renders                  | Use for                                                    |
-| ------------ | ------------------------ | ---------------------------------------------------------- |
-| `"wordmark"` | `TALLY` text only        | Sidebar, top nav, auth header, loading splash (default).   |
-| `"icon"`     | Tally-marks glyph only   | Compact toolbars, favicons-in-UI, collapsed sidebar.       |
-| `"full"`     | Icon + wordmark lockup   | Landing hero, marketing-adjacent screens, onboarding card. |
+| `type`       | Renders                | Use for                                                    |
+| ------------ | ---------------------- | ---------------------------------------------------------- |
+| `"wordmark"` | `TALLY` text only      | Sidebar, top nav, auth header, loading splash (default).   |
+| `"icon"`     | Tally-marks glyph only | Compact toolbars, favicons-in-UI, collapsed sidebar.       |
+| `"full"`     | Icon + wordmark lockup | Landing hero, marketing-adjacent screens, onboarding card. |
 
 For `type="full"`, pass `orientation="horizontal"` (icon beside wordmark — nav bars) or `orientation="vertical"` (icon above wordmark — hero). Use `align="center"` when the parent centers it; default `"start"` keeps things left-aligned.
 
@@ -36,7 +36,7 @@ For `type="full"`, pass `orientation="horizontal"` (icon beside wordmark — nav
 - Text: `TALLY` — always uppercase, always `translate="no"`.
 - Font: **Unbounded**, weight `800`, `tracking-[-0.02em]` (Unbounded 800 is wide — negative tracking tightens it without distorting the strokes).
 - Sizes via the `size` prop: `sm` · `md` · `lg` · `xl` (scales wordmark text, icon glyph, and spacing together).
-- Semantic element via the `as` prop: `"h1"` for landing hero (one per document), `"h2"` for auth headers, `"span"` *(default)* elsewhere.
+- Semantic element via the `as` prop: `"h1"` for landing hero (one per document), `"h2"` for auth headers, `"span"` _(default)_ elsewhere.
 
 ### Icon mark
 
@@ -67,7 +67,7 @@ Pass `invert` when the logo sits on a surface that's the opposite of the current
 | ------------------ | --------------------------------- | ------------- | ---------------------------------------------------------------------------- |
 | Body / UI          | `--font-sans` → `font-sans`       | Geist Sans    | Everything prose and UI by default                                           |
 | Numeric / tabular  | `--font-mono` → `font-mono`       | Geist Mono    | Currency, IDs, dates in tables (`tabular-nums` helper when aligning columns) |
-| Display / wordmark | `--font-display` → `font-display` | Unbounded 800 | `<Logo />` wordmark **only** — not for general headlines                    |
+| Display / wordmark | `--font-display` → `font-display` | Unbounded 800 | `<Logo />` wordmark **only** — not for general headlines                     |
 
 **Scale** (Tailwind defaults, no custom overrides): `text-xs` (0.75rem) → `text-6xl` (3.75rem). Pairings:
 
@@ -122,13 +122,13 @@ Use these — never raw colors.
 
 Tally runs on everything from a phone held one-handed at a jobsite to a 32" monitor on a second desk. The design stays honest across all of them.
 
-| Name       | Range         | Tailwind prefix | Target devices                     |
-| ---------- | ------------- | --------------- | ---------------------------------- |
-| Phone      | `< 640px`     | (default)       | iPhone SE → Pro Max, Android       |
-| Tablet     | `640–1024px`  | `sm:` / `md:`   | iPad portrait / landscape          |
-| Desktop    | `1024–1440px` | `lg:`           | 13–15" laptops                     |
-| Wide       | `1440–1920px` | `xl:`           | 24–27" monitors                    |
-| Ultra-wide | `≥ 1920px`    | `2xl:`          | 32" monitors, TVs, ultra-wides     |
+| Name       | Range         | Tailwind prefix | Target devices                 |
+| ---------- | ------------- | --------------- | ------------------------------ |
+| Phone      | `< 640px`     | (default)       | iPhone SE → Pro Max, Android   |
+| Tablet     | `640–1024px`  | `sm:` / `md:`   | iPad portrait / landscape      |
+| Desktop    | `1024–1440px` | `lg:`           | 13–15" laptops                 |
+| Wide       | `1440–1920px` | `xl:`           | 24–27" monitors                |
+| Ultra-wide | `≥ 1920px`    | `2xl:`          | 32" monitors, TVs, ultra-wides |
 
 ### Rules
 

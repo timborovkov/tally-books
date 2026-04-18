@@ -143,13 +143,7 @@ export function Logo({
   // Everything else: a single column (wordmark on top, tagline below, icon above if present).
   if (type === "full" && orientation === "horizontal") {
     return (
-      <div
-        className={cn(
-          "flex flex-row items-center",
-          fullGap.horizontal[size],
-          className,
-        )}
-      >
+      <div className={cn("flex flex-row items-center", fullGap.horizontal[size], className)}>
         <TallyIcon size={iconPixelSize[size]} className={iconColor} />
         <div className={cn("flex flex-col", alignCls, "gap-1")}>
           <Wordmark as={as} sizeClass={wordmarkTextSize[size]} colorClass={wordmarkColor} />
@@ -172,9 +166,7 @@ export function Logo({
         className,
       )}
     >
-      {showIcon ? (
-        <TallyIcon size={iconPixelSize[size]} className={iconColor} />
-      ) : null}
+      {showIcon ? <TallyIcon size={iconPixelSize[size]} className={iconColor} /> : null}
       {showWordmark ? (
         <Wordmark as={as} sizeClass={wordmarkTextSize[size]} colorClass={wordmarkColor} />
       ) : null}
@@ -229,7 +221,7 @@ function Wordmark({
     <Tag
       translate="no"
       className={cn(
-        "font-display font-extrabold uppercase leading-none tracking-[-0.02em] m-0",
+        "font-display m-0 leading-none font-extrabold tracking-[-0.02em] uppercase",
         sizeClass,
         colorClass,
       )}

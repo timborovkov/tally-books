@@ -377,7 +377,7 @@ export default function DesignSystemDemoPage() {
               <Card>
                 <CardContent className="grid gap-10 py-8 md:grid-cols-2">
                   <div className="flex flex-col items-start gap-8">
-                    <span className="text-muted-foreground text-xs uppercase tracking-wide">
+                    <span className="text-muted-foreground text-xs tracking-wide uppercase">
                       Wordmark · sizes
                     </span>
                     <Logo type="wordmark" size="sm" />
@@ -386,7 +386,7 @@ export default function DesignSystemDemoPage() {
                     <Logo type="wordmark" size="xl" />
                   </div>
                   <div className="flex flex-col items-start justify-start gap-8">
-                    <span className="text-muted-foreground text-xs uppercase tracking-wide">
+                    <span className="text-muted-foreground text-xs tracking-wide uppercase">
                       Icon · sizes
                     </span>
                     <div className="flex items-end gap-6">
@@ -397,9 +397,9 @@ export default function DesignSystemDemoPage() {
                     </div>
                   </div>
                 </CardContent>
-                <CardContent className="grid gap-10 py-8 md:grid-cols-2 border-t">
+                <CardContent className="grid gap-10 border-t py-8 md:grid-cols-2">
                   <div className="flex flex-col items-start gap-6">
-                    <span className="text-muted-foreground text-xs uppercase tracking-wide">
+                    <span className="text-muted-foreground text-xs tracking-wide uppercase">
                       Full · horizontal
                     </span>
                     <Logo type="full" orientation="horizontal" size="sm" />
@@ -408,32 +408,32 @@ export default function DesignSystemDemoPage() {
                     <Logo type="full" orientation="horizontal" size="md" tagline />
                   </div>
                   <div className="flex flex-col items-start gap-6">
-                    <span className="text-muted-foreground text-xs uppercase tracking-wide">
+                    <span className="text-muted-foreground text-xs tracking-wide uppercase">
                       Full · vertical
                     </span>
                     <Logo type="full" orientation="vertical" size="md" align="start" />
                     <Logo type="full" orientation="vertical" size="lg" align="start" tagline />
                   </div>
                 </CardContent>
-                <CardContent className="grid gap-10 py-8 md:grid-cols-2 border-t">
+                <CardContent className="grid gap-10 border-t py-8 md:grid-cols-2">
                   <div className="flex flex-col items-start gap-4">
-                    <span className="text-muted-foreground text-xs uppercase tracking-wide">
+                    <span className="text-muted-foreground text-xs tracking-wide uppercase">
                       Default · on page surface
                     </span>
-                    <div className="bg-background border rounded-md p-6 w-full">
+                    <div className="bg-background w-full rounded-md border p-6">
                       <Logo type="full" orientation="horizontal" size="md" tagline />
                     </div>
                   </div>
                   <div className="flex flex-col items-start gap-4">
-                    <span className="text-muted-foreground text-xs uppercase tracking-wide">
+                    <span className="text-muted-foreground text-xs tracking-wide uppercase">
                       Inverted · on opposite-theme surface
                     </span>
-                    <div className="bg-foreground rounded-md p-6 w-full">
+                    <div className="bg-foreground w-full rounded-md p-6">
                       <Logo type="full" orientation="horizontal" size="md" tagline invert />
                     </div>
                   </div>
                 </CardContent>
-                <CardContent className="py-6 border-t">
+                <CardContent className="border-t py-6">
                   <div className="text-muted-foreground text-sm">
                     Tagline copy: <code className="font-mono">{LOGO_TAGLINE}</code>
                   </div>
