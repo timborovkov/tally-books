@@ -128,12 +128,15 @@ export function EntityForm({ jurisdictions, entity, action, submitLabel }: Entit
           </Select>
         </Field>
         <Field label="Entity type" htmlFor="entityType">
+          {/* Authoritative source for what gets submitted. Radix Select
+              only emits its own hidden input when an item is selected,
+              so an empty Select would silently drop entityType from
+              FormData; this hidden input ensures the field is always
+              present (as "" when nothing is picked) regardless of which
+              UI variant renders below. */}
+          <input type="hidden" name="entityType" value={entityType} />
           {entityTypeOptions.length > 0 ? (
-            <Select
-              name="entityType"
-              value={entityTypeValueIsValid ? entityType : ""}
-              onValueChange={setEntityType}
-            >
+            <Select value={entityTypeValueIsValid ? entityType : ""} onValueChange={setEntityType}>
               <SelectTrigger id="entityType">
                 <SelectValue placeholder="Select…" />
               </SelectTrigger>
@@ -148,7 +151,6 @@ export function EntityForm({ jurisdictions, entity, action, submitLabel }: Entit
           ) : (
             <Input
               id="entityType"
-              name="entityType"
               value={entityType}
               onChange={(e) => setEntityType(e.target.value)}
             />
