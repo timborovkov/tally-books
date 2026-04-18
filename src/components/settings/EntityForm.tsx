@@ -115,22 +115,30 @@ export function EntityForm({ jurisdictions, entity, action, submitLabel }: Entit
             name="jurisdictionId"
             value={jurisdictionId}
             onValueChange={(v) => {
+              // Snapshot the *pre-switch* config before state updates
+              // queue. `selectedConfig` from useMemo only reflects the
+              // committed render, so reading it here is safe — but the
+              // functional `setXxx(prev => …)` calls below give us the
+              // authoritative current value regardless of how many
+              // transitions batch into one commit.
+              const oldConfig = selectedConfig;
+              const nextEntry = jurisdictions.find((j) => j.id === v);
+              const nextConfig = nextEntry ? parseJurisdictionConfigOrNull(nextEntry.config) : null;
+
               setJurisdictionId(v);
-              const next = jurisdictions.find((j) => j.id === v);
-              const nextConfig = next ? parseJurisdictionConfigOrNull(next.config) : null;
               // Reset entity type if it isn't valid for the new jurisdiction.
-              if (entityType && !nextConfig?.entityTypes.includes(entityType)) {
-                setEntityType("");
-              }
-              // If the user is currently on the old jurisdiction's
-              // default currency (i.e., they haven't manually picked
-              // something else), switch to the new jurisdiction's
-              // default. Keep the user's manual choice otherwise.
-              const oldDefault = selectedConfig?.defaultCurrency;
-              const nextDefault = nextConfig?.defaultCurrency;
-              if (nextDefault && baseCurrency === oldDefault) {
-                setBaseCurrency(nextDefault);
-              }
+              setEntityType((prev) =>
+                prev && !nextConfig?.entityTypes.includes(prev) ? "" : prev,
+              );
+              // If the user hasn't manually overridden the currency
+              // (their current value still matches the old
+              // jurisdiction's default), adopt the new jurisdiction's
+              // default. Otherwise keep the user's pick.
+              setBaseCurrency((prev) => {
+                const nextDefault = nextConfig?.defaultCurrency;
+                const oldDefault = oldConfig?.defaultCurrency;
+                return nextDefault && prev === oldDefault ? nextDefault : prev;
+              });
             }}
           >
             <SelectTrigger id="jurisdictionId">
