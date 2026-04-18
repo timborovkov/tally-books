@@ -28,8 +28,6 @@ const MONTHS = [
 
 const COMMON_CURRENCIES = ["EUR", "USD", "GBP", "SEK", "NOK", "DKK", "CHF"];
 
-type EntityWithoutKind = Omit<Entity, "kind">;
-
 interface EntityFormProps {
   jurisdictions: Jurisdiction[];
   entity: Entity | null;
@@ -75,11 +73,7 @@ export function EntityForm({ jurisdictions, entity, action, submitLabel }: Entit
           </Field>
         ) : (
           <Field label="Kind" htmlFor="kind">
-            <Input
-              id="kind"
-              disabled
-              defaultValue={(entity as EntityWithoutKind & { kind: string }).kind}
-            />
+            <Input id="kind" disabled defaultValue={entity.kind} />
           </Field>
         )}
 

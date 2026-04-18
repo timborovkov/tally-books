@@ -23,8 +23,9 @@ interface NavItem {
 // tools see the real structure today; the routes themselves ship in
 // later milestones.
 //
-// Exception: "Entities" and "Settings" route into the live
-// `(app)/settings/*` shell (entities/persons/jurisdictions management).
+// Exception: "Entities" jumps directly to the entities list (the most
+// common settings task), and "Settings" lands on the settings index
+// which lists every settings section.
 const NAV: readonly NavItem[] = [
   { label: "Dashboard", href: "/", Icon: LayoutDashboard },
   { label: "Entities", href: "/settings/entities", Icon: Building2 },
@@ -33,7 +34,7 @@ const NAV: readonly NavItem[] = [
   { label: "Invoices", href: "/invoices", Icon: FileText },
   { label: "Reports", href: "/reports", Icon: BookOpen },
   { label: "Agent", href: "/agent", Icon: MessageSquare },
-  { label: "Settings", href: "/settings/entities", Icon: Settings },
+  { label: "Settings", href: "/settings", Icon: Settings },
 ] as const;
 
 export function Sidebar(): React.ReactElement {
