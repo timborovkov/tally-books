@@ -43,6 +43,11 @@ beforeEach(async () => {
       permissions,
       invites,
       sessions,
+      financial_periods,
+      entity_person_links,
+      entities,
+      persons,
+      jurisdictions,
       users
     RESTART IDENTITY CASCADE
   `);
@@ -68,6 +73,8 @@ describe("enums", () => {
       "billing_arrangement",
     ],
     user_role: ["admin", "member"],
+    entity_kind: ["legal", "personal"],
+    period_kind: ["month", "quarter", "year", "custom"],
     resource_type: [
       "invoices",
       "expenses",
@@ -109,7 +116,19 @@ describe("tables", () => {
       WHERE schemaname = 'public'
     `);
     const names = new Set(rows.map((r) => r.tablename));
-    for (const t of ["users", "sessions", "invites", "permissions", "edit_sessions", "audit_log"]) {
+    for (const t of [
+      "users",
+      "sessions",
+      "invites",
+      "permissions",
+      "edit_sessions",
+      "audit_log",
+      "jurisdictions",
+      "persons",
+      "entities",
+      "entity_person_links",
+      "financial_periods",
+    ]) {
       expect(names.has(t)).toBe(true);
     }
   });
@@ -133,9 +152,21 @@ describe("indexes", () => {
       "audit_log_thing_at_idx",
       "audit_log_actor_at_idx",
       "audit_log_at_idx",
+      "entities_jurisdiction_idx",
+      "entities_active_idx",
+      "entity_person_links_entity_idx",
+      "entity_person_links_person_idx",
+      "financial_periods_entity_kind_start_idx",
     ]) {
       expect(byName.has(idx)).toBe(true);
     }
+  });
+
+  it("entities_active_idx is partial on archived_at IS NULL", async () => {
+    const [row] = await db.execute<{ indexdef: string }>(sql`
+      SELECT indexdef FROM pg_indexes WHERE indexname = 'entities_active_idx'
+    `);
+    expect(row?.indexdef).toMatch(/WHERE.*archived_at.*IS NULL/i);
   });
 
   it("users_active_idx is partial on removed_at IS NULL", async () => {

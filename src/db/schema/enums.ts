@@ -55,3 +55,11 @@ export const resourceTypeEnum = pgEnum("resource_type", [
 
 // data-structure.md §4.4.
 export const accessLevelEnum = pgEnum("access_level", ["read", "write"]);
+
+// data-structure.md §5.2. The "personal" pseudo-entity rides on this enum;
+// it's a real row, not a magic ID, so queries that join through entities
+// don't need a special case.
+export const entityKindEnum = pgEnum("entity_kind", ["legal", "personal"]);
+
+// data-structure.md §5.5.
+export const periodKindEnum = pgEnum("period_kind", ["month", "quarter", "year", "custom"]);

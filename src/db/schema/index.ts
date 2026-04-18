@@ -4,3 +4,6 @@ export * from "./sessions";
 export * from "./invites";
 export * from "./permissions";
 export * from "./versioning";
+export * from "./jurisdictions";
+export * from "./persons";
+export * from "./entities";

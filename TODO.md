@@ -54,13 +54,13 @@ The minimum scaffolding needed to start building features safely.
 
 ### Entities & jurisdictions
 
-- [ ] `entity` table + CRUD
-- [ ] `jurisdiction` table + CRUD
-- [ ] Prefilled jurisdiction configs: Estonia, Finland, Delaware (US)
-- [ ] Personal pseudo-entity handling
-- [ ] Entity ↔ person links (board, CEO, shareholder)
-- [ ] `person` table + CRUD (legal name, tax residency, country IDs)
-- [ ] Entity management UI
+- [x] `entity` table + CRUD
+- [x] `jurisdiction` table + CRUD
+- [x] Prefilled jurisdiction configs: Estonia, Finland, Delaware (US)
+- [x] Personal pseudo-entity handling
+- [x] Entity ↔ person links (board, CEO, shareholder)
+- [x] `person` table + CRUD (legal name, tax residency, country IDs)
+- [x] Entity management UI
 
 ### Cross-cutting
 
