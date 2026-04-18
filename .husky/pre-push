@@ -2,9 +2,10 @@
 
 remote="$1"
 
-# Pick the most accurate base to diff against, falling back gracefully so
-# we always lint the *full* set of changes about to land — never just the
-# last commit.
+# Pick the most accurate base to diff against. The chain covers every
+# realistic case: a tracking branch, the remote we're pushing to, then
+# origin/main. If none exist we abort loudly — silently linting nothing
+# is worse than blocking the push.
 upstream="$(git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null || true)"
 
 if [ -n "$upstream" ]; then
@@ -14,13 +15,10 @@ elif git rev-parse --verify --quiet "$remote/main" >/dev/null; then
 elif git rev-parse --verify --quiet origin/main >/dev/null; then
   range="origin/main...HEAD"
 else
-  range=""
+  echo "✗ pre-push: no base ref found (no upstream, no $remote/main, no origin/main)." >&2
+  echo "  Refusing to push without a diff range — fetch your remote and retry." >&2
+  exit 1
 fi
 
-if [ -n "$range" ]; then
-  echo "→ Running lint-staged on diff: $range"
-  pnpm exec lint-staged --diff="$range" || exit 1
-else
-  echo "→ Running lint-staged on all files (no base ref found)"
-  pnpm exec lint-staged || exit 1
-fi
+echo "→ Running lint-staged on diff: $range"
+pnpm exec lint-staged --diff="$range"
