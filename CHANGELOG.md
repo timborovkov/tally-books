@@ -38,3 +38,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Reusable `Skeleton` primitive and `ErrorFallback` component; `docs/architecture/ui-conventions.md` codifies when to use each.
   - New docs: `docs/architecture/dates.md`, `docs/architecture/sentry.md`, `docs/architecture/ui-conventions.md`.
   - Meaningful tests for every new surface (date helpers + TZ invariance, Sentry-disabled guard, robots.txt content, `next.config` headers, skeleton a11y, error fallback retry, app-shell landmarks, quick-add dialog open/close/select).
+- **Design system (v0.1 pass):**
+  - tweakcn **LogisticOne** palette applied in `src/app/globals.css` — full oklch token set for light + dark, sidebar palette, chart colors, shadow + tracking tokens.
+  - 26 shadcn/ui components pre-installed (button, input, textarea, label, select, checkbox, radio-group, switch, form, card, dialog, sheet, dropdown-menu, popover, tabs, table, badge, avatar, separator, skeleton, tooltip, sonner, alert, breadcrumb, scroll-area, sidebar).
+  - Light / dark / system mode via `next-themes` (`ThemeProvider` mounted in root layout, no-flash `disableTransitionOnChange`). `ModeToggle` dropdown with Sun / Moon / Monitor icons.
+  - Reusable `<Logo />` component — `TALLY` wordmark in **Space Grotesk** 600 + optional tagline "Self-hosted finance for solo operators." Sizes `sm` / `md` / `lg` / `xl`.
+  - Lucide-based `src/app/icon.svg` (App Router file-convention app icon) — stylized scale on navy rounded square.
+  - `/design-system-demo` — standalone showcase route with its own `layout.tsx` so it does NOT inherit the future app shell; 12 sections cover brand, typography, color tokens, buttons, forms, data display, overlays, feedback, navigation, sidebar shell, status badges across all three taxonomies (**Thing state**: DRAFT / READY / FILED / UNDERLYING DATA CHANGED / AUTO-REFRESH LOCKED / IN PERIOD LOCK; **Intake queue**: NEW / NEEDS REVIEW / ROUTED / CONFIRMED / REJECTED; **Compliance task**: OPEN / DONE / SNOOZED / WAIVED), and icon library.
+  - `DESIGN.md` — canonical design doc covering principles, brand, typography, color, spacing, motion, components, status vocabulary, accessibility, and component-addition workflow.
+  - Knip configured to treat `components/logo.tsx`, `theme-provider.tsx`, and `mode-toggle.tsx` as entry points so pre-installed UI stays linted. ESLint relaxed for shadcn vendor files (`components/ui/**`, `hooks/use-mobile.ts`).
