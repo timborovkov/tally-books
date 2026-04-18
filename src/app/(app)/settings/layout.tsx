@@ -2,10 +2,10 @@ import Link from "next/link";
 
 import { cn } from "@/lib/utils";
 
-// TODO(auth): wrap in a session check once BetterAuth lands. Today the
-// settings shell is open — there's no real session yet, so it just
-// renders for whoever opens the URL. The auth-shim resolves the
-// audit_log actor to the bootstrap admin in the meantime.
+// Auth is enforced by `(app)/layout.tsx` (the redirect cascade there
+// gates every route in this group on admin-exists, session, and 2FA).
+// Server actions in this subtree resolve the actor via auth-shim, which
+// reads the same BetterAuth session.
 
 const NAV = [
   { href: "/settings/entities", label: "Entities" },
