@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { optionalString, optionalUrl, sampleRate } from "@/lib/env.shared";
+
 /**
  * Server-only environment schema.
  *
@@ -16,30 +18,8 @@ import { z } from "zod";
  *      or malformed config instead of crashing on first use.
  *
  * Browser-accessible `NEXT_PUBLIC_*` vars live in `@/lib/env.client`.
+ * Zod helpers shared between the two live in `@/lib/env.shared`.
  */
-
-// Sampling-rate coercer: accepts empty string / undefined → `def`, otherwise
-// parses a number in [0, 1]. Sentry rejects out-of-range values at runtime,
-// so catch bad config at boot instead.
-const sampleRate = (def: number) =>
-  z
-    .string()
-    .trim()
-    .optional()
-    .transform((v) => (v === undefined || v === "" ? def : Number(v)))
-    .pipe(z.number().min(0).max(1));
-
-// Empty strings in `.env` (e.g. `SENTRY_ORG=`) must normalize to `undefined`,
-// not `""`. Otherwise `env.SENTRY_ENVIRONMENT ?? env.NODE_ENV` would pass an
-// empty string through, and `sentryUrl: process.env.SENTRY_URL || undefined`
-// style coalescing would diverge from the validated value.
-const optionalString = z
-  .string()
-  .trim()
-  .optional()
-  .transform((v) => (v === undefined || v === "" ? undefined : v));
-
-const optionalUrl = optionalString.pipe(z.string().url().optional());
 
 const serverSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),

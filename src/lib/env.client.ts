@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { booleanFlag, optionalUrl, sampleRate } from "@/lib/env.shared";
+
 /**
  * Client-safe environment schema.
  *
@@ -15,33 +17,17 @@ import { z } from "zod";
  *      are replaced at build time.)
  *   3. Add it to `.env.example` with a sensible placeholder.
  *   4. Read it via `import { clientEnv } from "@/lib/env.client"`.
+ *
+ * Zod helpers shared with `@/lib/env` live in `@/lib/env.shared`.
  */
 
-const optionalSentryDsn = z
-  .string()
-  .trim()
-  .optional()
-  .transform((v) => (v === undefined || v === "" ? undefined : v))
-  .pipe(z.string().url().optional());
-
-const sampleRate = (def: number) =>
-  z
-    .string()
-    .trim()
-    .optional()
-    .transform((v) => (v === undefined || v === "" ? def : Number(v)))
-    .pipe(z.number().min(0).max(1));
-
 const clientSchema = z.object({
-  // Master toggle. Only the literal string "true" enables Sentry; anything
-  // else (including unset) keeps the SDK inert even when a DSN is present.
-  // This is the "flip to true to test against Sentry" knob — see
-  // docs/architecture/sentry.md.
-  NEXT_PUBLIC_SENTRY_ENABLED: z
-    .string()
-    .optional()
-    .transform((v) => v === "true"),
-  NEXT_PUBLIC_SENTRY_DSN: optionalSentryDsn,
+  // Master toggle. Only the literal string "true" (whitespace-trimmed)
+  // enables Sentry; anything else (including unset) keeps the SDK inert
+  // even when a DSN is present. This is the "flip to true to test against
+  // Sentry" knob — see docs/architecture/sentry.md.
+  NEXT_PUBLIC_SENTRY_ENABLED: booleanFlag,
+  NEXT_PUBLIC_SENTRY_DSN: optionalUrl,
   NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE: sampleRate(0.15),
   NEXT_PUBLIC_SENTRY_REPLAYS_SESSION_SAMPLE_RATE: sampleRate(0.1),
   NEXT_PUBLIC_SENTRY_REPLAYS_ERROR_SAMPLE_RATE: sampleRate(1.0),
