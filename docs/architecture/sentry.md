@@ -121,10 +121,13 @@ Server-only vars (`SENTRY_ENVIRONMENT`, `SENTRY_TRACES_SAMPLE_RATE`, `SENTRY_PRO
 For reference, the Tally project on Sentry:
 
 - **Org slug**: `irmin-dw`
+- **Org ID**: `o4508020488536064`
 - **Project slug**: `tally-books`
 - **Project ID**: `4511241689235536`
-- **DSN**: set in your deploy env (see `PROJECT_BRIEF.md` deployment notes — do not commit it).
+- **Region**: DE (`https://de.sentry.io/`)
+- **DSN**: `https://6a92acfdb03a17c942e998f41d7d8043@o4508020488536064.ingest.de.sentry.io/4511241689235536` — also checked into `.env.example`. Sentry DSNs are safe to publish (rate-limited, send-only), so it's fine for forks and self-hosters to start with this value and override when they provision their own project.
 - **OTLP ingest** (future telemetry): `https://o4508020488536064.ingest.de.sentry.io/api/4511241689235536/integration/otlp`
+- **Vercel log drain**: `https://o4508020488536064.ingest.de.sentry.io/api/4511241689235536/integration/vercel/logs`
 
 The OTLP endpoint is not wired today — it's here so that when we add OpenTelemetry instrumentation (post-v1) we have the reference in one place.
 
