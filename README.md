@@ -1,4 +1,5 @@
 # Tally
+
 ## Business and personal finance, in one private instance
 
 **Self-hosted accounting for solo operators who run multiple entities across borders—company books, invoicing, expenses, budgeting, and business taxes alongside your personal finances, personal taxes, and other mandatory contributions, plus employer benefits, mileage and commute compensation, and jurisdiction-guided employment obligations, with versioned ledgers, tax-aware workflows, and an agent that actually knows the whole picture.**
@@ -11,7 +12,7 @@ Multi-entity. Versioned. AI-assisted. Travel, benefits, and guided jurisdiction 
 
 > ⚠️ **Status: pre-alpha, under active development.** Tally is being built in the open. The core architecture is settled (see [`PROJECT_BRIEF.md`](./PROJECT_BRIEF.md)) and milestones are tracked in [`TODO.md`](./TODO.md). It is not yet usable. Star the repo to follow along.
 
-> **Not a replacement for professionals or “official” stacks.** Tally is **not** meant to substitute your accounting firm, licensed tax advisors, auditors, or whatever accounting software or filings workflow your jurisdiction or engagement requires. It is built to run **alongside** them—as a **personal navigator**: one private place to keep *your* books, obligations, receipts, and context organized so you, your advisors, and grounded tools are looking at the same picture. Judgment calls and statutory sign-offs stay with the people and systems responsible for them.
+> **Not a replacement for professionals or “official” stacks.** Tally is **not** meant to substitute your accounting firm, licensed tax advisors, auditors, or whatever accounting software or filings workflow your jurisdiction or engagement requires. It is built to run **alongside** them—as a **personal navigator**: one private place to keep _your_ books, obligations, receipts, and context organized so you, your advisors, and grounded tools are looking at the same picture. Judgment calls and statutory sign-offs stay with the people and systems responsible for them.
 
 ## What is Tally?
 
@@ -29,9 +30,9 @@ Small-business SaaS (Xero, QuickBooks, FreeAgent, …) still centers **one legal
 
 **Everything was split across too many places.** One tool or file for one company’s books, another for the next, another lane for personal finance, personal tax and contributions back in spreadsheets, receipts scattered, trip reports living on a laptop and painful to assemble—high friction, low reuse, and no single place that understands how the pieces connect.
 
-**Compensation and capture are a different failure mode.** It is not only “log an expense”: **business trips** and per-diem narratives, **mileage and commute reimbursements** (where the rules change by *why* you drove and *where* you pay tax), and **benefits and allowances** (lunch, sports and culture, gear, phone, home office, company car or e-bike, health—whatever each jurisdiction calls normal) all keep asking *business or personal? which legal entity? cash reimbursement, tax-free allowance cap, or taxable in-kind?* Receipts and approvals still bounce between **parallel inboxes per company** (the same proof uploaded five times, or not at all because you opened the wrong app). Elections and evidence sit in email and half-finished documents **instead of beside the ledger and filings they should drive**—so even when the “big picture” tools exist, the layer that actually moves tax and cash stays brittle.
+**Compensation and capture are a different failure mode.** It is not only “log an expense”: **business trips** and per-diem narratives, **mileage and commute reimbursements** (where the rules change by _why_ you drove and _where_ you pay tax), and **benefits and allowances** (lunch, sports and culture, gear, phone, home office, company car or e-bike, health—whatever each jurisdiction calls normal) all keep asking _business or personal? which legal entity? cash reimbursement, tax-free allowance cap, or taxable in-kind?_ Receipts and approvals still bounce between **parallel inboxes per company** (the same proof uploaded five times, or not at all because you opened the wrong app). Elections and evidence sit in email and half-finished documents **instead of beside the ledger and filings they should drive**—so even when the “big picture” tools exist, the layer that actually moves tax and cash stays brittle.
 
-**A chat LLM isn’t enough on its own.** Even a good model can’t give grounded advice if it doesn’t see your corporate structures, legal entities, jurisdictions, **and the statutory, regulatory, and practical norms that apply in each**—and it can’t *do* much without tools (e.g. suggest budgets, stress-test payout structures, prefill declarations). Tally is the system of record those answers should attach to, with an agent that can read state and take structured actions.
+**A chat LLM isn’t enough on its own.** Even a good model can’t give grounded advice if it doesn’t see your corporate structures, legal entities, jurisdictions, **and the statutory, regulatory, and practical norms that apply in each**—and it can’t _do_ much without tools (e.g. suggest budgets, stress-test payout structures, prefill declarations). Tally is the system of record those answers should attach to, with an agent that can read state and take structured actions.
 
 **There’s no margin for “I’ll remember later.”** Obligations, filings, and one-off tasks slip without a proper calendar of what’s due, what’s blocked on what, and what still needs evidence. Tally is also meant to be that operational backbone—not only storage for numbers.
 
@@ -107,7 +108,7 @@ Health endpoints once the dev server is up:
 
 ### Self-hosting (production)
 
-[`docker-compose.prod.yml`](./docker-compose.prod.yml) is a starting reference. Run behind a reverse proxy (Caddy, Traefik, nginx) that terminates TLS and forwards to the `app` service. Never expose `postgres`, `minio`, or `qdrant` ports publicly.
+The local [`docker-compose.yml`](./docker-compose.yml) shows the infra Tally needs: `app`, `postgres`, `minio`, `qdrant`. Adapt it to your hosting setup — your reverse proxy (Caddy, Traefik, nginx) terminates TLS and forwards to the `app` service; your volumes persist `postgres` and `minio` data; `postgres`, `minio`, and `qdrant` ports stay off the public internet. No opinionated production compose file is provided — deployment shapes vary too much to pretend one works everywhere.
 
 ## Observability
 

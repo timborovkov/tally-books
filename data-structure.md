@@ -278,6 +278,30 @@ BetterAuth owns the shape. Mirrored here so Drizzle can join:
 
 **Indexes:** `(entity_id, kind, start_at)`.
 
+### 5.6 `employment_relations`
+
+The first-class employment record the evaluator (brief §5.4.2) triggers on: hire dates, jurisdiction of the employment, employment type, and the employing entity. `entity_person_links` stays a flat governance registry (board / CEO / shareholder); employment is a distinct concern because the compliance engine diffs obligation catalogs against **this** table's state. Founder-as-employee (brief §5.4.1–§5.4.2) uses the same row shape—no special case.
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `text`, PK | |
+| `entity_id` | `text`, NOT NULL, FK → `entities.id` | The employer. |
+| `person_id` | `text`, NOT NULL, FK → `persons.id` | The employee (may be the admin themselves). |
+| `jurisdiction_id` | `text`, NOT NULL, FK → `jurisdictions.id` | Jurisdiction whose employment rules govern this relation. Usually matches `entities.jurisdiction_id` but kept explicit for cross-border employments. |
+| `employment_type` | `employment_type` enum (`employee`, `director_employee`, `founder_employee`, `contractor`, `board_member`, `other`), NOT NULL | Drives which obligation templates apply. `contractor` is included so the evaluator can short-circuit (most employer-side obligations don't apply) but the row still exists for bookkeeping. |
+| `hired_at` | `timestamptz`, NOT NULL | Legal start. The evaluator uses this to decide which jurisdiction-config version applies. |
+| `terminated_at` | `timestamptz`, nullable | Set on termination. Obligations past this date stop being re-opened. |
+| `terms` | `jsonb`, NOT NULL, default `{}` | Salary, hours, contract terms, references to attached documents. Free-shape by design — jurisdictions and employment kinds vary. |
+| `metadata` | `jsonb`, NOT NULL, default `{}` | |
+| `created_at`, `updated_at` | `timestamptz`, NOT NULL | |
+
+**CHECKS:**
+- `terminated_at IS NULL OR terminated_at >= hired_at`.
+
+**Indexes:** `(entity_id, terminated_at)` (active employees per entity — hot path for the evaluator), `(person_id, terminated_at)` (all employments of a person, incl. founder-as-employee), `(jurisdiction_id)`.
+
+**Soft deletion policy:** none. Termination is a real-world lifecycle event, not a soft delete; `terminated_at` carries the meaning. Historical rows stay to satisfy obligations that linger past termination (final payslip, year-end filings).
+
 ---
 
 ## 6. FX rates (new)
@@ -681,10 +705,10 @@ Budget-vs-reality reads the version active during the compared period — the `<
 | `id` | `text`, PK | |
 | `entity_id` | `text`, NOT NULL, FK -> `entities.id` | |
 | `jurisdiction_id` | `text`, NOT NULL, FK -> `jurisdictions.id` | |
-| `obligation_domain` | `obligation_domain` enum (`employment`, `tax_payment`, `reporting`, `other`) | Generalized obligation engine (not employment-only). |
-| `subject_type` | `obligation_subject_type` enum (`entity`, `employment_relation`, `person`, `filing`, `payment`, `other`) | |
+| `obligation_domain` | `obligation_domain` enum (`employment`, `tax_payment`, `reporting`, `other`), NOT NULL | Generalized obligation engine (not employment-only). NOT NULL so rows participate correctly in the §14 idempotency unique index (Postgres treats NULLs as distinct). |
+| `subject_type` | `obligation_subject_type` enum (`entity`, `employment_relation`, `person`, `filing`, `payment`, `other`), NOT NULL | Same NOT NULL rationale as `obligation_domain`. |
 | `subject_id` | `text`, nullable | Generic pointer for evaluator-produced context. |
-| `employment_relation_id` | `text`, nullable | Kept explicit for common HR path and filters. |
+| `employment_relation_id` | `text`, nullable, FK → `employment_relations.id` | Explicit FK for the common HR path and filters. See §5.6. |
 | `person_id` | `text`, nullable, FK -> `persons.id` | |
 | `obligation_key` | `text`, NOT NULL | Stable key from jurisdiction config template. |
 | `satisfaction_mode` | `obligation_satisfaction_mode` enum (`bank_match`, `filing_ref`, `doc_evidence`, `composite`, `manual_override`), NOT NULL | Chosen by template or evaluator from jurisdiction config. |
@@ -971,6 +995,9 @@ One place for every index this spec prescribes. When a migration lands, diff thi
 | `entity_person_links` | `(entity_id, valid_to)` | |
 | `entity_person_links` | `(person_id, valid_to)` | |
 | `financial_periods` | `(entity_id, kind, start_at)` | |
+| `employment_relations` | `(entity_id, terminated_at)` | Active employees per entity — evaluator hot path. |
+| `employment_relations` | `(person_id, terminated_at)` | All employments of a person. |
+| `employment_relations` | `(jurisdiction_id)` | |
 | `fx_rates` | `UNIQUE(rate_date, from_ccy, to_ccy, source)` | |
 | `fx_rates` | `(from_ccy, to_ccy, rate_date DESC)` | Rate lookup. |
 | `blobs` | `(checksum)` | Dedup. |
@@ -1042,6 +1069,7 @@ Each table declares one policy. No mixing. Resolves **I14**.
 | **Void** (versioned Thing killed, history retained) | `state = 'void'` | every versioned Thing |
 | **Delete + tombstone** (Qdrant bookkeeping) | `deleted_at timestamptz` | `embedding_index` |
 | **Hard delete** | — | `sessions`, `edit_sessions` (ephemeral), `meeting_expenses` (cascade) |
+| **No soft delete** (lifecycle column carries meaning) | `terminated_at timestamptz` (not a soft delete) | `employment_relations` |
 
 ---
 

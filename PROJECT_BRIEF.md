@@ -719,8 +719,7 @@ Each point in Qdrant carries a payload with: `entity_id`, `kind`, `period`, `cre
 ### 6.13 Deployment & local dev
 
 - **`Dockerfile`** for the app — multi-stage build (deps → build → runtime). Production image is the only artifact published.
-- **`docker-compose.yml`** for local development, with services: `app` (dev mode, hot reload, source mounted), `postgres`, `minio`, `qdrant`.
-- **`docker-compose.prod.yml`** as a reference production compose for self-hosters: same services minus dev mounts, plus volume persistence and healthchecks.
+- **`docker-compose.yml`** for local development, with services: `app` (dev mode, hot reload, source mounted), `postgres`, `minio`, `qdrant`. This file also doubles as the canonical statement of what infra Tally needs; self-hosters adapt it to their hosting shape rather than copying a boxed "prod compose" that won't match their proxy, secrets, or volume setup anyway.
 - First-boot flow: if no admin exists, redirect to `/setup`.
 - Reverse proxy (Caddy or user's choice) for TLS — out of scope for the compose file, documented in `docs/guides/deployment.md`.
 - `robots.txt` disallow all; `X-Robots-Tag: noindex` header on all routes.
@@ -752,8 +751,7 @@ Each point in Qdrant carries a payload with: `entity_id`, `kind`, `period`, `cre
 ├── docs/                           # Public docs
 ├── internal-docs/                  # Gitignored: personal notes
 ├── Dockerfile
-├── docker-compose.yml              # Local dev
-├── docker-compose.prod.yml         # Reference production compose
+├── docker-compose.yml              # Local dev (also the infra-shape reference for self-hosters)
 ├── CHANGELOG.md
 ├── TODO.md
 ├── README.md
@@ -1224,7 +1222,7 @@ Kept in `docs/` and updated as we build.
 - **Embeddings provider:** OpenAI (`text-embedding-3-*`).
 - **Vision provider:** OpenAI (structured-output schema for receipts).
 - **Chat provider default:** OpenAI; abstraction allows Ollama later.
-- **Local dev:** `Dockerfile` + `docker-compose.yml`. Reference `docker-compose.prod.yml` for self-hosters.
+- **Local dev:** `Dockerfile` + `docker-compose.yml`. The same compose file is the infra-shape reference for self-hosters — no separate "prod compose" ships, because deployment shapes (proxy, secrets, volumes, orchestrator) vary too much for a canned example to be useful.
 
 ### 12.2 Still open — to decide during build
 

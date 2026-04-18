@@ -28,8 +28,7 @@ The minimum scaffolding needed to start building features safely.
 ### Containers & local dev
 
 - [x] `Dockerfile` (multi-stage: deps → build → runtime)
-- [x] `docker-compose.yml` for local dev (`app`, `postgres`, `minio`, `qdrant`)
-- [x] `docker-compose.prod.yml` reference
+- [x] `docker-compose.yml` for local dev (`app`, `postgres`, `minio`, `qdrant`) — doubles as infra shape reference for self-hosters; no separate prod compose shipped
 - [x] `.env.example` with all required env keys documented
 - [x] Health + readiness endpoints
 
