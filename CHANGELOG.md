@@ -30,3 +30,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `versionedColumns()` helper exported for the next versioned-Thing PR; `current_version_id` deferred until then.
 - Scripts: `db:generate`, `db:migrate`, `db:push`, `db:studio`, `db:seed`. Idempotent admin-user seed.
 - Real `pnpm test:integration` suite: schema smoke test that asserts enums, tables, named indexes, partial WHERE clauses, the 2FA CHECK rejection, and `edit_sessions` uniqueness against the live Postgres service.
+- **Cross-cutting foundation (v0.1 pass):**
+  - UTC-only date helpers in `src/lib/dates.ts` (`nowUtc`, `formatUtcDate`, `formatUtcDateTime`, `startOfUtcDay`, `endOfUtcDay`, `parseUtcDate`). ESLint `no-restricted-syntax` rule bans `toLocale*` and `Date.now()` outside this module.
+  - Sentry wired via `@sentry/nextjs` for browser, Node, and edge runtimes. DSN-driven off-switch (empty DSN ⇒ `enabled: false`); local dev ships with blank DSNs. `global-error.tsx` plus a segment-level `(app)/error.tsx` both capture to Sentry.
+  - Dockerfile build stage takes `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_ORG`, `SENTRY_PROJECT` as build args and `SENTRY_AUTH_TOKEN` as a BuildKit secret, so source maps upload during `docker build` without baking the token into the image.
+  - App shell under a new `(app)` route group: `TopNav` (search + quick-add), `Sidebar` (eight primary sections), `AppShell`. Dashboard landing renders placeholder overview cards + a matching `DashboardSkeleton` via `loading.tsx`.
+  - Quick-add `+` modal with four stub actions (new expense, upload receipt, new invoice draft, new trip). Real routing wires in v0.2+.
+  - Reusable `Skeleton` primitive and `ErrorFallback` component; `docs/architecture/ui-conventions.md` codifies when to use each.
+  - New docs: `docs/architecture/dates.md`, `docs/architecture/sentry.md`, `docs/architecture/ui-conventions.md`.
+  - Meaningful tests for every new surface (date helpers + TZ invariance, Sentry-disabled guard, robots.txt content, `next.config` headers, skeleton a11y, error fallback retry, app-shell landmarks, quick-add dialog open/close/select).

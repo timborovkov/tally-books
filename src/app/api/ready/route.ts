@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+import { nowUtc, toIsoUtc } from "@/lib/dates";
+
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
@@ -19,7 +21,7 @@ export function GET(): NextResponse {
   };
   const allOk = !Object.values(checks).includes("fail");
   return NextResponse.json(
-    { status: allOk ? "ready" : "not_ready", checks, timestamp: new Date().toISOString() },
+    { status: allOk ? "ready" : "not_ready", checks, timestamp: toIsoUtc(nowUtc()) },
     { status: allOk ? 200 : 503 },
   );
 }

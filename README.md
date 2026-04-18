@@ -55,7 +55,7 @@ See [`PROJECT_BRIEF.md` §3](./PROJECT_BRIEF.md#3-technical-stack) for details o
 
 ## Getting started
 
-> Status: foundation scaffolding (v0.1) is in place — Next.js, strict TypeScript, Tailwind v4, shadcn/ui, ESLint, Prettier, Knip, Vitest, Husky, GitHub Actions CI, and the Docker stack for `postgres`, `minio`, and `qdrant`. Most product features are still on the roadmap; see [`TODO.md`](./TODO.md).
+> Status: foundation scaffolding (v0.1) is in place — Next.js, strict TypeScript, Tailwind v4, shadcn/ui, ESLint, Prettier, Knip, Vitest, Husky, GitHub Actions CI, Sentry wiring (off by default locally), app shell with top-nav + sidebar + quick-add modal, and the Docker stack for `postgres`, `minio`, and `qdrant`. Most product features are still on the roadmap; see [`TODO.md`](./TODO.md).
 
 ### Prerequisites
 
@@ -103,11 +103,18 @@ Health endpoints once the dev server is up:
 
 [`docker-compose.prod.yml`](./docker-compose.prod.yml) is a starting reference. Run behind a reverse proxy (Caddy, Traefik, nginx) that terminates TLS and forwards to the `app` service. Never expose `postgres`, `minio`, or `qdrant` ports publicly.
 
+## Observability
+
+Sentry is wired for the browser, Node server, and edge runtimes. It is **off by default** — local dev runs with blank DSNs so your development crashes don't pollute the production issue stream. See [`docs/architecture/sentry.md`](./docs/architecture/sentry.md) for enabling it in a deploy, Docker build-arg + secret wiring for source map upload, and how the error boundaries interact with Sentry.
+
 ## Documentation
 
 - [`PROJECT_BRIEF.md`](./PROJECT_BRIEF.md) — full specification: goals, stack, features, architecture, data model, dependency graph
 - [`TODO.md`](./TODO.md) — milestone-based roadmap with checkboxes
-- [`docs/`](./docs/) — architecture docs, integration guides, jurisdiction notes, usage docs (in progress)
+- [`docs/architecture/sentry.md`](./docs/architecture/sentry.md) — error reporting setup
+- [`docs/architecture/dates.md`](./docs/architecture/dates.md) — UTC-only convention + the date helpers
+- [`docs/architecture/ui-conventions.md`](./docs/architecture/ui-conventions.md) — app shell, loading, error boundaries
+- [`docs/`](./docs/) — other architecture docs, integration guides, jurisdiction notes, usage docs (in progress)
 - [`CHANGELOG.md`](./CHANGELOG.md) — version history once we start cutting releases
 
 ## Contributing
