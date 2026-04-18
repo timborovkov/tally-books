@@ -27,7 +27,11 @@ $RECYCLE.BIN/
 # Claude / AI assistant
 .claude/
 .claude-*/
+CLAUDE.md
 CLAUDE.local.md
+
+# Personal notes, author's actual financial situation (brief §6.15)
+internal-docs/
 
 # Node / package managers
 node_modules/
