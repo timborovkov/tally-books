@@ -131,7 +131,7 @@ export function Logo({
   const showIcon = type === "icon" || type === "full";
   const showWordmark = type === "wordmark" || type === "full";
 
-  const taglineText = showWordmark && tagline === true ? LOGO_TAGLINE : tagline || null;
+  const taglineText = showWordmark ? (tagline === true ? LOGO_TAGLINE : tagline || null) : null;
 
   const wordmarkColor = invert ? "text-background" : "text-foreground";
   const taglineColor = invert ? "text-background/70" : "text-muted-foreground";

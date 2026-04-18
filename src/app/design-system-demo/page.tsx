@@ -321,9 +321,7 @@ function SectionHeading({
 }) {
   return (
     <div id={id} className="scroll-mt-24 space-y-1">
-      <h2 className="font-display text-foreground text-2xl font-semibold tracking-tight">
-        {title}
-      </h2>
+      <h2 className="text-foreground text-2xl font-semibold tracking-tight">{title}</h2>
       {description ? (
         <p className="text-muted-foreground max-w-2xl text-sm">{description}</p>
       ) : null}
@@ -413,6 +411,24 @@ export default function DesignSystemDemoPage() {
                     </span>
                     <Logo type="full" orientation="vertical" size="md" align="start" />
                     <Logo type="full" orientation="vertical" size="lg" align="start" tagline />
+                  </div>
+                </CardContent>
+                <CardContent className="grid gap-10 border-t py-8 md:grid-cols-2">
+                  <div className="flex flex-col gap-4">
+                    <span className="text-muted-foreground text-xs tracking-wide uppercase">
+                      align=&quot;start&quot; (default) · left-aligned column
+                    </span>
+                    <div className="bg-background w-full rounded-md border p-6">
+                      <Logo type="full" orientation="vertical" size="lg" align="start" tagline />
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-4">
+                    <span className="text-muted-foreground text-xs tracking-wide uppercase">
+                      align=&quot;center&quot; · used on the landing hero
+                    </span>
+                    <div className="bg-background w-full rounded-md border p-6">
+                      <Logo type="full" orientation="vertical" size="lg" align="center" tagline />
+                    </div>
                   </div>
                 </CardContent>
                 <CardContent className="grid gap-10 border-t py-8 md:grid-cols-2">
