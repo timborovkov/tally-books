@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Space_Grotesk } from "next/font/google";
+import { Geist, Geist_Mono, Unbounded } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
@@ -14,10 +14,11 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const spaceGrotesk = Space_Grotesk({
-  variable: "--font-space-grotesk",
+const unbounded = Unbounded({
+  variable: "--font-unbounded",
   subsets: ["latin"],
-  weight: ["500", "600", "700"],
+  weight: ["800"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -35,7 +36,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} ${spaceGrotesk.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${unbounded.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">
         <ThemeProvider

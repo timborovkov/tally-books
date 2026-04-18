@@ -338,7 +338,7 @@ export default function DesignSystemDemoPage() {
         <header className="border-border bg-background/80 sticky top-0 z-30 border-b backdrop-blur">
           <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-6 py-4">
             <div className="flex items-center gap-4">
-              <Logo size="md" />
+              <Logo type="full" orientation="horizontal" size="sm" />
               <Separator orientation="vertical" className="hidden h-6 md:block" />
               <span className="text-muted-foreground hidden text-sm md:inline">
                 Design system reference
@@ -372,22 +372,70 @@ export default function DesignSystemDemoPage() {
               <SectionHeading
                 id="brand"
                 title="Brand"
-                description="The wordmark is typed in Space Grotesk. No icon mark — just letters. The tagline appears only on auth and landing surfaces."
+                description="Wordmark (Unbounded 800), tally-marks icon, and the full lockup — all rendered by the same <Logo /> component. Tagline appears only on auth and landing surfaces."
               />
               <Card>
                 <CardContent className="grid gap-10 py-8 md:grid-cols-2">
                   <div className="flex flex-col items-start gap-8">
-                    <Logo size="sm" />
-                    <Logo size="md" />
-                    <Logo size="lg" />
-                    <Logo size="xl" />
+                    <span className="text-muted-foreground text-xs uppercase tracking-wide">
+                      Wordmark · sizes
+                    </span>
+                    <Logo type="wordmark" size="sm" />
+                    <Logo type="wordmark" size="md" />
+                    <Logo type="wordmark" size="lg" />
+                    <Logo type="wordmark" size="xl" />
                   </div>
-                  <div className="flex flex-col items-start justify-center gap-8">
-                    <Logo size="md" tagline />
-                    <Logo size="lg" tagline />
-                    <div className="text-muted-foreground text-sm">
-                      Tagline: <code className="font-mono">{LOGO_TAGLINE}</code>
+                  <div className="flex flex-col items-start justify-start gap-8">
+                    <span className="text-muted-foreground text-xs uppercase tracking-wide">
+                      Icon · sizes
+                    </span>
+                    <div className="flex items-end gap-6">
+                      <Logo type="icon" size="sm" />
+                      <Logo type="icon" size="md" />
+                      <Logo type="icon" size="lg" />
+                      <Logo type="icon" size="xl" />
                     </div>
+                  </div>
+                </CardContent>
+                <CardContent className="grid gap-10 py-8 md:grid-cols-2 border-t">
+                  <div className="flex flex-col items-start gap-6">
+                    <span className="text-muted-foreground text-xs uppercase tracking-wide">
+                      Full · horizontal
+                    </span>
+                    <Logo type="full" orientation="horizontal" size="sm" />
+                    <Logo type="full" orientation="horizontal" size="md" />
+                    <Logo type="full" orientation="horizontal" size="lg" />
+                    <Logo type="full" orientation="horizontal" size="md" tagline />
+                  </div>
+                  <div className="flex flex-col items-start gap-6">
+                    <span className="text-muted-foreground text-xs uppercase tracking-wide">
+                      Full · vertical
+                    </span>
+                    <Logo type="full" orientation="vertical" size="md" align="start" />
+                    <Logo type="full" orientation="vertical" size="lg" align="start" tagline />
+                  </div>
+                </CardContent>
+                <CardContent className="grid gap-10 py-8 md:grid-cols-2 border-t">
+                  <div className="flex flex-col items-start gap-4">
+                    <span className="text-muted-foreground text-xs uppercase tracking-wide">
+                      Default · on page surface
+                    </span>
+                    <div className="bg-background border rounded-md p-6 w-full">
+                      <Logo type="full" orientation="horizontal" size="md" tagline />
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-start gap-4">
+                    <span className="text-muted-foreground text-xs uppercase tracking-wide">
+                      Inverted · on opposite-theme surface
+                    </span>
+                    <div className="bg-foreground rounded-md p-6 w-full">
+                      <Logo type="full" orientation="horizontal" size="md" tagline invert />
+                    </div>
+                  </div>
+                </CardContent>
+                <CardContent className="py-6 border-t">
+                  <div className="text-muted-foreground text-sm">
+                    Tagline copy: <code className="font-mono">{LOGO_TAGLINE}</code>
                   </div>
                 </CardContent>
               </Card>
@@ -398,14 +446,18 @@ export default function DesignSystemDemoPage() {
               <SectionHeading
                 id="typography"
                 title="Typography"
-                description="Geist Sans for body, Geist Mono for numerics and code, Space Grotesk for display/wordmark."
+                description="Geist Sans for body, Geist Mono for numerics and code, Unbounded 800 reserved for the Tally wordmark."
               />
               <Card>
                 <CardContent className="space-y-6 py-8">
                   <div className="space-y-3">
-                    <h1 className="font-display text-5xl leading-tight font-semibold tracking-tight">
-                      Display — Space Grotesk
+                    <h1 className="text-5xl leading-tight font-semibold tracking-tight">
+                      Display headings use Geist Sans 600
                     </h1>
+                    <p className="text-muted-foreground text-xs">
+                      (The <code className="font-mono">font-display</code> utility is reserved for
+                      the <code className="font-mono">&lt;Logo /&gt;</code> wordmark only.)
+                    </p>
                     <h2 className="text-3xl font-semibold tracking-tight">
                       Heading 2 — Geist Sans 600
                     </h2>
@@ -911,7 +963,7 @@ export default function DesignSystemDemoPage() {
                 <SidebarProvider>
                   <Sidebar collapsible="none" className="h-full">
                     <SidebarHeader>
-                      <Logo size="sm" />
+                      <Logo type="full" orientation="horizontal" size="sm" />
                     </SidebarHeader>
                     <SidebarContent>
                       <SidebarGroup>
