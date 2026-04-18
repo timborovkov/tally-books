@@ -13,14 +13,17 @@ const NAV = [
   { href: "/settings/jurisdictions", label: "Jurisdictions" },
 ] as const;
 
+// Wrapped in AppShell (`(app)/layout.tsx`) — that layout renders the
+// outer <main>. This file is just the in-page split between the
+// settings sub-nav and the section content.
 export default function SettingsLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-1 gap-8 px-6 py-10">
-      <aside className="w-48 shrink-0">
+      <nav aria-label="Settings sections" className="w-48 shrink-0">
         <div className="text-muted-foreground mb-4 text-xs font-semibold tracking-wider uppercase">
           Settings
         </div>
-        <nav className="flex flex-col gap-1">
+        <div className="flex flex-col gap-1">
           {NAV.map((item) => (
             <Link
               key={item.href}
@@ -33,9 +36,9 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
               {item.label}
             </Link>
           ))}
-        </nav>
-      </aside>
-      <main className="min-w-0 flex-1">{children}</main>
+        </div>
+      </nav>
+      <div className="min-w-0 flex-1">{children}</div>
     </div>
   );
 }
