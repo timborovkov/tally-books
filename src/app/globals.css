@@ -64,6 +64,7 @@
 
 /* LogisticOne — tweakcn theme cmlrqe6vc000104lbcjpo6cv0 */
 :root {
+  color-scheme: light;
   --radius: 0.5rem;
   --tracking-normal: 0em;
 
@@ -123,6 +124,7 @@
 }
 
 .dark {
+  color-scheme: dark;
   --background: oklch(0.1149 0 0);
   --foreground: oklch(0.9851 0 0);
   --card: oklch(0.1448 0 0);
