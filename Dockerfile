@@ -6,6 +6,7 @@ ARG PNPM_VERSION=10.33.0
 
 # ─── deps ───────────────────────────────────────────────────────────────────────
 FROM node:${NODE_VERSION} AS deps
+ARG PNPM_VERSION
 WORKDIR /app
 
 RUN apk add --no-cache libc6-compat
@@ -19,6 +20,7 @@ RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
 
 # ─── build ──────────────────────────────────────────────────────────────────────
 FROM node:${NODE_VERSION} AS build
+ARG PNPM_VERSION
 WORKDIR /app
 
 RUN npm install -g corepack@latest \
