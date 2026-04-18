@@ -66,6 +66,15 @@ export function EntityForm({ jurisdictions, entity, action, submitLabel }: Entit
     [selectedJurisdiction],
   );
 
+  // baseCurrency is controlled so the default tracks the selected
+  // jurisdiction. `defaultValue` wouldn't re-render — the user would
+  // silently carry the prior jurisdiction's currency into a new one.
+  // Initial value: saved entity currency (edit), else jurisdiction
+  // default, else EUR as a last resort.
+  const [baseCurrency, setBaseCurrency] = useState<string>(
+    entity?.baseCurrency ?? selectedConfig?.defaultCurrency ?? "EUR",
+  );
+
   const entityTypeOptions = selectedConfig?.entityTypes ?? [];
   // If the saved entityType isn't valid for the selected jurisdiction's
   // config, the Select shows nothing selected — the server's validator
@@ -107,11 +116,20 @@ export function EntityForm({ jurisdictions, entity, action, submitLabel }: Entit
             value={jurisdictionId}
             onValueChange={(v) => {
               setJurisdictionId(v);
-              // Reset entity type if it isn't valid for the new jurisdiction.
               const next = jurisdictions.find((j) => j.id === v);
               const nextConfig = next ? parseJurisdictionConfigOrNull(next.config) : null;
+              // Reset entity type if it isn't valid for the new jurisdiction.
               if (entityType && !nextConfig?.entityTypes.includes(entityType)) {
                 setEntityType("");
+              }
+              // If the user is currently on the old jurisdiction's
+              // default currency (i.e., they haven't manually picked
+              // something else), switch to the new jurisdiction's
+              // default. Keep the user's manual choice otherwise.
+              const oldDefault = selectedConfig?.defaultCurrency;
+              const nextDefault = nextConfig?.defaultCurrency;
+              if (nextDefault && baseCurrency === oldDefault) {
+                setBaseCurrency(nextDefault);
               }
             }}
           >
@@ -165,10 +183,7 @@ export function EntityForm({ jurisdictions, entity, action, submitLabel }: Entit
           <Input id="businessId" name="businessId" defaultValue={entity?.businessId ?? ""} />
         </Field>
         <Field label="Base currency (ISO 4217)" htmlFor="baseCurrency" required>
-          <Select
-            name="baseCurrency"
-            defaultValue={entity?.baseCurrency ?? selectedConfig?.defaultCurrency ?? "EUR"}
-          >
+          <Select name="baseCurrency" value={baseCurrency} onValueChange={setBaseCurrency}>
             <SelectTrigger id="baseCurrency">
               <SelectValue />
             </SelectTrigger>

@@ -1,3 +1,7 @@
+"use client";
+
+import { useState } from "react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,6 +28,12 @@ export function PersonForm({ jurisdictions, person, action, submitLabel }: Perso
   const rows: ReadonlyArray<[string, string]> = [...idEntries, ["", ""]];
   const contact = (person?.contact as Record<string, string>) ?? {};
 
+  // Tax residency is optional. Radix Select can't hold an empty string
+  // as a value (no SelectItem matches), so we keep it in state and
+  // carry the submitted value via an explicit hidden input below —
+  // same pattern as entityType in EntityForm.
+  const [taxResidency, setTaxResidency] = useState<string>(person?.taxResidency ?? "");
+
   return (
     <form action={action} className="flex flex-col gap-6">
       {person !== null ? <input type="hidden" name="id" value={person.id} /> : null}
@@ -37,7 +47,12 @@ export function PersonForm({ jurisdictions, person, action, submitLabel }: Perso
         </div>
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="taxResidency">Tax residency</Label>
-          <Select name="taxResidency" defaultValue={person?.taxResidency ?? ""}>
+          {/* Authoritative source for the submitted value; the Select
+              below is display-only so the empty-string initial state
+              stays valid for Radix (which rejects an empty-string
+              value as a SelectItem match). */}
+          <input type="hidden" name="taxResidency" value={taxResidency} />
+          <Select value={taxResidency} onValueChange={setTaxResidency}>
             <SelectTrigger id="taxResidency">
               <SelectValue placeholder="Select…" />
             </SelectTrigger>
