@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 
 import type { Db } from "@/db/client";
 import {
@@ -216,26 +216,26 @@ export async function unlinkPersonFromEntity(
   actor: CurrentActor,
   linkId: string,
 ): Promise<EntityPersonLink> {
-  // Don't reuse `validTo IS NULL` filter — caller may explicitly close
-  // a link with a future date. We just refuse to clobber an already
-  // closed link.
-  const [existing] = await db
-    .select()
-    .from(entityPersonLinks)
-    .where(eq(entityPersonLinks.id, linkId))
-    .limit(1);
-
-  if (!existing) throw new NotFoundError("entity_person_link", linkId);
-  if (existing.validTo !== null) {
-    throw new ConflictError("Link is already closed", { linkId, closedAt: existing.validTo });
-  }
-
+  // Atomic close: only update rows that are still open. If 0 rows
+  // come back, a separate SELECT distinguishes "not found" from
+  // "already closed" so the API surface stays unambiguous. This
+  // avoids the SELECT-then-UPDATE race where two concurrent unlinks
+  // would both succeed and double-write to audit_log.
   const [row] = await db
     .update(entityPersonLinks)
     .set({ validTo: new Date() })
-    .where(eq(entityPersonLinks.id, linkId))
+    .where(and(eq(entityPersonLinks.id, linkId), isNull(entityPersonLinks.validTo)))
     .returning();
-  if (!row) throw new NotFoundError("entity_person_link", linkId);
+
+  if (!row) {
+    const [existing] = await db
+      .select({ validTo: entityPersonLinks.validTo })
+      .from(entityPersonLinks)
+      .where(eq(entityPersonLinks.id, linkId))
+      .limit(1);
+    if (!existing) throw new NotFoundError("entity_person_link", linkId);
+    throw new ConflictError("Link is already closed", { linkId, closedAt: existing.validTo });
+  }
 
   await recordAudit(db, {
     actorId: actor.userId,

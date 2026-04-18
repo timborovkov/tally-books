@@ -44,4 +44,3 @@ export async function getCurrentActor(db: Db): Promise<CurrentActor> {
   }
   return { userId: cachedAdminId, kind: "user" };
 }
-

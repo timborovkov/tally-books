@@ -111,7 +111,7 @@ describe("entities.financial_year_start_month CHECK", () => {
   });
 });
 
-describe("entity_person_links.share_percent precision", () => {
+describe("entity_person_links.share_percent CHECK", () => {
   async function setupEntityAndPerson(): Promise<{ entityId: string; personId: string }> {
     const jurisdictionId = await makeJurisdiction();
     const entityId = newId();
@@ -139,17 +139,56 @@ describe("entity_person_links.share_percent precision", () => {
     });
   });
 
-  it("rejects 100.0001 (numeric(7,4) overflow)", async () => {
+  it("accepts NULL (non-equity roles)", async () => {
     const { entityId, personId } = await setupEntityAndPerson();
-    // Postgres 22003 = numeric_value_out_of_range. Drizzle wraps it
-    // as `cause`.
+    await db.insert(schema.entityPersonLinks).values({
+      id: newId(),
+      entityId,
+      personId,
+      role: "ceo",
+      sharePercent: null,
+    });
+  });
+
+  it("rejects 100.0001 — exceeds the 0–100 business range", async () => {
+    // 23514 = check_violation. The CHECK constraint catches values that
+    // numeric(7,4) alone would happily store (its raw ceiling is 999.9999).
+    const { entityId, personId } = await setupEntityAndPerson();
     await expect(
       db.insert(schema.entityPersonLinks).values({
         id: newId(),
         entityId,
         personId,
         role: "shareholder",
-        sharePercent: "1000.0001",
+        sharePercent: "100.0001",
+      }),
+    ).rejects.toMatchObject({ cause: { code: "23514" } });
+  });
+
+  it("rejects negative share percent", async () => {
+    const { entityId, personId } = await setupEntityAndPerson();
+    await expect(
+      db.insert(schema.entityPersonLinks).values({
+        id: newId(),
+        entityId,
+        personId,
+        role: "shareholder",
+        sharePercent: "-0.0001",
+      }),
+    ).rejects.toMatchObject({ cause: { code: "23514" } });
+  });
+
+  it("rejects values that overflow numeric(7,4) precision", async () => {
+    // 22003 = numeric_value_out_of_range. Belt-and-braces: even without
+    // the CHECK, the column type rejects 4-digit-prefix values.
+    const { entityId, personId } = await setupEntityAndPerson();
+    await expect(
+      db.insert(schema.entityPersonLinks).values({
+        id: newId(),
+        entityId,
+        personId,
+        role: "shareholder",
+        sharePercent: "1000.0000",
       }),
     ).rejects.toMatchObject({ cause: { code: "22003" } });
   });

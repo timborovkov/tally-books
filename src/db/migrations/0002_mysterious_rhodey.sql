@@ -1,0 +1,1 @@
+ALTER TABLE "entity_person_links" ADD CONSTRAINT "entity_person_links_share_percent_range" CHECK ("entity_person_links"."share_percent" IS NULL OR ("entity_person_links"."share_percent" >= 0 AND "entity_person_links"."share_percent" <= 100));

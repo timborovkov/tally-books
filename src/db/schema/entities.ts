@@ -78,6 +78,8 @@ export const entityPersonLinks = pgTable(
     role: text("role").notNull(),
     // numeric(7,4) so a sole shareholder holds exactly 100.0000.
     // numeric(6,4) would cap at 99.9999. Resolves I1.
+    // The CHECK below enforces the 0–100 business rule — numeric(7,4)
+    // alone would let "200.0000" through (its real ceiling is 999.9999).
     sharePercent: numeric("share_percent", { precision: 7, scale: 4 }),
     validFrom: timestamp("valid_from", { withTimezone: true }).notNull().defaultNow(),
     validTo: timestamp("valid_to", { withTimezone: true }),
@@ -86,6 +88,10 @@ export const entityPersonLinks = pgTable(
       .default(sql`'{}'::jsonb`),
   },
   (t) => [
+    check(
+      "entity_person_links_share_percent_range",
+      sql`${t.sharePercent} IS NULL OR (${t.sharePercent} >= 0 AND ${t.sharePercent} <= 100)`,
+    ),
     index("entity_person_links_entity_idx").on(t.entityId, t.validTo),
     index("entity_person_links_person_idx").on(t.personId, t.validTo),
   ],

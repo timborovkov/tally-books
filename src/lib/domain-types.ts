@@ -23,4 +23,3 @@ export type ThingType =
   | "payroll_run"
   | "scenario"
   | "billing_arrangement";
-
