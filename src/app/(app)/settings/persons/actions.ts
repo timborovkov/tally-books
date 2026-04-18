@@ -6,18 +6,7 @@ import { redirect } from "next/navigation";
 import { getDb } from "@/db/client";
 import { createPerson, deletePerson, updatePerson } from "@/domains/persons";
 import { getCurrentActor } from "@/lib/auth-shim";
-
-function str(form: FormData, key: string): string {
-  const v = form.get(key);
-  if (typeof v !== "string") throw new Error(`missing ${key}`);
-  return v;
-}
-
-function strOrNull(form: FormData, key: string): string | null {
-  const v = form.get(key);
-  if (typeof v !== "string" || v.trim() === "") return null;
-  return v;
-}
+import { str, strOrNull } from "@/lib/form-helpers";
 
 function parseIds(form: FormData): Record<string, string> {
   // ids_keys[] / ids_values[] are aligned arrays sent by the IDs editor.

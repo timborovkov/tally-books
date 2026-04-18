@@ -13,24 +13,7 @@ import {
   updateEntity,
 } from "@/domains/entities";
 import { getCurrentActor } from "@/lib/auth-shim";
-
-function int(form: FormData, key: string): number {
-  const v = form.get(key);
-  if (typeof v !== "string") throw new Error(`missing ${key}`);
-  return Number.parseInt(v, 10);
-}
-
-function str(form: FormData, key: string): string {
-  const v = form.get(key);
-  if (typeof v !== "string") throw new Error(`missing ${key}`);
-  return v;
-}
-
-function strOrNull(form: FormData, key: string): string | null {
-  const v = form.get(key);
-  if (typeof v !== "string" || v.trim() === "") return null;
-  return v;
-}
+import { int, str, strOrNull } from "@/lib/form-helpers";
 
 function buildAddress(form: FormData): Record<string, string> {
   const fields = ["line1", "line2", "city", "region", "postcode", "country"] as const;
