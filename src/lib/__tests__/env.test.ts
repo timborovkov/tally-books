@@ -11,4 +11,9 @@ describe("env", () => {
     const again = await import("@/lib/env");
     expect(again.env).toBe(env);
   });
+
+  it("treats an absent SENTRY_DSN as disabled (undefined)", () => {
+    // vitest.setup.ts does not set SENTRY_DSN, so it must parse to undefined.
+    expect(env.SENTRY_DSN).toBeUndefined();
+  });
 });

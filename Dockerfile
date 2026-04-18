@@ -33,8 +33,34 @@ RUN npm install -g corepack@latest \
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
+# ── Sentry build-time configuration ───────────────────────────────────────────
+# NEXT_PUBLIC_SENTRY_DSN is inlined into the client bundle by Next.js, so it
+# must be present at build time. SENTRY_AUTH_TOKEN (+ ORG/PROJECT) gate source
+# map upload — leave them unset to build an image without source maps.
+#
+# On Railway/Docker, pass via `--build-arg`:
+#   docker build \
+#     --build-arg NEXT_PUBLIC_SENTRY_DSN=$NEXT_PUBLIC_SENTRY_DSN \
+#     --build-arg SENTRY_ORG=$SENTRY_ORG \
+#     --build-arg SENTRY_PROJECT=$SENTRY_PROJECT \
+#     --secret id=sentry_auth_token,env=SENTRY_AUTH_TOKEN \
+#     -t tally .
+ARG NEXT_PUBLIC_SENTRY_DSN=""
+ARG SENTRY_ORG=""
+ARG SENTRY_PROJECT=""
+ENV NEXT_PUBLIC_SENTRY_DSN=${NEXT_PUBLIC_SENTRY_DSN}
+ENV SENTRY_ORG=${SENTRY_ORG}
+ENV SENTRY_PROJECT=${SENTRY_PROJECT}
+
 ENV NEXT_TELEMETRY_DISABLED=1
-RUN pnpm build
+# SENTRY_AUTH_TOKEN passed via BuildKit secret so it isn't baked into the
+# image or shown in `docker history`. The mount exposes it at /run/secrets/…
+# only for the lifetime of this RUN command.
+RUN --mount=type=secret,id=sentry_auth_token,required=false,target=/run/secrets/sentry_auth_token \
+    if [ -s /run/secrets/sentry_auth_token ]; then \
+      export SENTRY_AUTH_TOKEN="$(cat /run/secrets/sentry_auth_token)"; \
+    fi; \
+    pnpm build
 
 # ─── runtime ────────────────────────────────────────────────────────────────────
 FROM node:${NODE_VERSION} AS runtime

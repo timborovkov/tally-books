@@ -14,10 +14,26 @@ import { z } from "zod";
  * Browser-accessible vars must be prefixed `NEXT_PUBLIC_` and live in a
  * separate `clientSchema` (none yet — add when one is needed).
  */
+
+// Sentry DSNs are URLs, but an empty string must be accepted as "disabled"
+// so we can ship a single `.env.example` without a real DSN and so local
+// dev does not emit events. See docs/architecture/sentry.md.
+const optionalSentryDsn = z
+  .string()
+  .trim()
+  .optional()
+  .transform((v) => (v === undefined || v === "" ? undefined : v))
+  .pipe(z.string().url().optional());
+
 const serverSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   DATABASE_URL: z.string().url(),
   SEED_ADMIN_EMAIL: z.string().email().default("admin@tally.local"),
+  // ── Sentry (all optional; empty = disabled) ────────────────────────────
+  SENTRY_DSN: optionalSentryDsn,
+  SENTRY_ORG: z.string().trim().optional(),
+  SENTRY_PROJECT: z.string().trim().optional(),
+  SENTRY_AUTH_TOKEN: z.string().trim().optional(),
 });
 
 export type Env = z.infer<typeof serverSchema>;

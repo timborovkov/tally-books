@@ -64,13 +64,13 @@ The minimum scaffolding needed to start building features safely.
 
 ### Cross-cutting
 
-- [ ] UTC date handling everywhere — no local timezone leaks
-- [ ] Sentry integrated (client + server)
-- [ ] `robots.txt` disallow all + `X-Robots-Tag: noindex` headers
-- [ ] Loading skeleton component conventions established
-- [ ] Error boundary conventions established
-- [ ] App-wide layout: nav bar with search, sidebar, dashboard shell
-- [ ] Quick-add `+` button modal (skeleton, even if entries are stubs)
+- [x] UTC date handling everywhere — no local timezone leaks
+- [x] Sentry integrated (client + server)
+- [x] `robots.txt` disallow all + `X-Robots-Tag: noindex` headers
+- [x] Loading skeleton component conventions established
+- [x] Error boundary conventions established
+- [x] App-wide layout: nav bar with search, sidebar, dashboard shell
+- [x] Quick-add `+` button modal (skeleton, even if entries are stubs)
 
 ### Versioning engine
 
