@@ -71,21 +71,28 @@ cd tally-books
 pnpm install
 cp .env.example .env       # fill in OPENAI_API_KEY, RESEND_API_KEY, secrets
 docker compose up -d       # starts postgres, minio, qdrant
+pnpm db:migrate            # apply Drizzle migrations
+pnpm db:seed               # create the bootstrap admin user
 pnpm dev                   # http://localhost:3000
 ```
 
 Useful scripts (full list in [`CONTRIBUTING.md`](./CONTRIBUTING.md)):
 
-| Command                 | What it does                               |
-| ----------------------- | ------------------------------------------ |
-| `pnpm dev`              | Next.js dev server (Turbopack)             |
-| `pnpm build` / `start`  | Production build / serve the build         |
-| `pnpm lint`             | ESLint (zero warnings allowed)             |
-| `pnpm typecheck`        | `tsc --noEmit` against the strict config   |
-| `pnpm format`           | Prettier write (`format:check` for CI)     |
-| `pnpm knip`             | Dead-code / unused dependency scan         |
-| `pnpm test`             | Vitest unit tests (`test:watch` for watch) |
-| `pnpm test:integration` | Integration tests (placeholder until v0.2) |
+| Command                 | What it does                                          |
+| ----------------------- | ----------------------------------------------------- |
+| `pnpm dev`              | Next.js dev server (Turbopack)                        |
+| `pnpm build` / `start`  | Production build / serve the build                    |
+| `pnpm lint`             | ESLint (zero warnings allowed)                        |
+| `pnpm typecheck`        | `tsc --noEmit` against the strict config              |
+| `pnpm format`           | Prettier write (`format:check` for CI)                |
+| `pnpm knip`             | Dead-code / unused dependency scan                    |
+| `pnpm test`             | Vitest unit tests (`test:watch` for watch)            |
+| `pnpm test:integration` | Vitest integration tests (require Postgres reachable) |
+| `pnpm db:generate`      | Drizzle: generate a migration from the schema diff    |
+| `pnpm db:migrate`       | Drizzle: apply pending migrations                     |
+| `pnpm db:push`          | Drizzle: push schema (dev only — skips migrations)    |
+| `pnpm db:studio`        | Drizzle Studio: browse the database in a UI           |
+| `pnpm db:seed`          | Insert the bootstrap admin user (idempotent)          |
 
 Health endpoints once the dev server is up:
 

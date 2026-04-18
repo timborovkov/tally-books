@@ -16,6 +16,8 @@ import { z } from "zod";
  */
 const serverSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+  DATABASE_URL: z.string().url(),
+  SEED_ADMIN_EMAIL: z.string().email().default("admin@tally.local"),
 });
 
 export type Env = z.infer<typeof serverSchema>;
