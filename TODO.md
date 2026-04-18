@@ -15,6 +15,9 @@ The minimum scaffolding needed to start building features safely.
 
 - [x] Initialize Next.js (App Router) + TypeScript (strict)
 - [x] Tailwind + shadcn/ui set up
+- [x] Design system: tweakcn LogisticOne theme, ~25 shadcn components, Logo, ThemeProvider, ModeToggle
+- [x] `DESIGN.md` + `/design-system-demo` live component reference page
+- [x] Dark / light / system mode via `next-themes`
 - [x] ESLint (strict config) + Prettier + Knip configured
 - [x] Vitest configured for unit tests
 - [x] GitHub Actions CI: lint, typecheck, knip, unit, integration
