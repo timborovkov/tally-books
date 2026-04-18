@@ -87,15 +87,23 @@ export async function unarchiveEntityAction(form: FormData): Promise<void> {
 export async function linkPersonAction(form: FormData): Promise<void> {
   const db = getDb();
   const actor = await getCurrentActor(db);
+
+  // `type="number"` is a browser-only hint; server actions can be
+  // posted directly with anything in the string. Parse defensively
+  // and normalise a failed parse to null so the domain layer sees a
+  // clean optional value rather than NaN.
   const sharePercentRaw = form.get("sharePercent");
+  let sharePercent: number | null = null;
+  if (typeof sharePercentRaw === "string" && sharePercentRaw.trim() !== "") {
+    const parsed = Number.parseFloat(sharePercentRaw);
+    sharePercent = Number.isFinite(parsed) ? parsed : null;
+  }
+
   await linkPersonToEntity(db, actor, {
     entityId: str(form, "entityId"),
     personId: str(form, "personId"),
     role: str(form, "role"),
-    sharePercent:
-      typeof sharePercentRaw === "string" && sharePercentRaw.trim() !== ""
-        ? Number.parseFloat(sharePercentRaw)
-        : null,
+    sharePercent,
     metadata: {},
   });
   revalidatePath(`/settings/entities/${str(form, "entityId")}`);

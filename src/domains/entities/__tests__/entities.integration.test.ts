@@ -241,6 +241,25 @@ describe("linkPersonToEntity / unlink", () => {
     expect(active).toHaveLength(0);
   });
 
+  it("rejects NaN sharePercent at the schema layer (ZodError), not Postgres", async () => {
+    // Server actions parse FormData with Number.parseFloat, which
+    // yields NaN for non-numeric input. The Zod `.finite()` constraint
+    // catches that before it reaches numeric(7,4) and turns into an
+    // opaque driver error.
+    const j = await h.seedJurisdiction("EE");
+    const entityId = await makeEntity(j);
+    const person = await createPerson(h.db, h.actor, { legalName: "Tim B" });
+    await expect(
+      linkPersonToEntity(h.db, h.actor, {
+        entityId,
+        personId: person.id,
+        role: "shareholder",
+        sharePercent: Number.NaN,
+        metadata: {},
+      }),
+    ).rejects.toThrowError(/finite|nan|number/i);
+  });
+
   it("unlink twice raises ConflictError on the second call", async () => {
     const j = await h.seedJurisdiction("EE");
     const entityId = await makeEntity(j);

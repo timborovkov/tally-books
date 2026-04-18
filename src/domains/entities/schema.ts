@@ -43,8 +43,11 @@ export const linkPersonInput = z.object({
   personId: z.string().min(1),
   role: z.string().min(1).max(40),
   // 0.0000 – 100.0000. numeric(7,4). Stored as string in pg-driver but
-  // we accept numbers and serialise.
-  sharePercent: z.number().min(0).max(100).nullable().optional(),
+  // we accept numbers and serialise. `.finite()` rejects NaN and ±Infinity
+  // so a bad `Number.parseFloat()` in a server action fails here with a
+  // typed validation error instead of reaching Postgres and producing
+  // an opaque driver error.
+  sharePercent: z.number().finite().min(0).max(100).nullable().optional(),
   validFrom: z.date().optional(),
   validTo: z.date().nullable().optional(),
   metadata: z.record(z.string(), z.unknown()).default({}),
