@@ -1,3 +1,7 @@
+"use client";
+
+import { useMemo, useState } from "react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -43,11 +47,31 @@ function parseJurisdictionConfigOrNull(value: unknown): JurisdictionConfig | nul
 
 export function EntityForm({ jurisdictions, entity, action, submitLabel }: EntityFormProps) {
   const isNew = entity === null;
-  const initialJurisdiction =
-    entity !== null ? jurisdictions.find((j) => j.id === entity.jurisdictionId) : jurisdictions[0];
-  const initialConfig = initialJurisdiction
-    ? parseJurisdictionConfigOrNull(initialJurisdiction.config)
-    : null;
+  const initialJurisdictionId = entity?.jurisdictionId ?? jurisdictions[0]?.id ?? "";
+
+  // Track jurisdiction client-side so the entity-type dropdown stays in
+  // sync when the user picks a different jurisdiction. The server still
+  // validates `entityType ∈ jurisdiction.config.entityTypes` in
+  // createEntity/updateEntity — this client behaviour is just UX.
+  const [jurisdictionId, setJurisdictionId] = useState<string>(initialJurisdictionId);
+  const [entityType, setEntityType] = useState<string>(entity?.entityType ?? "");
+
+  const selectedJurisdiction = useMemo(
+    () => jurisdictions.find((j) => j.id === jurisdictionId),
+    [jurisdictions, jurisdictionId],
+  );
+  const selectedConfig = useMemo(
+    () =>
+      selectedJurisdiction ? parseJurisdictionConfigOrNull(selectedJurisdiction.config) : null,
+    [selectedJurisdiction],
+  );
+
+  const entityTypeOptions = selectedConfig?.entityTypes ?? [];
+  // If the saved entityType isn't valid for the selected jurisdiction's
+  // config, the Select shows nothing selected — the server's validator
+  // catches a stale value if the user submits without picking a new one.
+  const entityTypeValueIsValid = entityType === "" || entityTypeOptions.includes(entityType);
+
   const address: Record<string, string | undefined> =
     (entity?.address as Record<string, string | undefined>) ?? {};
 
@@ -78,7 +102,19 @@ export function EntityForm({ jurisdictions, entity, action, submitLabel }: Entit
         )}
 
         <Field label="Jurisdiction" htmlFor="jurisdictionId" required>
-          <Select name="jurisdictionId" defaultValue={initialJurisdiction?.id ?? ""}>
+          <Select
+            name="jurisdictionId"
+            value={jurisdictionId}
+            onValueChange={(v) => {
+              setJurisdictionId(v);
+              // Reset entity type if it isn't valid for the new jurisdiction.
+              const next = jurisdictions.find((j) => j.id === v);
+              const nextConfig = next ? parseJurisdictionConfigOrNull(next.config) : null;
+              if (entityType && !nextConfig?.entityTypes.includes(entityType)) {
+                setEntityType("");
+              }
+            }}
+          >
             <SelectTrigger id="jurisdictionId">
               <SelectValue placeholder="Select…" />
             </SelectTrigger>
@@ -92,13 +128,17 @@ export function EntityForm({ jurisdictions, entity, action, submitLabel }: Entit
           </Select>
         </Field>
         <Field label="Entity type" htmlFor="entityType">
-          {initialConfig && initialConfig.entityTypes.length > 0 ? (
-            <Select name="entityType" defaultValue={entity?.entityType ?? ""}>
+          {entityTypeOptions.length > 0 ? (
+            <Select
+              name="entityType"
+              value={entityTypeValueIsValid ? entityType : ""}
+              onValueChange={setEntityType}
+            >
               <SelectTrigger id="entityType">
                 <SelectValue placeholder="Select…" />
               </SelectTrigger>
               <SelectContent>
-                {initialConfig.entityTypes.map((t) => (
+                {entityTypeOptions.map((t) => (
                   <SelectItem key={t} value={t}>
                     {t}
                   </SelectItem>
@@ -106,10 +146,16 @@ export function EntityForm({ jurisdictions, entity, action, submitLabel }: Entit
               </SelectContent>
             </Select>
           ) : (
-            <Input id="entityType" name="entityType" defaultValue={entity?.entityType ?? ""} />
+            <Input
+              id="entityType"
+              name="entityType"
+              value={entityType}
+              onChange={(e) => setEntityType(e.target.value)}
+            />
           )}
           <FieldHint>
-            Allowed types come from the selected jurisdiction&apos;s config. Reload after switching.
+            Allowed types come from the selected jurisdiction&apos;s config. Switching jurisdictions
+            clears this field if the value isn&apos;t allowed in the new one.
           </FieldHint>
         </Field>
 
@@ -119,7 +165,7 @@ export function EntityForm({ jurisdictions, entity, action, submitLabel }: Entit
         <Field label="Base currency (ISO 4217)" htmlFor="baseCurrency" required>
           <Select
             name="baseCurrency"
-            defaultValue={entity?.baseCurrency ?? initialConfig?.defaultCurrency ?? "EUR"}
+            defaultValue={entity?.baseCurrency ?? selectedConfig?.defaultCurrency ?? "EUR"}
           >
             <SelectTrigger id="baseCurrency">
               <SelectValue />

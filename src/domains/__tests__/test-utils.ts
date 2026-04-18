@@ -53,11 +53,28 @@ export async function makeTestHarness(): Promise<TestHarness> {
     },
     async seedJurisdiction(code = "EE") {
       const id = newId();
+      // Minimal but schema-valid JurisdictionConfig — the entity-type
+      // validator parses this with jurisdictionConfigSchema and falls
+      // back to permissive when parsing fails, so omitting required
+      // fields here would silently disable cross-jurisdiction
+      // validation in tests. Keep this in sync with src/lib/jurisdictions/types.ts.
       await db.insert(schema.jurisdictions).values({
         id,
         code,
         name: `Jurisdiction ${code}`,
-        config: { defaultCurrency: "EUR", entityTypes: ["X", "Y"] },
+        config: {
+          defaultCurrency: "EUR",
+          entityTypes: ["X", "Y"],
+          taxTypes: [],
+          vatRules: null,
+          perDiemRules: null,
+          filingSchedules: [],
+          portalLinks: [],
+          guideLinks: [],
+          payoutOptions: [],
+          contributions: [],
+          payoutKindDisplay: {},
+        },
       });
       return id;
     },

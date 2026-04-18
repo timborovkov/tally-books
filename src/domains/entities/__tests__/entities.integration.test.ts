@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
+import { newId } from "@/db/id";
 import * as schema from "@/db/schema";
 import {
   archiveEntity,
@@ -33,11 +34,13 @@ beforeEach(async () => {
   await h.seedAdmin();
 });
 
-async function makeEntity(jurisdictionId: string, name = "OÜ Demo"): Promise<string> {
+// "X" matches test-utils.ts → seedJurisdiction config (entityTypes: ["X", "Y"]).
+// The service-layer validator rejects values outside that list.
+async function makeEntity(jurisdictionId: string, name = "Demo"): Promise<string> {
   const e = await createEntity(h.db, h.actor, {
     kind: "legal",
     name,
-    entityType: "OU",
+    entityType: "X",
     jurisdictionId,
     vatRegistered: true,
     vatNumber: "EE123",
@@ -76,6 +79,38 @@ describe("createEntity", () => {
         vatRegistered: false,
       }),
     ).rejects.toBeInstanceOf(ValidationError);
+  });
+
+  it("rejects entityType not in the jurisdiction's allowed list", async () => {
+    const j = await h.seedJurisdiction("EE");
+    await expect(
+      createEntity(h.db, h.actor, {
+        kind: "legal",
+        name: "Bad",
+        entityType: "OU", // not in seed's ["X", "Y"]
+        jurisdictionId: j,
+        baseCurrency: "EUR",
+        financialYearStartMonth: 1,
+        metadata: {},
+        address: {},
+        vatRegistered: false,
+      }),
+    ).rejects.toBeInstanceOf(ValidationError);
+  });
+
+  it("accepts a null entityType regardless of jurisdiction (e.g., for personal pseudo-entity)", async () => {
+    const j = await h.seedJurisdiction("EE");
+    const created = await createEntity(h.db, h.actor, {
+      kind: "personal",
+      name: "Personal",
+      jurisdictionId: j,
+      baseCurrency: "EUR",
+      financialYearStartMonth: 1,
+      metadata: {},
+      address: {},
+      vatRegistered: false,
+    });
+    expect(created.entityType).toBeNull();
   });
 });
 
@@ -122,6 +157,44 @@ describe("updateEntity", () => {
     await expect(
       updateEntity(h.db, h.actor, { id, jurisdictionId: "missing" }),
     ).rejects.toBeInstanceOf(ValidationError);
+  });
+
+  it("rejects updating entityType to a value not allowed by the jurisdiction", async () => {
+    const j = await h.seedJurisdiction("EE");
+    const id = await makeEntity(j);
+    await expect(updateEntity(h.db, h.actor, { id, entityType: "OU" })).rejects.toBeInstanceOf(
+      ValidationError,
+    );
+  });
+
+  it("rejects switching jurisdiction when the entity's existing entityType isn't allowed there", async () => {
+    // Entity is set up with entityType "X" in the EE seed. Switching to
+    // a jurisdiction whose config only allows "Z" must reject — the
+    // existing value can't carry over silently.
+    const ee = await h.seedJurisdiction("EE");
+    const id = await makeEntity(ee);
+    const fi = newId();
+    await h.db.insert(schema.jurisdictions).values({
+      id: fi,
+      code: "FI",
+      name: "Finland",
+      config: {
+        defaultCurrency: "EUR",
+        entityTypes: ["Z"],
+        taxTypes: [],
+        vatRules: null,
+        perDiemRules: null,
+        filingSchedules: [],
+        portalLinks: [],
+        guideLinks: [],
+        payoutOptions: [],
+        contributions: [],
+        payoutKindDisplay: {},
+      },
+    });
+    await expect(updateEntity(h.db, h.actor, { id, jurisdictionId: fi })).rejects.toBeInstanceOf(
+      ValidationError,
+    );
   });
 });
 

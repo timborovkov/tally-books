@@ -8,9 +8,11 @@ import {
   persons,
   type Entity,
   type EntityPersonLink,
+  type Jurisdiction,
 } from "@/db/schema";
 import { recordAudit } from "@/lib/audit";
 import type { CurrentActor } from "@/lib/auth-shim";
+import { jurisdictionConfigSchema } from "@/lib/jurisdictions/types";
 
 import { ConflictError, NotFoundError, ValidationError } from "../errors";
 
@@ -23,6 +25,35 @@ import {
   type UpdateEntityInput,
 } from "./schema";
 
+/**
+ * Cross-check that an entity_type value is allowed by the jurisdiction's
+ * config. The form filters this client-side, but the form is just a
+ * convenience — a stale browser tab, a curl call, or a future API
+ * client could still post a mismatched pair. This is the authoritative
+ * gate.
+ *
+ * Returns silently if the jurisdiction has no config or no
+ * entityTypes list (empty / malformed configs default to permissive
+ * since the data layer is the wrong place to invent business rules).
+ */
+function assertEntityTypeMatchesJurisdiction(
+  jurisdiction: Pick<Jurisdiction, "code" | "config">,
+  entityType: string | null | undefined,
+): void {
+  if (!entityType) return;
+  const parsed = jurisdictionConfigSchema.safeParse(jurisdiction.config);
+  if (!parsed.success) return;
+  const allowed = parsed.data.entityTypes;
+  if (allowed.length === 0) return;
+  if (!allowed.includes(entityType)) {
+    throw new ValidationError(
+      `Entity type "${entityType}" is not allowed in jurisdiction ${jurisdiction.code}. ` +
+        `Allowed: ${allowed.join(", ")}.`,
+      { field: "entityType", jurisdictionCode: jurisdiction.code, allowed },
+    );
+  }
+}
+
 export async function createEntity(
   db: Db,
   actor: CurrentActor,
@@ -31,9 +62,10 @@ export async function createEntity(
   const input = createEntityInput.parse(raw);
 
   // Check FK ourselves so the error message is actionable instead of a
-  // raw 23503 leaking out.
+  // raw 23503 leaking out. We need code + config too, for the
+  // entity-type cross-check below.
   const [j] = await db
-    .select({ id: jurisdictions.id })
+    .select({ code: jurisdictions.code, config: jurisdictions.config })
     .from(jurisdictions)
     .where(eq(jurisdictions.id, input.jurisdictionId))
     .limit(1);
@@ -43,6 +75,8 @@ export async function createEntity(
       field: "jurisdictionId",
     });
   }
+
+  assertEntityTypeMatchesJurisdiction(j, input.entityType);
 
   const [row] = await db
     .insert(entities)
@@ -80,18 +114,34 @@ export async function updateEntity(
 ): Promise<Entity> {
   const input = updateEntityInput.parse(raw);
 
-  if (input.jurisdictionId !== undefined) {
-    const [j] = await db
-      .select({ id: jurisdictions.id })
-      .from(jurisdictions)
-      .where(eq(jurisdictions.id, input.jurisdictionId))
-      .limit(1);
-    if (!j) {
-      throw new ValidationError(`Unknown jurisdiction: ${input.jurisdictionId}`, {
-        field: "jurisdictionId",
-      });
-    }
+  // Pull the existing entity so we can validate the (jurisdiction,
+  // entityType) pair against the *target* jurisdiction — which may be
+  // either the new jurisdictionId in the patch or the entity's
+  // current one if jurisdictionId isn't changing.
+  const [existing] = await db
+    .select({ jurisdictionId: entities.jurisdictionId, entityType: entities.entityType })
+    .from(entities)
+    .where(eq(entities.id, input.id))
+    .limit(1);
+  if (!existing) throw new NotFoundError("entity", input.id);
+
+  const targetJurisdictionId = input.jurisdictionId ?? existing.jurisdictionId;
+  const [j] = await db
+    .select({ code: jurisdictions.code, config: jurisdictions.config })
+    .from(jurisdictions)
+    .where(eq(jurisdictions.id, targetJurisdictionId))
+    .limit(1);
+  if (!j) {
+    throw new ValidationError(`Unknown jurisdiction: ${targetJurisdictionId}`, {
+      field: "jurisdictionId",
+    });
   }
+
+  // Validate the entity_type that will end up persisted: the new value
+  // if the patch includes one, otherwise the existing value (which now
+  // needs to be valid in the new jurisdiction if jurisdictionId moved).
+  const targetEntityType = input.entityType !== undefined ? input.entityType : existing.entityType;
+  assertEntityTypeMatchesJurisdiction(j, targetEntityType);
 
   const patch: Partial<typeof entities.$inferInsert> & { updatedAt: Date } = {
     updatedAt: new Date(),
