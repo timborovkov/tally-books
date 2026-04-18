@@ -21,6 +21,23 @@ function parseIds(form: FormData): Record<string, string> {
   return out;
 }
 
+// Build the contact object from every `contact_*` field the form
+// renders. The domain `updatePerson` does a wholesale replacement of
+// the `contact` jsonb column, so any sub-field missing here would be
+// silently dropped on save — keep this in sync with PersonForm's
+// rendered inputs (email, phone, notes today).
+function buildContact(form: FormData): {
+  email?: string;
+  phone?: string;
+  notes?: string;
+} {
+  return {
+    email: strOrNull(form, "contact_email") ?? undefined,
+    phone: strOrNull(form, "contact_phone") ?? undefined,
+    notes: strOrNull(form, "contact_notes") ?? undefined,
+  };
+}
+
 export async function createPersonAction(form: FormData): Promise<void> {
   const db = getDb();
   const actor = await getCurrentActor(db);
@@ -29,10 +46,7 @@ export async function createPersonAction(form: FormData): Promise<void> {
     taxResidency: strOrNull(form, "taxResidency"),
     ids: parseIds(form),
     addresses: [],
-    contact: {
-      email: strOrNull(form, "contact_email") ?? undefined,
-      phone: strOrNull(form, "contact_phone") ?? undefined,
-    },
+    contact: buildContact(form),
     metadata: {},
   });
 
@@ -48,10 +62,7 @@ export async function updatePersonAction(form: FormData): Promise<void> {
     legalName: str(form, "legalName"),
     taxResidency: strOrNull(form, "taxResidency"),
     ids: parseIds(form),
-    contact: {
-      email: strOrNull(form, "contact_email") ?? undefined,
-      phone: strOrNull(form, "contact_phone") ?? undefined,
-    },
+    contact: buildContact(form),
   });
 
   revalidatePath("/settings/persons");

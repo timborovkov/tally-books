@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import type { Jurisdiction, Person } from "@/db/schema";
 
 interface PersonFormProps {
@@ -79,6 +80,21 @@ export function PersonForm({ jurisdictions, person, action, submitLabel }: Perso
           <Label htmlFor="contact_phone">Phone</Label>
           <Input id="contact_phone" name="contact_phone" defaultValue={contact.phone ?? ""} />
         </div>
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="contact_notes">Contact notes</Label>
+        <Textarea
+          id="contact_notes"
+          name="contact_notes"
+          defaultValue={contact.notes ?? ""}
+          rows={3}
+          placeholder="Preferred contact method, availability, introductions, anything that would get lost in a name + email row."
+        />
+        <p className="text-muted-foreground text-xs">
+          Round-tripped on every save. The domain service replaces the whole <code>contact</code>{" "}
+          jsonb column — any field the form doesn&apos;t render would be silently dropped.
+        </p>
       </div>
 
       <fieldset className="flex flex-col gap-3 rounded-md border p-4">

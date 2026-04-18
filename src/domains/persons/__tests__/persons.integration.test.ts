@@ -69,6 +69,33 @@ describe("updatePerson", () => {
       updatePerson(h.db, h.actor, { id: "nope", legalName: "X" }),
     ).rejects.toBeInstanceOf(NotFoundError);
   });
+
+  it("replaces contact jsonb wholesale — callers must round-trip every sub-field", async () => {
+    // Document the service contract: `patch.contact = input.contact` is a
+    // full replacement, not a merge. If an action forgets to pass a
+    // sub-field (e.g. notes), it gets dropped. PersonForm + actions must
+    // stay in sync with contactSchema.
+    const p = await createPerson(h.db, h.actor, {
+      legalName: "Round Trip",
+      contact: { email: "tim@tally.test", phone: "+358-1", notes: "prefers email" },
+    });
+    expect(p.contact).toMatchObject({ email: "tim@tally.test", notes: "prefers email" });
+
+    // Simulate an action that forgets `notes` — the existing notes get
+    // wiped. This is the contract; fix is at the action/form layer.
+    const updated = await updatePerson(h.db, h.actor, {
+      id: p.id,
+      contact: { email: "tim@tally.test", phone: "+358-1" },
+    });
+    expect(updated.contact).not.toHaveProperty("notes");
+
+    // And when the action passes notes through, it survives.
+    const kept = await updatePerson(h.db, h.actor, {
+      id: p.id,
+      contact: { email: "tim@tally.test", phone: "+358-1", notes: "v2" },
+    });
+    expect(kept.contact).toMatchObject({ notes: "v2" });
+  });
 });
 
 describe("deletePerson", () => {
