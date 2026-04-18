@@ -3,21 +3,24 @@
  * `src/instrumentation-client.ts` is present (same convention as the server
  * `instrumentation.ts`).
  *
- * DSN is read from `NEXT_PUBLIC_SENTRY_DSN`. Leave it blank (in `.env` or
- * the deploy environment) to disable — the SDK still initialises but with
- * an empty DSN it never sends events. See `docs/architecture/sentry.md`.
+ * Config is driven by `NEXT_PUBLIC_SENTRY_*` env vars, validated in
+ * `@/lib/env.client`. Sentry stays inert unless both the master toggle is
+ * `"true"` AND a DSN is set — see `docs/architecture/sentry.md`.
  */
 import * as Sentry from "@sentry/nextjs";
 
-const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN ?? "";
+import { clientEnv } from "@/lib/env.client";
+
+const dsn = clientEnv.NEXT_PUBLIC_SENTRY_DSN ?? "";
+const enabled = clientEnv.NEXT_PUBLIC_SENTRY_ENABLED && dsn !== "";
 
 Sentry.init({
   dsn,
-  enabled: dsn !== "",
+  enabled,
   sendDefaultPii: true,
-  tracesSampleRate: process.env.NODE_ENV === "development" ? 1.0 : 0.1,
-  replaysSessionSampleRate: 0.1,
-  replaysOnErrorSampleRate: 1.0,
+  tracesSampleRate: clientEnv.NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE,
+  replaysSessionSampleRate: clientEnv.NEXT_PUBLIC_SENTRY_REPLAYS_SESSION_SAMPLE_RATE,
+  replaysOnErrorSampleRate: clientEnv.NEXT_PUBLIC_SENTRY_REPLAYS_ERROR_SAMPLE_RATE,
   integrations: [Sentry.replayIntegration()],
 });
 

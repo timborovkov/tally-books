@@ -1,43 +1,62 @@
 # Sentry (error reporting)
 
-Tally integrates Sentry via `@sentry/nextjs` for browser + Node server + edge runtimes. Error reports flow to the Tally project in the `irmin-dw` Sentry org (de-region). The integration is **off by default** and enabled per-deployment via env vars.
+Tally integrates Sentry via `@sentry/nextjs` for browser + Node server + edge runtimes, plus `@sentry/profiling-node` for server profiling. Error reports flow to the Tally project in the `irmin-dw` Sentry org (de-region). The integration is **off by default** and enabled per-deployment via env vars.
 
 ## How it's wired
 
 | File                                  | Runtime | Role                                                                |
 | ------------------------------------- | ------- | ------------------------------------------------------------------- |
 | `src/instrumentation-client.ts`       | browser | Client init + router transition instrumentation + session replay    |
-| `src/sentry.server.config.ts`         | node    | Server init                                                         |
+| `src/sentry.server.config.ts`         | node    | Server init + node profiling                                        |
 | `src/sentry.edge.config.ts`           | edge    | Edge runtime init                                                   |
 | `src/instrumentation.ts`              | both    | Loads the right config per `NEXT_RUNTIME`; exports `onRequestError` |
+| `src/lib/env.ts`                      | server  | Zod validation of server-only Sentry vars                           |
+| `src/lib/env.client.ts`               | any     | Zod validation of `NEXT_PUBLIC_SENTRY_*` vars                       |
 | `src/app/global-error.tsx`            | browser | Last-resort boundary; captures unhandled root-layout errors         |
 | `src/app/error.tsx`                   | browser | Route-level boundary; captures + shows retry UI                     |
 | `next.config.ts` (`withSentryConfig`) | build   | Tunnel route, source-map upload (prod), silent in local             |
 
-## Enabling Sentry
+## Master toggle
 
-Set both DSNs in the deploy environment:
+`NEXT_PUBLIC_SENTRY_ENABLED` is the single knob that arms the SDK. Set it to `"true"` to enable reporting; anything else (including unset) leaves the SDK inert regardless of DSN. Defaults to `false` in `.env.example` so local dev never ships to the issue tracker.
 
-```bash
-NEXT_PUBLIC_SENTRY_DSN=https://xxxxx@o0.ingest.de.sentry.io/0000000
-SENTRY_DSN=https://xxxxx@o0.ingest.de.sentry.io/0000000
-```
+Both the toggle AND a non-empty DSN must be present for events to flow. The toggle alone has no effect (the SDK would have nowhere to send); the DSN alone has no effect (the toggle gate wins). This gives operators a clean "flip one var to test end-to-end" workflow without editing multiple keys.
 
-For source-map upload at build time also set:
+## Env vars
 
-```bash
-SENTRY_ORG=irmin-dw
-SENTRY_PROJECT=tally-books
-SENTRY_AUTH_TOKEN=<internal token, never committed>
-```
+### Runtime (read by the Sentry SDK)
 
-All five keys are **optional**. Empty or unset = disabled. See `src/lib/env.ts` for the schema.
+| Var                                              | Scope         | Default    | Purpose                                          |
+| ------------------------------------------------ | ------------- | ---------- | ------------------------------------------------ |
+| `NEXT_PUBLIC_SENTRY_ENABLED`                     | client+server | `false`    | Master toggle; must be `"true"` to arm the SDK.  |
+| `NEXT_PUBLIC_SENTRY_DSN`                         | all three     | empty      | Single DSN for client + server + edge.           |
+| `SENTRY_ENVIRONMENT`                             | server + edge | `NODE_ENV` | Deploy tag (dev / staging / production).         |
+| `NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE`          | client        | `0.15`     | Browser tracing.                                 |
+| `NEXT_PUBLIC_SENTRY_REPLAYS_SESSION_SAMPLE_RATE` | client        | `0.1`      | Session replay.                                  |
+| `NEXT_PUBLIC_SENTRY_REPLAYS_ERROR_SAMPLE_RATE`   | client        | `1.0`      | Replay on error.                                 |
+| `SENTRY_TRACES_SAMPLE_RATE`                      | server + edge | `0.1`      | Server/edge tracing.                             |
+| `SENTRY_PROFILES_SAMPLE_RATE`                    | server        | `0.1`      | Node profiling (relative to traces sample rate). |
 
-## Disabling Sentry locally
+The DSN has a single source of truth: `NEXT_PUBLIC_SENTRY_DSN`. It's not a secret — it's embedded in every browser bundle — so there's no value in duplicating it as a server-only var. The server and edge configs import it via `src/lib/env.client.ts` so they read the same value the browser does.
 
-Local dev should not emit events — you'd be spamming the production issue tracker with `pnpm dev` crashes. Both `.env.example` and the repo's `.env` ship with these keys blank.
+### Build-time (source-map upload)
 
-Runtime guard: each `Sentry.init(...)` call sets `enabled: dsn !== ""`. With empty DSN the SDK initialises but the transport is a no-op — no network traffic leaves the process. This is verified by `src/__tests__/sentry-disabled.test.ts`.
+| Var                 | Default              | Purpose                                                              |
+| ------------------- | -------------------- | -------------------------------------------------------------------- |
+| `SENTRY_ORG`        | empty                | Org slug.                                                            |
+| `SENTRY_PROJECT`    | empty                | Project slug.                                                        |
+| `SENTRY_AUTH_TOKEN` | empty                | **Gates the entire upload step.** Blank → no upload, build succeeds. |
+| `SENTRY_URL`        | `https://sentry.io/` | Override for self-hosted / EU / private-cloud Sentry.                |
+
+Upload runs only when `SENTRY_AUTH_TOKEN` is set. Local builds and CI without the token simply skip it — no plugin error, no upload.
+
+### Misc
+
+| Var                                 | Purpose                                                                           |
+| ----------------------------------- | --------------------------------------------------------------------------------- |
+| `SENTRY_SUPPRESS_TURBOPACK_WARNING` | Set to `"1"` to silence the `@sentry/nextjs` Turbopack-not-yet-supported warning. |
+
+All vars are validated by zod at boot (see `src/lib/env.ts` and `src/lib/env.client.ts`). Out-of-range sampling rates, malformed DSN URLs, or bad `SENTRY_URL` values fail fast instead of silently breaking.
 
 ## Tunnel route
 
@@ -52,33 +71,32 @@ Next.js has two boundary layers:
 
 Add a nested `error.tsx` inside a route segment when that segment does its own data fetching and you want scoped recovery (the parent's shell stays, only the failing subtree re-renders).
 
-## Sampling
+## Testing Sentry locally
 
-- Traces: 100 % in dev, 10 % in production.
-- Session Replay: 10 % of sessions, 100 % of sessions that hit an error.
-- `sendDefaultPii: true` — Tally is single-tenant, the "P" in PII is the operator themselves.
+With the defaults in `.env.example`, the SDK initialises with `enabled: false` and no events leave the process. This is verified by `src/__tests__/sentry-disabled.test.ts`.
 
-Tune these in the three `sentry.*.config.ts` files if they ever need to change per deploy.
+To test real reporting:
 
-## Source map upload
+1. Set `NEXT_PUBLIC_SENTRY_ENABLED=true` in `.env`.
+2. Set `NEXT_PUBLIC_SENTRY_DSN` to a real DSN (the Tally project DSN or a throwaway you own).
+3. Restart `pnpm dev`.
+4. Trigger an error — confirm it lands in Sentry with the expected `environment` tag.
 
-`SENTRY_AUTH_TOKEN` presence gates source-map upload (see `next.config.ts`). CI and local builds without the token simply skip it — no plugin error. Self-hosters who don't want to configure a Sentry project at all can leave every var blank and `pnpm build` works unchanged.
-
-### Docker build (Railway / VPS)
+## Docker build (Railway / VPS)
 
 Three classes of Sentry env need to reach `pnpm build` in the `build` stage of `Dockerfile`:
 
-| Var                      | Why it's needed at **build time**                                                   | How to pass         |
-| ------------------------ | ----------------------------------------------------------------------------------- | ------------------- |
-| `NEXT_PUBLIC_SENTRY_DSN` | Inlined into the client JS bundle by Next.js — must be literal in the build output. | `--build-arg`       |
-| `SENTRY_ORG`             | Tells the upload plugin which Sentry org to target.                                 | `--build-arg`       |
-| `SENTRY_PROJECT`         | Tells the upload plugin which Sentry project to target.                             | `--build-arg`       |
-| `SENTRY_AUTH_TOKEN`      | Authorises the source-map upload. Secret — must not be baked into the image.        | BuildKit `--secret` |
+| Class                 | Vars                                                                                       | Why at build time                                            | How to pass         |
+| --------------------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------ | ------------------- |
+| Client runtime config | `NEXT_PUBLIC_SENTRY_ENABLED`, `NEXT_PUBLIC_SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_*_SAMPLE_RATE` | Inlined into the client bundle — must be literal at build.   | `--build-arg`       |
+| Upload plugin config  | `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_URL`, `SENTRY_ENVIRONMENT`                         | Read by the Sentry webpack plugin during `next build`.       | `--build-arg`       |
+| Secret                | `SENTRY_AUTH_TOKEN`                                                                        | Authorises source-map upload — must not be baked into image. | BuildKit `--secret` |
 
-Example build with source map upload:
+Example build with source-map upload:
 
 ```bash
 DOCKER_BUILDKIT=1 docker build \
+  --build-arg NEXT_PUBLIC_SENTRY_ENABLED=true \
   --build-arg NEXT_PUBLIC_SENTRY_DSN="$NEXT_PUBLIC_SENTRY_DSN" \
   --build-arg SENTRY_ORG=irmin-dw \
   --build-arg SENTRY_PROJECT=tally-books \
@@ -92,13 +110,11 @@ Example build **without** Sentry (plain self-host):
 docker build -t tally:latest .
 ```
 
-With every arg absent, `NEXT_PUBLIC_SENTRY_DSN` defaults to `""` → the client SDK initialises with `enabled: false`, and `next.config.ts` skips the source-map upload plugin because `SENTRY_AUTH_TOKEN` is unset. No errors, no Sentry traffic.
+With every arg absent, `NEXT_PUBLIC_SENTRY_ENABLED` defaults to `false` → the client SDK initialises with `enabled: false`, and `next.config.ts` skips the source-map upload plugin because `SENTRY_AUTH_TOKEN` is unset. No errors, no Sentry traffic.
 
 ### Runtime env
 
-`SENTRY_DSN` (server-side) is needed at **runtime** only, not build time — set it in the container's runtime environment (Railway dashboard, docker-compose env, systemd unit).
-
-The server is safe to start with `SENTRY_DSN` unset: the runtime guard in `src/sentry.server.config.ts` disables the transport the same way the client does.
+Server-only vars (`SENTRY_ENVIRONMENT`, `SENTRY_TRACES_SAMPLE_RATE`, `SENTRY_PROFILES_SAMPLE_RATE`) are needed at **runtime** only — set them in the container's runtime environment (Railway dashboard, docker-compose env, systemd unit). The server is safe to start with these unset: defaults come from zod.
 
 ### Sentry project metadata
 
