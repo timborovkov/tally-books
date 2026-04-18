@@ -4,7 +4,9 @@ import {
   AlarmClock,
   Archive,
   Bell,
+  Briefcase,
   Calendar,
+  Car,
   CheckCircle2,
   ChevronDown,
   CircleAlert,
@@ -12,17 +14,23 @@ import {
   CircleDollarSign,
   CircleSlash,
   FileText,
+  Gift,
+  HelpCircle,
   Info,
   Inbox,
   Lock,
   MoveRight,
+  Paperclip,
   Plus,
   RefreshCw,
   Scale,
   Search,
   Settings,
+  ShieldCheck,
   Sparkles,
+  Trash2,
   User,
+  Wallet,
 } from "lucide-react";
 import { useCallback, useSyncExternalStore } from "react";
 import { toast } from "sonner";
@@ -30,7 +38,7 @@ import { toast } from "sonner";
 import { Logo, LOGO_TAGLINE } from "@/components/logo";
 import { ModeToggle } from "@/components/mode-toggle";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
   Breadcrumb,
@@ -130,6 +138,7 @@ const sections = [
   { id: "navigation", label: "Navigation" },
   { id: "sidebar", label: "Sidebar" },
   { id: "status", label: "Status badges" },
+  { id: "patterns", label: "Primitives & patterns" },
   { id: "icons", label: "Icon library" },
 ];
 
@@ -264,6 +273,12 @@ const demoIcons = [
   { icon: Calendar, name: "Calendar" },
   { icon: Sparkles, name: "Sparkles" },
   { icon: RefreshCw, name: "RefreshCw" },
+  { icon: Inbox, name: "Inbox" },
+  { icon: ShieldCheck, name: "ShieldCheck" },
+  { icon: Briefcase, name: "Briefcase" },
+  { icon: Car, name: "Car" },
+  { icon: Gift, name: "Gift" },
+  { icon: Wallet, name: "Wallet" },
 ];
 
 function subscribeToHtmlClass(cb: () => void) {
@@ -543,11 +558,45 @@ export default function DesignSystemDemoPage() {
             {/* DATA DISPLAY */}
             <section className="space-y-6">
               <SectionHeading id="data" title="Data display" />
-              <div className="grid gap-4 md:grid-cols-3">
+              <div className="grid gap-4 md:grid-cols-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Intake pending</CardTitle>
+                    <CardDescription>3 new · 1 needs review</CardDescription>
+                    <CardAction>
+                      <Inbox className="text-muted-foreground size-4" />
+                    </CardAction>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="font-mono text-3xl font-semibold tabular-nums">4</p>
+                  </CardContent>
+                  <CardFooter>
+                    <Button size="sm" variant="outline">
+                      Triage
+                    </Button>
+                  </CardFooter>
+                </Card>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Obligations due</CardTitle>
+                    <CardDescription>2 employment · 1 reporting</CardDescription>
+                    <CardAction>
+                      <ShieldCheck className="text-muted-foreground size-4" />
+                    </CardAction>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="font-mono text-3xl font-semibold tabular-nums">3</p>
+                  </CardContent>
+                  <CardFooter>
+                    <Button size="sm" variant="outline">
+                      Resolve
+                    </Button>
+                  </CardFooter>
+                </Card>
                 <Card>
                   <CardHeader>
                     <CardTitle>Q1 VAT liability</CardTitle>
-                    <CardDescription>Period 2026-01-01 → 2026-03-31</CardDescription>
+                    <CardDescription>2026-01-01 → 2026-03-31</CardDescription>
                     <CardAction>
                       <Badge variant="outline">DRAFT</Badge>
                     </CardAction>
@@ -563,31 +612,20 @@ export default function DesignSystemDemoPage() {
                 </Card>
                 <Card>
                   <CardHeader>
-                    <CardTitle>Open invoices</CardTitle>
-                    <CardDescription>6 pending · 2 overdue</CardDescription>
+                    <CardTitle>Mileage to reimburse</CardTitle>
+                    <CardDescription>2 claims · this month</CardDescription>
+                    <CardAction>
+                      <Car className="text-muted-foreground size-4" />
+                    </CardAction>
                   </CardHeader>
-                  <CardContent className="space-y-2">
-                    <Skeleton className="h-4 w-4/5" />
-                    <Skeleton className="h-4 w-3/5" />
-                    <Skeleton className="h-4 w-2/5" />
+                  <CardContent>
+                    <p className="font-mono text-3xl font-semibold tabular-nums">€312.40</p>
                   </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Team</CardTitle>
-                  </CardHeader>
-                  <CardContent className="flex items-center gap-3">
-                    <Avatar>
-                      <AvatarImage src="" alt="" />
-                      <AvatarFallback>TB</AvatarFallback>
-                    </Avatar>
-                    <Avatar>
-                      <AvatarFallback>AK</AvatarFallback>
-                    </Avatar>
-                    <Avatar>
-                      <AvatarFallback>+3</AvatarFallback>
-                    </Avatar>
-                  </CardContent>
+                  <CardFooter>
+                    <Button size="sm" variant="outline">
+                      Review
+                    </Button>
+                  </CardFooter>
                 </Card>
               </div>
 
@@ -633,6 +671,36 @@ export default function DesignSystemDemoPage() {
                       ))}
                     </TableBody>
                   </Table>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Loading state</CardTitle>
+                  <CardDescription>
+                    List-page skeleton pattern. Show table-shaped skeletons during initial load —
+                    never a spinner.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div className="flex items-center gap-4">
+                    <Skeleton className="h-4 w-20" />
+                    <Skeleton className="h-4 flex-1" />
+                    <Skeleton className="h-4 w-16" />
+                    <Skeleton className="h-4 w-20" />
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <Skeleton className="h-4 w-20" />
+                    <Skeleton className="h-4 flex-1" />
+                    <Skeleton className="h-4 w-16" />
+                    <Skeleton className="h-4 w-20" />
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <Skeleton className="h-4 w-20" />
+                    <Skeleton className="h-4 flex-1" />
+                    <Skeleton className="h-4 w-16" />
+                    <Skeleton className="h-4 w-20" />
+                  </div>
                 </CardContent>
               </Card>
             </section>
@@ -857,6 +925,29 @@ export default function DesignSystemDemoPage() {
                             </SidebarMenuItem>
                             <SidebarMenuItem>
                               <SidebarMenuButton>
+                                <Inbox /> Intake
+                                <Badge variant="secondary" className="ml-auto">
+                                  3
+                                </Badge>
+                              </SidebarMenuButton>
+                            </SidebarMenuItem>
+                            <SidebarMenuItem>
+                              <SidebarMenuButton>
+                                <ShieldCheck /> Obligations
+                                <Badge variant="secondary" className="ml-auto">
+                                  2
+                                </Badge>
+                              </SidebarMenuButton>
+                            </SidebarMenuItem>
+                          </SidebarMenu>
+                        </SidebarGroupContent>
+                      </SidebarGroup>
+                      <SidebarGroup>
+                        <SidebarGroupLabel>Books</SidebarGroupLabel>
+                        <SidebarGroupContent>
+                          <SidebarMenu>
+                            <SidebarMenuItem>
+                              <SidebarMenuButton>
                                 <FileText /> Invoices
                               </SidebarMenuButton>
                             </SidebarMenuItem>
@@ -868,6 +959,40 @@ export default function DesignSystemDemoPage() {
                             <SidebarMenuItem>
                               <SidebarMenuButton>
                                 <Calendar /> Declarations
+                              </SidebarMenuButton>
+                            </SidebarMenuItem>
+                          </SidebarMenu>
+                        </SidebarGroupContent>
+                      </SidebarGroup>
+                      <SidebarGroup>
+                        <SidebarGroupLabel>Compensation</SidebarGroupLabel>
+                        <SidebarGroupContent>
+                          <SidebarMenu>
+                            <SidebarMenuItem>
+                              <SidebarMenuButton>
+                                <Briefcase /> Trips &amp; per diem
+                              </SidebarMenuButton>
+                            </SidebarMenuItem>
+                            <SidebarMenuItem>
+                              <SidebarMenuButton>
+                                <Car /> Mileage claims
+                              </SidebarMenuButton>
+                            </SidebarMenuItem>
+                            <SidebarMenuItem>
+                              <SidebarMenuButton>
+                                <Gift /> Benefits
+                              </SidebarMenuButton>
+                            </SidebarMenuItem>
+                          </SidebarMenu>
+                        </SidebarGroupContent>
+                      </SidebarGroup>
+                      <SidebarGroup>
+                        <SidebarGroupLabel>Personal</SidebarGroupLabel>
+                        <SidebarGroupContent>
+                          <SidebarMenu>
+                            <SidebarMenuItem>
+                              <SidebarMenuButton>
+                                <Wallet /> Personal finance
                               </SidebarMenuButton>
                             </SidebarMenuItem>
                           </SidebarMenu>
@@ -962,21 +1087,268 @@ export default function DesignSystemDemoPage() {
                   <CardTitle className="text-base">Compliance task · obligation tracker</CardTitle>
                   <CardDescription>
                     Status of jurisdiction-driven employment / tax / reporting tasks generated by
-                    the obligation evaluator.
+                    the obligation evaluator. Render the <code className="font-mono">domain</code>{" "}
+                    alongside the status as a secondary outline badge.
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="flex flex-wrap gap-3">
-                  {complianceStatusBadges.map((b) => (
-                    <span
-                      key={b.label}
-                      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-medium tracking-wide uppercase ${b.className}`}
-                    >
-                      {b.icon}
-                      {b.label}
-                    </span>
-                  ))}
+                <CardContent className="space-y-4">
+                  <div className="flex flex-wrap gap-3">
+                    {complianceStatusBadges.map((b) => (
+                      <span
+                        key={b.label}
+                        className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-medium tracking-wide uppercase ${b.className}`}
+                      >
+                        {b.icon}
+                        {b.label}
+                      </span>
+                    ))}
+                  </div>
+                  <Separator />
+                  <div className="space-y-3">
+                    <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                      Paired with domain
+                    </p>
+                    <div className="flex flex-col gap-2 text-sm">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-0.5 text-[11px] font-medium tracking-wide text-amber-700 uppercase dark:text-amber-400">
+                          <CircleAlert className="size-3" /> OPEN
+                        </span>
+                        <Badge variant="outline">employment</Badge>
+                        <span className="text-muted-foreground">
+                          Health insurance registration for new hire
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-medium tracking-wide text-emerald-700 uppercase dark:text-emerald-400">
+                          <CheckCircle2 className="size-3" /> DONE
+                        </span>
+                        <Badge variant="outline">tax_payment</Badge>
+                        <span className="text-muted-foreground">Q1 VAT remit · bank match</span>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="inline-flex items-center gap-1.5 rounded-full border border-sky-500/30 bg-sky-500/10 px-2.5 py-0.5 text-[11px] font-medium tracking-wide text-sky-700 uppercase dark:text-sky-400">
+                          <AlarmClock className="size-3" /> SNOOZED
+                        </span>
+                        <Badge variant="outline">reporting</Badge>
+                        <span className="text-muted-foreground">
+                          Annual report · snoozed until 2026-06-01
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
+            </section>
+
+            {/* PATTERNS */}
+            <section className="space-y-6">
+              <SectionHeading
+                id="patterns"
+                title="Primitives & patterns"
+                description="Reusable UI patterns that show up across features: OCR confidence highlighting, mass-action toolbars, evidence attachment, rationale popovers, and intake triage decisions."
+              />
+
+              {/* Confidence highlighting */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">OCR confidence highlighting</CardTitle>
+                  <CardDescription>
+                    Low-confidence extracted fields get an amber ring + helper text so the user
+                    knows what to verify. High-confidence fields look like any other input.
+                    PROJECT_BRIEF §3.6, §5.2.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="merchant-high">Merchant (high confidence)</Label>
+                    <Input id="merchant-high" defaultValue="Lufthansa AG" />
+                    <p className="text-muted-foreground text-xs">Extracted with 98% confidence.</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="merchant-low">Merchant (low confidence)</Label>
+                    <Input
+                      id="merchant-low"
+                      defaultValue="Lufthansa"
+                      className="ring-2 ring-amber-500/40 focus-visible:ring-amber-500/60"
+                    />
+                    <p className="text-xs text-amber-700 dark:text-amber-400">
+                      Extracted with 47% confidence. Verify before confirming.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Mass-action toolbar */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Mass-action toolbar</CardTitle>
+                  <CardDescription>
+                    Every list page supports multi-select + bulk actions. The toolbar docks to the
+                    top of the list when rows are selected. PROJECT_BRIEF §3.6.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="border-border bg-accent/30 flex flex-wrap items-center justify-between gap-3 rounded-md border px-3 py-2">
+                    <div className="flex items-center gap-3 text-sm">
+                      <Checkbox defaultChecked aria-label="Select all" />
+                      <span className="text-foreground font-medium">3 selected</span>
+                      <span className="text-muted-foreground">of 48</span>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button size="sm" variant="outline">
+                        <MoveRight /> Route to entity
+                      </Button>
+                      <Button size="sm" variant="outline">
+                        <User /> Mark personal
+                      </Button>
+                      <Button size="sm" variant="outline">
+                        <Paperclip /> Request evidence
+                      </Button>
+                      <Button size="sm" variant="outline" className="text-destructive">
+                        <Trash2 /> Delete
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Intake triage */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Intake triage decision</CardTitle>
+                  <CardDescription>
+                    Three routing dimensions per intake item: scope, entity, target flow.
+                    PROJECT_BRIEF §5.1.5.1.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="grid gap-4 md:grid-cols-3">
+                  <div className="space-y-2">
+                    <Label>Scope</Label>
+                    <RadioGroup defaultValue="business" className="flex gap-4">
+                      <div className="flex items-center gap-2">
+                        <RadioGroupItem value="business" id="scope-biz" />
+                        <Label htmlFor="scope-biz" className="font-normal">
+                          Business
+                        </Label>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <RadioGroupItem value="personal" id="scope-personal" />
+                        <Label htmlFor="scope-personal" className="font-normal">
+                          Personal
+                        </Label>
+                      </div>
+                    </RadioGroup>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="triage-entity">Entity</Label>
+                    <Select defaultValue="acme">
+                      <SelectTrigger id="triage-entity">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="acme">Acme OÜ</SelectItem>
+                        <SelectItem value="tecci">Tecci OY</SelectItem>
+                        <SelectItem value="personal">— Personal —</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="triage-target">Target flow</Label>
+                    <Select defaultValue="expense">
+                      <SelectTrigger id="triage-target">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="expense">Expense</SelectItem>
+                        <SelectItem value="mileage_claim">Mileage claim</SelectItem>
+                        <SelectItem value="trip_evidence">Trip evidence</SelectItem>
+                        <SelectItem value="benefit_evidence">Benefit evidence</SelectItem>
+                        <SelectItem value="compliance_evidence">Compliance evidence</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </CardContent>
+                <CardFooter className="justify-end gap-2">
+                  <Button variant="outline">Reject</Button>
+                  <Button>Confirm routing</Button>
+                </CardFooter>
+              </Card>
+
+              {/* Evidence chips + rationale popover */}
+              <div className="grid gap-4 md:grid-cols-2">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">Evidence attachments</CardTitle>
+                    <CardDescription>
+                      Used on compliance tasks, filings, mileage claims, benefit enrollments.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex flex-wrap gap-2">
+                      <span className="bg-muted text-foreground border-border inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs">
+                        <Paperclip className="size-3" />
+                        health-policy-2026.pdf
+                      </span>
+                      <span className="bg-muted text-foreground border-border inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs">
+                        <FileText className="size-3" />
+                        bank-match: TRX-77821
+                      </span>
+                      <span className="bg-muted text-foreground border-border inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs">
+                        <CircleCheck className="size-3" />
+                        filing-ref: VATQ1-A928
+                      </span>
+                    </div>
+                    <div className="text-muted-foreground flex items-center gap-2 text-xs">
+                      <Avatar className="size-5">
+                        <AvatarFallback className="text-[10px]">TB</AvatarFallback>
+                      </Avatar>
+                      Confirmed by Tim Borovkov · 2026-04-12
+                    </div>
+                    <Button size="sm" variant="outline">
+                      <Plus /> Attach evidence
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">Rationale popover</CardTitle>
+                    <CardDescription>
+                      Every compliance task carries a <code className="font-mono">rationale</code>{" "}
+                      from its jurisdiction config (why required · how to satisfy · guide link).
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center gap-2 text-sm">
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-0.5 text-[11px] font-medium tracking-wide text-amber-700 uppercase dark:text-amber-400">
+                        <CircleAlert className="size-3" /> OPEN
+                      </span>
+                      <Badge variant="outline">employment</Badge>
+                      <span className="text-foreground">Tyel registration</span>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button size="icon-xs" variant="ghost" aria-label="Why is this required?">
+                            <HelpCircle />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-80 text-sm">
+                          <p className="font-medium">Tyel (Finnish pension) registration</p>
+                          <p className="text-muted-foreground mt-2 text-xs leading-relaxed">
+                            Required within 30 days of the first payroll run for any employee
+                            earning above the monthly threshold. Applies to founder-employees too.
+                          </p>
+                          <a
+                            href="#"
+                            className="text-primary mt-3 inline-block text-xs underline underline-offset-4"
+                          >
+                            Read the full guide →
+                          </a>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             </section>
 
             {/* ICONS */}

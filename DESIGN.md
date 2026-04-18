@@ -116,7 +116,18 @@ See the live catalog at [`/design-system-demo`](src/app/design-system-demo/page.
 - **Badge** — Status vocabulary is reserved (see §8). Don't repurpose badge variants as generic accents.
 - **Dialog / Sheet** — Dialog for confirmations and short forms; Sheet for longer edit flows (think: "edit invoice").
 - **Sonner (Toaster)** — mounted once in `app/layout.tsx`. Use `toast.success`, `toast.error`, or `toast(title, { description })`.
-- **Sidebar** — uses dedicated `sidebar-*` palette tokens so it can feel distinct. Provider must wrap the entire shell.
+- **Sidebar** — uses dedicated `sidebar-*` palette tokens so it can feel distinct. Provider must wrap the entire shell. Canonical nav groups: **Workspace** (Dashboard, Intake, Obligations) · **Books** (Invoices, Expenses, Declarations) · **Compensation** (Trips, Mileage, Benefits) · **Personal** (Personal finance) · **Account** (Settings, Members).
+- **Skeleton** — render table-shaped skeletons on list pages and card-shaped on detail pages. Never use a spinner for page-level loads. Sets `role="status"` + `aria-busy="true"` for screen readers.
+
+### 7.1 Canonical patterns
+
+These aren't single components — they're compositions that recur across features. Live examples at `/design-system-demo#patterns`.
+
+- **OCR confidence highlighting** — low-confidence extracted fields wear `ring-2 ring-amber-500/40` + a sibling `text-xs text-amber-700` helper. High-confidence fields look like any other input. Required on every OCR / vision surface per `PROJECT_BRIEF §3.6`, `§5.2`.
+- **Mass-action toolbar** — every list page supports multi-select. Toolbar docks above the list when rows are selected, shows `n selected of N`, bulk actions (route, mark personal, request evidence, delete). Surface on the list container with `bg-accent/30`. Required on every list page per `PROJECT_BRIEF §3.6`.
+- **Intake triage decision** — three routing dimensions per intake item: **scope** (business/personal radio), **entity** (select), **target flow** (select: expense / mileage_claim / trip_evidence / benefit_evidence / compliance_evidence). See `PROJECT_BRIEF §5.1.5.1`.
+- **Evidence chip list** — attached evidence renders as `inline-flex rounded-md border bg-muted px-2 py-1 text-xs` with a leading lucide icon (`Paperclip`, `FileText`, `CircleCheck`). Followed by a small "Confirmed by" avatar row and an outline `+ Attach evidence` button. Used on compliance tasks, filings, mileage claims, benefit enrollments.
+- **Rationale popover** — compliance tasks carry a `rationale` JSON from jurisdiction config (why · how to satisfy · guide link). Render as a `HelpCircle` icon `icon-xs ghost` button that opens a `Popover` with the rationale text + "Read the full guide →" link.
 
 ---
 
@@ -193,9 +204,25 @@ Timeline panel + edit-session indicator: documented TBD in a future revision onc
 4. Add an example section to the demo page.
 5. If it introduces a new pattern (new token, new motion, new status), document it here.
 6. If knip flags it as unused (because it's pre-built), add its path to `knip.json` `entry` array.
+7. Before building a bespoke pattern, check §7.1 — many patterns (triage, mass actions, evidence chips, rationale popovers) are already canonical. Reuse them.
 
 ---
 
-## 11. Route isolation
+## 11. Non-goals / deliberately not designed (yet)
+
+Things intentionally outside the v0.1–v1.0 design system scope, to keep the surface honest:
+
+- **Email notifications / ICS calendar feeds** — `PROJECT_BRIEF.md §5.13` and `TODO.md` defer these to post-v1.0. The v0.6 reminder pattern is dashboard + in-app only.
+- **Bank reconciliation UI** — P3 feature (`PROJECT_BRIEF.md §5.14`). Don't design this until the spec lands.
+- **Mobile PWA receipt capture** — post-v1.0. Responsive web works; no separate mobile design.
+- **Agent chat sidebar** — the AI agent surface (`§5.2`) arrives in v0.5. Patterns TBD once that work starts.
+- **Version-diff rendering** — versioning exists in the DB (`§5.3`), but the Google-Docs-style timeline UI is a v0.3 deliverable. Until then, DESIGN.md §8.4 stays a stub.
+- **Public marketing site** — Tally is self-hosted; there's no sign-up funnel, no indexed pages. `robots.txt` disallows all.
+
+If a PR proposes designing one of these, it's either scope creep or the roadmap has moved. Check `TODO.md` before committing.
+
+---
+
+## 12. Route isolation
 
 The demo page has its own nested [`layout.tsx`](src/app/design-system-demo/layout.tsx). When we add navbar / sidebar / auth gating to the root `app/layout.tsx`, the demo page stays untouched — it remains a pristine visual reference as the app evolves.
