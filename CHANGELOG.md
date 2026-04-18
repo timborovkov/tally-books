@@ -21,6 +21,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Multi-stage Dockerfile (deps → build → runtime, distroless-friendly).
 - `docker-compose.yml` for local dev (`app`, `postgres`, `minio`, `qdrant`).
 - `docker-compose.prod.yml` reference for self-hosters.
-- `.env.example` with all required environment keys documented.
+- `.env.example` covering app, Postgres, BetterAuth, Resend, OpenAI, MinIO, Qdrant. Other integrations' env keys are added with the feature work that uses them.
 - `/api/health` and `/api/ready` endpoints.
 - `robots.txt` disallow-all + `X-Robots-Tag: noindex` headers (no search engine indexing).
