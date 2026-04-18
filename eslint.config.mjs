@@ -68,6 +68,15 @@ const eslintConfig = defineConfig([
       "no-restricted-syntax": "off",
     },
   },
+  // Vendor-style files maintained by shadcn CLI — don't fight upstream idioms.
+  {
+    files: ["src/components/ui/**", "src/hooks/use-mobile.ts"],
+    rules: {
+      "no-implicit-coercion": "off",
+      "react-hooks/purity": "off",
+      "react-hooks/set-state-in-effect": "off",
+    },
+  },
   prettier,
 ]);
 
