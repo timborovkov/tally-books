@@ -18,12 +18,17 @@ interface NavItem {
   Icon: React.ComponentType<{ className?: string }>;
 }
 
-// Sidebar entries point at routes that don't exist yet (v0.1 is scaffold-only).
-// They render as links so keyboard navigation and a11y tools see the real
-// structure today; the routes themselves ship in later milestones.
+// Most sidebar entries point at routes that don't exist yet (v0.1 is
+// scaffold-only). They render as links so keyboard navigation and a11y
+// tools see the real structure today; the routes themselves ship in
+// later milestones.
+//
+// Exception: "Entities" jumps directly to the entities list (the most
+// common settings task), and "Settings" lands on the settings index
+// which lists every settings section.
 const NAV: readonly NavItem[] = [
   { label: "Dashboard", href: "/", Icon: LayoutDashboard },
-  { label: "Entities", href: "/entities", Icon: Building2 },
+  { label: "Entities", href: "/settings/entities", Icon: Building2 },
   { label: "Expenses", href: "/expenses", Icon: Wallet },
   { label: "Receipts", href: "/receipts", Icon: Receipt },
   { label: "Invoices", href: "/invoices", Icon: FileText },
