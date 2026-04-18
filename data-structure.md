@@ -36,7 +36,7 @@ Who produced a version row. **Agent writes use `actor_kind = 'user'`** with an a
 ### 2.3 `thing_type`
 The enum that names every versioned or lockable Thing. Used by `edit_sessions`, `audit_log`, `agent_suggestions`, and any other polymorphic reference. Adding a new versioned Thing = adding a value here.
 
-`invoice · expense · receipt · vat_declaration · annual_report · income_tax_return · balance_sheet · budget · trip · trip_report · payroll_run · scenario · billing_arrangement`
+`invoice · expense · receipt · vat_declaration · annual_report · income_tax_return · balance_sheet · budget · trip · trip_report · commute_mileage_claim · employer_benefit_enrollment · compliance_task · payroll_run · scenario · billing_arrangement`
 
 ### 2.4 Other enums
 Defined in the section of their owning table.
@@ -189,7 +189,7 @@ BetterAuth owns the shape. Mirrored here so Drizzle can join:
 | `revoked_by` | `text`, nullable, FK → `users.id` | |
 
 **Enum `resource_type`:**
-`invoices · expenses · receipts · payouts · taxes · filings · legal_documents · estimates · budgets · reports · trips · agents · business_details · personal_details`
+`invoices · expenses · receipts · payouts · taxes · filings · legal_documents · estimates · budgets · reports · trips · benefits · travel_compensation · compliance_tasks · agents · business_details · personal_details`
 
 **Indexes:** `(user_id) WHERE revoked_at IS NULL` (the IAM check is a hot path).
 
@@ -204,7 +204,7 @@ BetterAuth owns the shape. Mirrored here so Drizzle can join:
 | `id` | `text`, PK | |
 | `code` | `text`, NOT NULL, UNIQUE | `EE`, `FI`, `US-DE`, `ES`, … |
 | `name` | `text`, NOT NULL | |
-| `config` | `jsonb`, NOT NULL | Big bundle: `entity_types[]`, `tax_types[]`, `vat_rules`, `per_diem_rules`, `filing_schedules[]`, `portal_links[]`, `guide_links[]`, `payout_options[]`, `contributions[]`, `payout_kind_display[]` (see §8.4). Typed as `JurisdictionConfig` in `packages/jurisdictions/types.ts`. |
+| `config` | `jsonb`, NOT NULL | Big bundle: `entity_types[]`, `tax_types[]`, `vat_rules`, `per_diem_rules`, `filing_schedules[]`, `portal_links[]`, `guide_links[]`, `payout_options[]`, `contributions[]`, `payout_kind_display[]`, and `obligations` catalogs with domains (`employment`, `tax_payment`, `reporting`) plus evaluator hints and guide links. Typed as `JurisdictionConfig` in `packages/jurisdictions/types.ts`. |
 | `freeform_context_md` | `text`, nullable | Injected into AI prompts — quirks, gotchas. |
 | `created_at`, `updated_at` | `timestamptz`, NOT NULL | |
 
@@ -277,6 +277,30 @@ BetterAuth owns the shape. Mirrored here so Drizzle can join:
 | `created_at` | `timestamptz`, NOT NULL | |
 
 **Indexes:** `(entity_id, kind, start_at)`.
+
+### 5.6 `employment_relations`
+
+The first-class employment record the evaluator (brief §5.4.2) triggers on: hire dates, jurisdiction of the employment, employment type, and the employing entity. `entity_person_links` stays a flat governance registry (board / CEO / shareholder); employment is a distinct concern because the compliance engine diffs obligation catalogs against **this** table's state. Founder-as-employee (brief §5.4.1–§5.4.2) uses the same row shape—no special case.
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `text`, PK | |
+| `entity_id` | `text`, NOT NULL, FK → `entities.id` | The employer. |
+| `person_id` | `text`, NOT NULL, FK → `persons.id` | The employee (may be the admin themselves). |
+| `jurisdiction_id` | `text`, NOT NULL, FK → `jurisdictions.id` | Jurisdiction whose employment rules govern this relation. Usually matches `entities.jurisdiction_id` but kept explicit for cross-border employments. |
+| `employment_type` | `employment_type` enum (`employee`, `director_employee`, `founder_employee`, `contractor`, `board_member`, `other`), NOT NULL | Drives which obligation templates apply. `contractor` is included so the evaluator can short-circuit (most employer-side obligations don't apply) but the row still exists for bookkeeping. |
+| `hired_at` | `timestamptz`, NOT NULL | Legal start. The evaluator uses this to decide which jurisdiction-config version applies. |
+| `terminated_at` | `timestamptz`, nullable | Set on termination. Obligations past this date stop being re-opened. |
+| `terms` | `jsonb`, NOT NULL, default `{}` | Salary, hours, contract terms, references to attached documents. Free-shape by design — jurisdictions and employment kinds vary. |
+| `metadata` | `jsonb`, NOT NULL, default `{}` | |
+| `created_at`, `updated_at` | `timestamptz`, NOT NULL | |
+
+**CHECKS:**
+- `terminated_at IS NULL OR terminated_at >= hired_at`.
+
+**Indexes:** `(entity_id, terminated_at)` (active employees per entity — hot path for the evaluator), `(person_id, terminated_at)` (all employments of a person, incl. founder-as-employee), `(jurisdiction_id)`.
+
+**Soft deletion policy:** none. Termination is a real-world lifecycle event, not a soft delete; `terminated_at` carries the meaning. Historical rows stay to satisfy obligations that linger past termination (final payslip, year-end filings).
 
 ---
 
@@ -408,6 +432,31 @@ Domain columns plus the `versioned` mixin from §3.1, with a companion `receipt_
 | … `versioned` mixin | | |
 
 **Indexes:** `(entity_id, occurred_at DESC)`, `(ocr_status) WHERE ocr_status IN ('pending','processing')` (worker queue).
+
+### 8.2.1 `intake_items` — unified cross-entity triage queue (new)
+Not versioned; workflow/audit events are in `audit_log`. This is the "single inbox" layer that prevents parallel per-entity queues.
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `text`, PK | |
+| `source_blob_id` | `text`, NOT NULL, FK -> `blobs.id` | Canonical uploaded file/media source. |
+| `source_kind` | `intake_source_kind` enum (`receipt_upload`, `email_forward`, `manual_doc`, `import`) | |
+| `status` | `intake_status` enum (`new`, `needs_review`, `routed`, `confirmed`, `rejected`), NOT NULL, default `new` | |
+| `confidence` | `numeric(5, 4)`, nullable | Routing/model confidence 0..1 where available. |
+| `route_scope` | `intake_route_scope` enum (`business`, `personal`, `unknown`), NOT NULL, default `unknown` | Business vs personal triage decision. |
+| `route_entity_id` | `text`, nullable, FK -> `entities.id` | Required when `route_scope = 'business'`. |
+| `route_target` | `intake_route_target` enum (`expense`, `trip_evidence`, `mileage_claim`, `benefit_evidence`, `compliance_evidence`, `other`), nullable | |
+| `route_reason` | `text`, nullable | Human/agent explanation for routing choice. |
+| `confirmed_by` | `text`, nullable, FK -> `users.id` | Who made the final routing confirmation. |
+| `confirmed_at` | `timestamptz`, nullable | |
+| `metadata` | `jsonb`, NOT NULL, default `{}` | Extra extraction hints, provider payload refs, etc. |
+| `created_at`, `updated_at` | `timestamptz`, NOT NULL | |
+
+**CHECKS:**
+- `(route_scope = 'business') = (route_entity_id IS NOT NULL)`.
+- `(status IN ('routed','confirmed')) = (route_target IS NOT NULL)`.
+
+**Indexes:** `(status, created_at)`, `(route_scope, route_entity_id, status)`, `(route_target, status)`, `(confirmed_by, confirmed_at DESC)`.
 
 ### 8.3 `expenses` — versioned
 
@@ -610,6 +659,77 @@ Budget-vs-reality reads the version active during the compared period — the `<
 | … `versioned` mixin | | |
 
 **Constraint:** `UNIQUE(trip_id)` — one report per trip.
+
+### 9.8.1 `commute_mileage_claims` — versioned
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `text`, PK | |
+| `entity_id` | `text`, NOT NULL, FK -> `entities.id` | |
+| `person_id` | `text`, nullable, FK -> `persons.id` | Nullable for claims not tied to one person. |
+| `period_id` | `text`, nullable, FK -> `financial_periods.id` | Optional if a claim spans custom dates. |
+| `claim_kind` | `travel_claim_kind` enum (`business_mileage`, `commute`, `other`) | Separate kinds because rules differ by jurisdiction. |
+| `jurisdiction_rule_ref` | `text`, nullable | Identifier/path inside `jurisdictions.config` to the applied rule set. |
+| `evidence` | `jsonb`, NOT NULL, default `[]` | Route exports, odometer notes, logs, receipts refs, etc. |
+| `rates_snapshot` | `jsonb`, NOT NULL, default `{}` | Frozen applied rates at calc time (auditable). |
+| `computed_totals` | `jsonb`, NOT NULL, default `{}` | Distances, reimbursable amounts, taxable/non-taxable split. |
+| `linked_expense_ids` | `jsonb`, NOT NULL, default `[]` | Temporary denormalized linkage; can migrate to a join table if cardinality grows. |
+| ... `versioned` mixin | | |
+
+**Indexes:** `(entity_id, period_id)`, `(person_id, period_id)`, `(claim_kind)`.
+
+### 9.8.2 `employer_benefit_enrollments` — versioned
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `text`, PK | |
+| `entity_id` | `text`, NOT NULL, FK -> `entities.id` | |
+| `person_id` | `text`, NOT NULL, FK -> `persons.id` | Includes owner-manager/founder when on payroll. |
+| `benefit_type_id` | `text`, NOT NULL | Points to a configured benefit type in jurisdiction config. |
+| `effective_from` | `timestamptz`, NOT NULL | |
+| `effective_to` | `timestamptz`, nullable | |
+| `parameters` | `jsonb`, NOT NULL, default `{}` | Plan-specific values (caps, coverage level, employer share, etc.). |
+| `valuation_snapshot` | `jsonb`, NOT NULL, default `{}` | Taxable valuation basis captured at enrollment/recalc time. |
+| `linked_payroll_line_ids` | `jsonb`, NOT NULL, default `[]` | Denormalized references to generated payroll lines. |
+| `linked_expense_ids` | `jsonb`, NOT NULL, default `[]` | Denormalized references to generated expenses/accruals. |
+| ... `versioned` mixin | | |
+
+**CHECK:** `effective_to IS NULL OR effective_to >= effective_from`.
+
+**Indexes:** `(entity_id, person_id, effective_from DESC)`, `(benefit_type_id)`.
+
+### 9.8.3 `compliance_tasks` — versioned
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `text`, PK | |
+| `entity_id` | `text`, NOT NULL, FK -> `entities.id` | |
+| `jurisdiction_id` | `text`, NOT NULL, FK -> `jurisdictions.id` | |
+| `obligation_domain` | `obligation_domain` enum (`employment`, `tax_payment`, `reporting`, `other`), NOT NULL | Generalized obligation engine (not employment-only). NOT NULL so rows participate correctly in the §14 idempotency unique index (Postgres treats NULLs as distinct). |
+| `subject_type` | `obligation_subject_type` enum (`entity`, `employment_relation`, `person`, `filing`, `payment`, `other`), NOT NULL | Same NOT NULL rationale as `obligation_domain`. |
+| `subject_id` | `text`, nullable | Generic pointer for evaluator-produced context. |
+| `employment_relation_id` | `text`, nullable, FK → `employment_relations.id` | Explicit FK for the common HR path and filters. See §5.6. |
+| `person_id` | `text`, nullable, FK -> `persons.id` | |
+| `obligation_key` | `text`, NOT NULL | Stable key from jurisdiction config template. |
+| `satisfaction_mode` | `obligation_satisfaction_mode` enum (`bank_match`, `filing_ref`, `doc_evidence`, `composite`, `manual_override`), NOT NULL | Chosen by template or evaluator from jurisdiction config. |
+| `status` | `compliance_task_status` enum (`open`, `done`, `waived`, `snoozed`), NOT NULL, default `open` | |
+| `due_at` | `timestamptz`, nullable | |
+| `snooze_until` | `timestamptz`, nullable | |
+| `rationale` | `jsonb`, NOT NULL, default `{}` | Why required + how to satisfy + guide links from config. |
+| `resolution_note` | `text`, nullable | |
+| `evidence` | `jsonb`, NOT NULL, default `[]` | Attached refs / filing refs / payment refs / docs. |
+| `satisfied_by` | `jsonb`, nullable | Machine/human closure payload (`{ kind, refs[], actor, reason }`). |
+| ... `versioned` mixin | | |
+
+**Indexes:** `(entity_id, status, due_at)`, `(obligation_domain, status, due_at)`, `(subject_type, subject_id)`, `(person_id, status)`.
+
+**Constraint:** `UNIQUE(entity_id, obligation_domain, obligation_key, subject_type, COALESCE(subject_id, '')) WHERE status IN ('open', 'snoozed')` — prevents duplicate active tasks for the same obligation subject.
+
+**CHECKS:**
+- `snooze_until IS NULL OR status = 'snoozed'`.
+- `subject_type <> 'employment_relation' OR employment_relation_id IS NOT NULL`.
+- `status <> 'done' OR satisfied_by IS NOT NULL`.
+- `(satisfaction_mode = 'manual_override') OR (status <> 'done') OR (jsonb_typeof(satisfied_by) = 'object')`.
 
 ### 9.9 `meetings` — NOT versioned
 
@@ -831,6 +951,9 @@ Rules the schema alone can't enforce; live in service code.
 - **Agent writes carry `actor_kind = 'user'` with `agent_id` set** on the version row. `agent_actions` holds the tool-call detail.
 - **Internal invoice mirror:** when both ends of an invoice are owned entities, the service creates two invoice rows and sets `mirror_invoice_id` bidirectionally.
 - **OCR extraction runs through the vision provider abstraction** — never calls OpenAI SDK directly from a receipt handler.
+- **Obligation evaluators are idempotent.** Employment and non-employment evaluators (tax/payment/reporting) can run repeatedly; they open/reopen/close `compliance_tasks` based on state + evidence, never duplicate equivalent open tasks for the same `(entity, obligation_domain, obligation_key, subject_type, subject_id)`.
+- **`compliance_tasks` closure is explainable.** Closing a task to `done` requires `satisfied_by` populated according to `satisfaction_mode` (`bank_match`, `filing_ref`, `doc_evidence`, etc.) or explicit `manual_override` with actor + reason.
+- **Intake re-routing propagates safely.** Moving an `intake_item` between entity/scope/target emits events that mark dependent drafts `underlying_data_changed` and re-run relevant evaluators.
 
 ---
 
@@ -872,6 +995,9 @@ One place for every index this spec prescribes. When a migration lands, diff thi
 | `entity_person_links` | `(entity_id, valid_to)` | |
 | `entity_person_links` | `(person_id, valid_to)` | |
 | `financial_periods` | `(entity_id, kind, start_at)` | |
+| `employment_relations` | `(entity_id, terminated_at)` | Active employees per entity — evaluator hot path. |
+| `employment_relations` | `(person_id, terminated_at)` | All employments of a person. |
+| `employment_relations` | `(jurisdiction_id)` | |
 | `fx_rates` | `UNIQUE(rate_date, from_ccy, to_ccy, source)` | |
 | `fx_rates` | `(from_ccy, to_ccy, rate_date DESC)` | Rate lookup. |
 | `blobs` | `(checksum)` | Dedup. |
@@ -884,6 +1010,10 @@ One place for every index this spec prescribes. When a migration lands, diff thi
 | `parties` | `(name)` | Search. |
 | `receipts` | `(entity_id, occurred_at DESC)` | |
 | `receipts` | `(ocr_status) WHERE ocr_status IN ('pending','processing')` | Worker queue. |
+| `intake_items` | `(status, created_at)` | Unified inbox queue ordering. |
+| `intake_items` | `(route_scope, route_entity_id, status)` | Cross-entity triage/filter. |
+| `intake_items` | `(route_target, status)` | Work queue by target flow. |
+| `intake_items` | `(confirmed_by, confirmed_at DESC)` | Audit and reviewer trace. |
 | `expenses` | `(entity_id, occurred_at DESC)` | VAT recalc. |
 | `expenses` | `(category_id)` | |
 | `expenses` | `(linked_receipt_id)` | |
@@ -902,6 +1032,16 @@ One place for every index this spec prescribes. When a migration lands, diff thi
 | `income_tax_returns` | `UNIQUE(subject_person_id, jurisdiction_id, tax_year)` | |
 | `balance_sheets` | `(entity_id, as_of DESC)` | |
 | `trip_reports` | `UNIQUE(trip_id)` | |
+| `commute_mileage_claims` | `(entity_id, period_id)` | |
+| `commute_mileage_claims` | `(person_id, period_id)` | |
+| `commute_mileage_claims` | `(claim_kind)` | |
+| `employer_benefit_enrollments` | `(entity_id, person_id, effective_from DESC)` | |
+| `employer_benefit_enrollments` | `(benefit_type_id)` | |
+| `compliance_tasks` | `(entity_id, status, due_at)` | |
+| `compliance_tasks` | `(obligation_domain, status, due_at)` | |
+| `compliance_tasks` | `(subject_type, subject_id)` | |
+| `compliance_tasks` | `(person_id, status)` | |
+| `compliance_tasks` | `UNIQUE(entity_id, obligation_domain, obligation_key, subject_type, COALESCE(subject_id,'')) WHERE status IN ('open','snoozed')` | Prevent duplicate active obligation tasks. |
 | `meeting_expenses` | `PK(meeting_id, expense_id)`, `(expense_id)` | |
 | `agent_threads` | `(user_id, updated_at DESC)` | |
 | `agent_threads` | `(agent_id, updated_at DESC)` | |
@@ -929,6 +1069,7 @@ Each table declares one policy. No mixing. Resolves **I14**.
 | **Void** (versioned Thing killed, history retained) | `state = 'void'` | every versioned Thing |
 | **Delete + tombstone** (Qdrant bookkeeping) | `deleted_at timestamptz` | `embedding_index` |
 | **Hard delete** | — | `sessions`, `edit_sessions` (ephemeral), `meeting_expenses` (cascade) |
+| **No soft delete** (lifecycle column carries meaning) | `terminated_at timestamptz` (not a soft delete) | `employment_relations` |
 
 ---
 
