@@ -9,7 +9,9 @@ FROM node:${NODE_VERSION} AS deps
 WORKDIR /app
 
 RUN apk add --no-cache libc6-compat
-RUN corepack enable && corepack prepare pnpm@${PNPM_VERSION:-latest} --activate
+RUN npm install -g corepack@latest \
+ && corepack enable \
+ && corepack prepare pnpm@${PNPM_VERSION} --activate
 
 COPY package.json pnpm-lock.yaml* pnpm-workspace.yaml* ./
 RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
@@ -19,7 +21,9 @@ RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
 FROM node:${NODE_VERSION} AS build
 WORKDIR /app
 
-RUN corepack enable && corepack prepare pnpm@${PNPM_VERSION:-latest} --activate
+RUN npm install -g corepack@latest \
+ && corepack enable \
+ && corepack prepare pnpm@${PNPM_VERSION} --activate
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
