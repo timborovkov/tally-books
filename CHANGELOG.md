@@ -25,3 +25,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Typed environment loading via `src/lib/env.ts` (zod-validated, fail-fast at startup through `src/instrumentation.ts`).
 - `/api/health` and `/api/ready` endpoints.
 - `robots.txt` disallow-all + `X-Robots-Tag: noindex` headers (no search engine indexing).
+- Drizzle ORM + drizzle-kit wired up against Postgres (postgres.js driver, cuid2 ids).
+- Initial schema: shared enums (`thing_state`, `actor_kind`, `thing_type`, `user_role`, `resource_type`, `access_level`), IAM tables (`users` with the 2FA CHECK constraint, `sessions`, `invites`, `permissions`), and versioning primitives (`edit_sessions` with one-editor-per-Thing UNIQUE, `audit_log`).
+- `versionedColumns()` helper exported for the next versioned-Thing PR; `current_version_id` deferred until then.
+- Scripts: `db:generate`, `db:migrate`, `db:push`, `db:studio`, `db:seed`. Idempotent admin-user seed.
+- Real `pnpm test:integration` suite: schema smoke test that asserts enums, tables, named indexes, partial WHERE clauses, the 2FA CHECK rejection, and `edit_sessions` uniqueness against the live Postgres service.

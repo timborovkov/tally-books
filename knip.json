@@ -1,6 +1,6 @@
 {
   "$schema": "https://unpkg.com/knip@5/schema.json",
-  "entry": ["src/components/ui/**/*.tsx"],
+  "entry": ["src/components/ui/**/*.tsx", "src/db/migrate.ts", "src/db/seed.ts"],
   "project": ["src/**/*.{ts,tsx}", "*.{ts,mts,mjs}"],
   "ignoreDependencies": ["tailwindcss"],
   "ignoreExportsUsedInFile": true

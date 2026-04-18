@@ -35,11 +35,11 @@ The minimum scaffolding needed to start building features safely.
 
 ### Database & ORM
 
-- [ ] Drizzle installed and configured
-- [ ] Migration tooling working (`drizzle-kit`)
-- [ ] Versioning primitives schema (the `_version` pattern, edit_sessions, audit_log)
-- [ ] Core tables: user, session, invite, permission, audit_log
-- [ ] Seed scripts for dev (admin user, example entities)
+- [x] Drizzle installed and configured
+- [x] Migration tooling working (`drizzle-kit`)
+- [x] Versioning primitives schema (the `_version` pattern, edit_sessions, audit_log)
+- [x] Core tables: user, session, invite, permission, audit_log
+- [x] Seed scripts for dev (admin user, example entities)
 
 ### Auth & IAM
 

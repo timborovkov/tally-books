@@ -10,3 +10,6 @@ public
 # Spec / reference docs — author-owned, no prettier reformatting.
 PROJECT_BRIEF.md
 data-structure.md
+
+# Drizzle-generated SQL migrations — owned by drizzle-kit.
+src/db/migrations/
