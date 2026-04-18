@@ -30,6 +30,10 @@ const MONTHS = [
   "December",
 ];
 
+// Baseline convenience options — rendered on top of whatever the
+// jurisdictions expose. Not authoritative: the final option list also
+// includes every jurisdiction's default currency and the currently
+// selected value, so nothing can render as a blank trigger.
 const COMMON_CURRENCIES = ["EUR", "USD", "GBP", "SEK", "NOK", "DKK", "CHF"];
 
 interface EntityFormProps {
@@ -80,6 +84,21 @@ export function EntityForm({ jurisdictions, entity, action, submitLabel }: Entit
   // config, the Select shows nothing selected — the server's validator
   // catches a stale value if the user submits without picking a new one.
   const entityTypeValueIsValid = entityType === "" || entityTypeOptions.includes(entityType);
+
+  // Currency options are the union of: the hardcoded commons, every
+  // jurisdiction's default currency (so auto-switch always has a matching
+  // option), and the currently-selected value (so editing an entity whose
+  // baseCurrency is outside the hardcoded list doesn't render a blank
+  // trigger). De-duplicated and sorted for a stable list order.
+  const currencyOptions = useMemo(() => {
+    const set = new Set<string>(COMMON_CURRENCIES);
+    for (const j of jurisdictions) {
+      const cfg = parseJurisdictionConfigOrNull(j.config);
+      if (cfg?.defaultCurrency) set.add(cfg.defaultCurrency);
+    }
+    if (baseCurrency) set.add(baseCurrency);
+    return [...set].sort();
+  }, [jurisdictions, baseCurrency]);
 
   const address: Record<string, string | undefined> =
     (entity?.address as Record<string, string | undefined>) ?? {};
@@ -188,7 +207,7 @@ export function EntityForm({ jurisdictions, entity, action, submitLabel }: Entit
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {COMMON_CURRENCIES.map((c) => (
+              {currencyOptions.map((c) => (
                 <SelectItem key={c} value={c}>
                   {c}
                 </SelectItem>
