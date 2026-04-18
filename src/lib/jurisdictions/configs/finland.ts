@@ -73,6 +73,10 @@ export const finlandConfig: JurisdictionConfig = {
     dividend: "Osinko",
     yksittaisotto: "Yksittäisotto",
   },
+  // Obligation catalogs arrive in v0.6/v0.7 alongside the compliance
+  // evaluator. Empty stubs reserve the shape so readers and future
+  // migrations see the slot.
+  obligations: { employment: [], taxPayment: [], reporting: [] },
 };
 
 export const finlandFreeformContextMd = `# Finland (FI)

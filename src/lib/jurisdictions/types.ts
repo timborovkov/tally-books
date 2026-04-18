@@ -63,6 +63,27 @@ const contributionSchema = z.object({
   notes: z.string().optional(),
 });
 
+// Obligation catalog entry — the compliance evaluator (brief §5.4.2,
+// data-structure.md §9.8) diffs these catalogs against entity/
+// employment state to surface compliance tasks. v0.1 reserves the
+// shape with empty arrays; seeds land in v0.6/v0.7.
+const obligationSchema = z.object({
+  id: z.string().min(1),
+  label: z.string().min(1),
+  // Optional evaluator hints — free-form until the compliance engine
+  // lands and we know what it needs. Keeping this loose now avoids
+  // forcing a schema migration every time the evaluator learns
+  // something new.
+  evaluatorHints: z.record(z.string(), z.unknown()).optional(),
+  guideLinks: z.array(linkSchema).default([]),
+});
+
+const obligationsCatalogSchema = z.object({
+  employment: z.array(obligationSchema).default([]),
+  taxPayment: z.array(obligationSchema).default([]),
+  reporting: z.array(obligationSchema).default([]),
+});
+
 export const jurisdictionConfigSchema = z.object({
   // Currency the entities of this jurisdiction default to. Entities
   // can override (an Estonian OÜ that books in USD is unusual but
@@ -104,6 +125,11 @@ export const jurisdictionConfigSchema = z.object({
   // a Finnish toiminimi show "Yksittäisotto" while an Estonian OÜ
   // shows "Dividend" for the same conceptual payout slot.
   payoutKindDisplay: z.record(z.string(), z.string()).default({}),
+  // Obligation catalogs, keyed by domain. v0.1 reserves the shape;
+  // seeds arrive in v0.6 (employment obligations) and v0.7 (tax-payment
+  // and reporting obligations) once the compliance evaluator lands.
+  // Defaulting to empty arrays lets existing seeds parse cleanly.
+  obligations: obligationsCatalogSchema.default({ employment: [], taxPayment: [], reporting: [] }),
 });
 
 export type JurisdictionConfig = z.infer<typeof jurisdictionConfigSchema>;
