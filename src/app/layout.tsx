@@ -5,17 +5,17 @@ import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
 const geistSans = Geist({
-  variable: "--font-sans",
+  variable: "--font-geist-sans",
   subsets: ["latin"],
 });
 
 const geistMono = Geist_Mono({
-  variable: "--font-mono",
+  variable: "--font-geist-mono",
   subsets: ["latin"],
 });
 
 const spaceGrotesk = Space_Grotesk({
-  variable: "--font-display",
+  variable: "--font-space-grotesk",
   subsets: ["latin"],
   weight: ["500", "600", "700"],
 });
