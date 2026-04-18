@@ -14,17 +14,6 @@ describe("prefilled jurisdiction configs", () => {
     const codes = prefilledJurisdictions.map((j) => j.code).sort();
     expect(codes).toEqual(["EE", "FI", "US-DE"]);
   });
-
-  it("reserves the obligations catalog shape (seeds ship empty in v0.1)", () => {
-    for (const j of prefilledJurisdictions) {
-      const parsed = parseJurisdictionConfig(j.config);
-      expect(parsed.obligations).toEqual({
-        employment: [],
-        taxPayment: [],
-        reporting: [],
-      });
-    }
-  });
 });
 
 describe("jurisdictionConfigSchema", () => {

@@ -56,11 +56,16 @@ The minimum scaffolding needed to start building features safely.
 - [x] `entity` table + CRUD
 - [x] `jurisdiction` table + CRUD
 - [x] Prefilled jurisdiction configs: Estonia, Finland, Delaware (US)
-- [x] Config schema reserves **`obligations` catalog shape** with domains (`employment`, `tax_payment`, `reporting`) (stubs ship in v0.1 — empty arrays in EE/FI/US-DE configs; seeds arrive in v0.6/v0.7)
 - [x] Personal pseudo-entity handling
 - [x] Entity ↔ person links (board, CEO, shareholder)
 - [x] `person` table + CRUD (legal name, tax residency, country IDs)
 - [x] Entity management UI
+
+> Obligation catalogs live with the compliance work that consumes them:
+> employment catalog in v0.6 (§"Employment obligations & compliance tasks"),
+> tax/payment/reporting catalogs in v0.7 (§"Tax/payment/reporting obligations").
+> The JurisdictionConfig Zod schema extends cheaply when those land — no
+> v0.1 pre-reservation needed.
 
 ### Cross-cutting
 
@@ -77,8 +82,11 @@ The minimum scaffolding needed to start building features safely.
 - [ ] `versioned<T>.update()` helper with diff computation
 - [ ] Version timeline UI component (Google Docs-style history)
 - [ ] State machine helper for `draft → ready → filed → amended`
-- [ ] `auto_refresh_locked` toggle component
 - [ ] Period lock model + enforcement at service layer
+
+> The `auto_refresh_locked` toggle lives with the Editor-safety work in v0.3
+> (§"Editor-safety"). The toggle has nothing to gate on until the recalc
+> worker lands there — pre-building the UI is scope-creep.
 
 ### Docs (started in v0.1, kept current as we build)
 
