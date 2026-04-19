@@ -27,6 +27,9 @@ export default withSentryConfig(nextConfig, {
   org: process.env.SENTRY_ORG,
   project: process.env.SENTRY_PROJECT,
   authToken: process.env.SENTRY_AUTH_TOKEN,
+  // Override for self-hosted / EU / private-cloud Sentry. Defaults to
+  // https://sentry.io/ inside the plugin when undefined.
+  sentryUrl: process.env.SENTRY_URL || undefined,
   // Source maps only uploaded when auth token is present (production deploys).
   // Skip the upload plugin entirely when the token is absent so local builds
   // and CI-without-Sentry don't error out.
