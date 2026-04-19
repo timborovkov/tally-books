@@ -87,9 +87,16 @@ export function SetupWizard() {
     // twoFactorRedirect response (2FA is now enabled) and leave the user
     // stranded on the login page. The existing session stays valid, and
     // getCurrentUser() reads the updated user row on the next request.
+    //
+    // `router.refresh()` is required alongside `push("/")`: the home-page
+    // redirect cascade is an RSC, and the Next.js Router Cache would
+    // otherwise serve the pre-bootstrap payload (adminExists() was false
+    // when this session first rendered /) and bounce the user back to
+    // /setup for a frame before settling. Matches Enroll2FA's pattern.
     setStep("done");
     setPending(false);
     router.push("/");
+    router.refresh();
   }
 
   if (step === "admin") {
