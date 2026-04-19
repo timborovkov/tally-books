@@ -146,7 +146,7 @@ For reference, the Tally project on Sentry:
 - **Project slug**: `tally-books`
 - **Project ID**: `4511241689235536`
 - **Region**: DE (`https://de.sentry.io/`)
-- **DSN**: `https://6a92acfdb03a17c942e998f41d7d8043@o4508020488536064.ingest.de.sentry.io/4511241689235536` — also checked into `.env.example`. Sentry DSNs are safe to publish (rate-limited, send-only), so it's fine for forks and self-hosters to start with this value and override when they provision their own project.
+- **DSN**: `https://6a92acfdb03a17c942e998f41d7d8043@o4508020488536064.ingest.de.sentry.io/4511241689235536`. Sentry DSNs are safe to publish (rate-limited, send-only), but `.env.example` ships a placeholder rather than this real value — otherwise forks that copy it verbatim would silently pollute Tally's error stream. Use this DSN only on the canonical Tally deployment; forks and self-hosters should provision their own project.
 - **OTLP ingest** (future telemetry): `https://o4508020488536064.ingest.de.sentry.io/api/4511241689235536/integration/otlp`
 - **Vercel log drain**: `https://o4508020488536064.ingest.de.sentry.io/api/4511241689235536/integration/vercel/logs`
 
