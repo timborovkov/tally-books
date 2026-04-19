@@ -87,6 +87,26 @@ describe("better-auth integration", () => {
     expect(users).toHaveLength(0);
   });
 
+  it("rejects signup when the password fails the complexity policy", async () => {
+    // 14 chars (comfortably above BetterAuth's minPasswordLength: 12),
+    // but all lowercase — no upper / digit / symbol. BetterAuth's own
+    // length gate would let this through; the hooks.before middleware
+    // must run validatePassword and reject it. This is the regression
+    // test for the "direct /api/auth/sign-up/email bypass" bugbot flagged.
+    await expect(
+      auth.api.signUpEmail({
+        body: {
+          name: "Weak",
+          email: "weak@example.test",
+          password: "abcdefghijklmn",
+        },
+      }),
+    ).rejects.toBeTruthy();
+
+    const users = await db.select().from(schema.users);
+    expect(users).toHaveLength(0);
+  });
+
   it("signInEmail issues a session row", async () => {
     await auth.api.signUpEmail({
       body: {

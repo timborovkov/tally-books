@@ -12,6 +12,8 @@ import { env } from "@/lib/env";
 import { anyAdminUserExists } from "@/lib/iam/bootstrap";
 import { hasUsableInviteForEmail } from "@/lib/iam/invites";
 
+import { PASSWORD_REASON_MESSAGES, validatePassword } from "./password-policy";
+
 // BetterAuth is the owner of auth state. We map its expected schema
 // onto the existing Drizzle tables (users, sessions) via `usePlural: true`;
 // the extra BetterAuth-owned tables (accounts, verifications, two_factors)
@@ -51,18 +53,37 @@ export const auth = betterAuth({
   //      invited email AFTER validating the token; at that point a usable
   //      invite row for that email must exist.
   // Anything outside those gates is arbitrary signup and we reject it.
+  //
+  // Password policy is ALSO enforced here so the BetterAuth HTTP endpoint
+  // itself rejects weak passwords. The server actions
+  // (createBootstrapAdminAction, acceptInviteAction) already call
+  // validatePassword up-front, but a direct POST to /api/auth/sign-up/email
+  // would otherwise bypass every rule except BetterAuth's own
+  // minPasswordLength. Checking in the hook closes the loophole without
+  // duplicating the policy.
+  //
   // Rate limiting against the DoS tail (attacker pre-creating an invited
   // email) is a v1.0 security-review item — see TODO.md.
   hooks: {
     before: createAuthMiddleware(async (ctx) => {
       if (ctx.path !== "/sign-up/email") return;
-      const email =
-        typeof ctx.body === "object" &&
-        ctx.body !== null &&
-        typeof (ctx.body as { email?: unknown }).email === "string"
-          ? (ctx.body as { email: string }).email.toLowerCase()
+      const body =
+        typeof ctx.body === "object" && ctx.body !== null
+          ? (ctx.body as { email?: unknown; password?: unknown })
           : null;
+      const email = typeof body?.email === "string" ? body.email.toLowerCase() : null;
       if (!email) throw new APIError("BAD_REQUEST", { message: "Email is required." });
+
+      // Enforce the full complexity + common-password policy at the HTTP
+      // boundary. BetterAuth's emailAndPassword.minPasswordLength is a
+      // length-only floor; our rules add upper/lower/digit/symbol and a
+      // top-100 breached-password deny list.
+      const password = typeof body?.password === "string" ? body.password : null;
+      if (!password) throw new APIError("BAD_REQUEST", { message: "Password is required." });
+      const pw = validatePassword(password);
+      if (!pw.ok) {
+        throw new APIError("BAD_REQUEST", { message: PASSWORD_REASON_MESSAGES[pw.reason] });
+      }
 
       // Use `anyAdminUserExists` (not `adminExists`). The stricter check
       // flips true the moment the first admin row is inserted, even if
