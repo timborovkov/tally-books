@@ -160,6 +160,15 @@ export async function finalizeInviteAcceptance(args: {
 
   const scope = parseInviteScope(invite.scope, invite.id);
 
+  // Everything that makes the invite "accepted" goes in one atomic unit:
+  // the invite UPDATE, the permissions INSERT, and the audit rows. If
+  // the audit writes were outside the tx, a failure there would leave
+  // the invite consumed and permissions committed but nothing to
+  // compensate against (the caller's catch path can't roll permissions
+  // back cleanly because permissions.user_id has ON DELETE NO ACTION
+  // and the cleanup chain would need to include permissions too). With
+  // audits inside, the tx rolls back as a unit and the caller can
+  // safely delete the freshly-created user row.
   await db.transaction(async (tx) => {
     const updated = await tx
       .update(invites)
@@ -183,27 +192,27 @@ export async function finalizeInviteAcceptance(args: {
         })),
       );
     }
-  });
 
-  await recordAudit(db, {
-    actorId: args.userId,
-    actorKind: "user",
-    action: "invite.accepted",
-    payload: { inviteId: invite.id, grants: scope.length },
-  });
-  for (const grant of scope) {
-    await recordAudit(db, {
-      actorId: invite.createdBy,
+    await recordAudit(tx, {
+      actorId: args.userId,
       actorKind: "user",
-      action: "permission.granted",
-      payload: {
-        targetUserId: args.userId,
-        resourceType: grant.resourceType,
-        access: grant.access,
-        scope: grant.scope ?? {},
-      },
+      action: "invite.accepted",
+      payload: { inviteId: invite.id, grants: scope.length },
     });
-  }
+    for (const grant of scope) {
+      await recordAudit(tx, {
+        actorId: invite.createdBy,
+        actorKind: "user",
+        action: "permission.granted",
+        payload: {
+          targetUserId: args.userId,
+          resourceType: grant.resourceType,
+          access: grant.access,
+          scope: grant.scope ?? {},
+        },
+      });
+    }
+  });
 }
 
 export async function revokeInvite(args: { inviteId: string; revokedBy: string }): Promise<void> {

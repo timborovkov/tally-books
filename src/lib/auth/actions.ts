@@ -7,7 +7,7 @@ import { and, eq, isNull } from "drizzle-orm";
 import { getDb } from "@/db/client";
 
 const db = getDb();
-import { accounts, sessions, twoFactors, users } from "@/db/schema";
+import { accounts, permissions, sessions, twoFactors, users } from "@/db/schema";
 import { auth } from "@/lib/auth/auth";
 import { anyAdminUserExists } from "@/lib/iam/bootstrap";
 import { recordAudit } from "@/lib/audit";
@@ -173,12 +173,21 @@ export async function markTwoFactorEnabledAction(): Promise<ActionResult> {
 // Atomicity: signUpEmail and finalizeInviteAcceptance run in separate
 // transactions. If finalize fails after signup succeeds (concurrent
 // acceptor wins the accepted_at IS NULL race, malformed scope jsonb,
-// DB glitch), we compensate by deleting the freshly-created rows so
-// the invitee can retry. `sessions.user_id` is ON DELETE NO ACTION per
-// data-structure.md §4.2 — BetterAuth may have issued a session even
-// with `autoSignIn: false` (the request headers drive cookie setup),
-// so we must delete sessions explicitly before users to avoid an FK
-// violation that would leave the orphan in place.
+// audit-log write failure, DB glitch), finalizeInviteAcceptance's
+// internal transaction rolls everything back (invite update +
+// permissions + audit rows) so there's nothing committed on that side
+// to clean up. We only need to delete the freshly-created user row so
+// the invitee can retry.
+//
+// `sessions.user_id` and `permissions.user_id` are both ON DELETE
+// NO ACTION per data-structure.md §4.2 and §4.4. BetterAuth may have
+// issued a session even with `autoSignIn: false` (the request headers
+// drive cookie setup), so we delete sessions explicitly before users.
+// `permissions` is included defensively: the finalize tx is
+// all-or-nothing today, but if a future refactor splits the audit
+// writes back out there could be permissions rows committed before
+// the audit failure lands us here — deleting them first prevents a
+// silent FK violation.
 export async function acceptInviteAction(input: {
   token: string;
   name: string;
@@ -220,6 +229,7 @@ export async function acceptInviteAction(input: {
         // doesn't leave us in a worse state than before.
         await db.transaction(async (tx) => {
           await tx.delete(sessions).where(eq(sessions.userId, createdUserId!));
+          await tx.delete(permissions).where(eq(permissions.userId, createdUserId!));
           await tx.delete(twoFactors).where(eq(twoFactors.userId, createdUserId!));
           await tx.delete(accounts).where(eq(accounts.userId, createdUserId!));
           await tx.delete(users).where(eq(users.id, createdUserId!));
