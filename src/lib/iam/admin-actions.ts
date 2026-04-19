@@ -77,12 +77,22 @@ export async function createInviteAction(
     return { ok: false, error: "An outstanding invite already exists for this email." };
   }
 
+  // createInvite commits the invite row + `invite.created` audit in one
+  // tx. If the email send then fails, we're in a bad state: the invite
+  // row persists, the outstanding-invite duplicate check above blocks
+  // re-creation for the same email, but the admin sees "invite failed"
+  // and has no visibility into the phantom row. Compensate by revoking
+  // the invite (not deleting it) so the audit log keeps a coherent
+  // invite.created + invite.revoked paper trail AND the duplicate
+  // check's `revokedAt IS NULL` partial frees the email for retry.
+  let createdInviteId: string | null = null;
   try {
     const { invite, token } = await createInvite({
       email,
       scope,
       createdBy: admin.id,
     });
+    createdInviteId = invite.id;
     const inviteUrl = `${env.APP_URL}/invite/${token}`;
     const scopeSummary = scope.map((g) => `${g.access.padEnd(5)}  ${g.resourceType}`).join("\n");
     await getMailer().sendInvite({
@@ -101,6 +111,20 @@ export async function createInviteAction(
     revalidatePath("/admin/invites");
     return { ok: true, data: { inviteId: invite.id } };
   } catch (err) {
+    if (createdInviteId) {
+      try {
+        // revokeInviteService is idempotent (no-op if the partial WHERE
+        // doesn't match), and internally atomic (UPDATE + audit in one
+        // tx). If this throws, the invite persists with no
+        // `invite.revoked` audit — the admin will see it in the
+        // outstanding list and can revoke manually. Better than the
+        // alternative of hiding the error and pretending the invite
+        // is clean.
+        await revokeInviteService({ inviteId: createdInviteId, revokedBy: admin.id });
+      } catch {
+        // Swallow — the outer error is what matters to the admin.
+      }
+    }
     const msg = err instanceof Error ? err.message : "Invite failed.";
     return { ok: false, error: msg };
   }

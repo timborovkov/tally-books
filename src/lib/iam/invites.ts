@@ -100,24 +100,30 @@ export async function createInvite(args: {
   const ttlHours = args.ttlHours ?? 72;
   const expiresAt = new Date(nowUtcMs() + ttlHours * 60 * 60 * 1000);
 
-  const [invite] = await db
-    .insert(invites)
-    .values({
-      email: args.email.toLowerCase(),
-      scope: args.scope,
-      tokenHash,
-      createdBy: args.createdBy,
-      expiresAt,
-    })
-    .returning();
+  // Insert + audit in one tx so `invite row committed without an audit
+  // entry` is not representable. Same pattern as finalizeInviteAcceptance.
+  const invite = await db.transaction(async (tx) => {
+    const [row] = await tx
+      .insert(invites)
+      .values({
+        email: args.email.toLowerCase(),
+        scope: args.scope,
+        tokenHash,
+        createdBy: args.createdBy,
+        expiresAt,
+      })
+      .returning();
 
-  if (!invite) throw new Error("Invite insert returned no row");
+    if (!row) throw new Error("Invite insert returned no row");
 
-  await recordAudit(db, {
-    actorId: args.createdBy,
-    actorKind: "user",
-    action: "invite.created",
-    payload: { inviteId: invite.id, email: invite.email, scope: args.scope },
+    await recordAudit(tx, {
+      actorId: args.createdBy,
+      actorKind: "user",
+      action: "invite.created",
+      payload: { inviteId: row.id, email: row.email, scope: args.scope },
+    });
+
+    return row;
   });
 
   return { invite, token };
@@ -223,20 +229,26 @@ export async function revokeInvite(args: { inviteId: string; revokedBy: string }
   // missing. Skip the audit in that case — otherwise we'd be writing
   // phantom "invite.revoked" rows that the audit reader can't
   // distinguish from real revocations.
-  const updated = await db
-    .update(invites)
-    .set({ revokedAt: new Date(), revokedBy: args.revokedBy })
-    .where(
-      and(eq(invites.id, args.inviteId), isNull(invites.revokedAt), isNull(invites.acceptedAt)),
-    )
-    .returning({ id: invites.id });
-  if (updated.length === 0) return;
+  //
+  // UPDATE + audit live in one tx so `invite revoked without an audit
+  // entry` is not representable. Same pattern as
+  // finalizeInviteAcceptance / removeUserTransaction.
+  await db.transaction(async (tx) => {
+    const updated = await tx
+      .update(invites)
+      .set({ revokedAt: new Date(), revokedBy: args.revokedBy })
+      .where(
+        and(eq(invites.id, args.inviteId), isNull(invites.revokedAt), isNull(invites.acceptedAt)),
+      )
+      .returning({ id: invites.id });
+    if (updated.length === 0) return;
 
-  await recordAudit(db, {
-    actorId: args.revokedBy,
-    actorKind: "user",
-    action: "invite.revoked",
-    payload: { inviteId: args.inviteId },
+    await recordAudit(tx, {
+      actorId: args.revokedBy,
+      actorKind: "user",
+      action: "invite.revoked",
+      payload: { inviteId: args.inviteId },
+    });
   });
 }
 

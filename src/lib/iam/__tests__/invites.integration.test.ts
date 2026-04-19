@@ -90,6 +90,26 @@ describe("invites", () => {
     expect(invite.tokenHash).not.toContain(token);
   });
 
+  it("createInvite writes invite.created audit atomically with the row", async () => {
+    const adminId = await seedAdmin();
+    const { invite } = await createInvite({
+      email: "audit@example.test",
+      scope: [{ resourceType: "expenses", access: "read" }],
+      createdBy: adminId,
+    });
+    const audits = await db
+      .select({
+        action: schema.auditLog.action,
+        actorId: schema.auditLog.actorId,
+        payload: schema.auditLog.payload,
+      })
+      .from(schema.auditLog)
+      .where(eq(schema.auditLog.action, "invite.created"));
+    expect(audits).toHaveLength(1);
+    expect(audits[0]?.actorId).toBe(adminId);
+    expect(audits[0]?.payload).toMatchObject({ inviteId: invite.id, email: "audit@example.test" });
+  });
+
   it("rejects empty scope", async () => {
     const adminId = await seedAdmin();
     await expect(
