@@ -147,18 +147,27 @@ export async function markBootstrapCompletedAction(): Promise<ActionResult> {
   // (each sees bootstrapCompletedAt=null in its snapshot) — but only the
   // first UPDATE wins the partial WHERE. The loser must NOT emit a
   // second `bootstrap.completed` audit row.
+  //
+  // UPDATE + audit inside one tx so the `.returning()` idempotency guard
+  // doesn't permanently lose the audit row on a transient audit_log
+  // write failure: if audit throws, the UPDATE rolls back too, so the
+  // next retry sees `bootstrapCompletedAt IS NULL` again and can
+  // reattempt both together. Same pattern as finalizeInviteAcceptance /
+  // removeUserTransaction / createInvite / revokeInvite.
   const now = new Date();
-  const updated = await db
-    .update(users)
-    .set({ bootstrapCompletedAt: now, updatedAt: now })
-    .where(and(eq(users.id, user.id), isNull(users.bootstrapCompletedAt)))
-    .returning({ id: users.id });
-  if (updated.length === 0) return { ok: true };
+  await db.transaction(async (tx) => {
+    const updated = await tx
+      .update(users)
+      .set({ bootstrapCompletedAt: now, updatedAt: now })
+      .where(and(eq(users.id, user.id), isNull(users.bootstrapCompletedAt)))
+      .returning({ id: users.id });
+    if (updated.length === 0) return; // no-op: another tab won the race
 
-  await recordAudit(db, {
-    actorId: user.id,
-    actorKind: "user",
-    action: "bootstrap.completed",
+    await recordAudit(tx, {
+      actorId: user.id,
+      actorKind: "user",
+      action: "bootstrap.completed",
+    });
   });
   return { ok: true };
 }
@@ -186,19 +195,24 @@ export async function markTwoFactorEnabledAction(): Promise<ActionResult> {
   // `.returning()` — same idempotency story as markBootstrapCompletedAction.
   // The partial WHERE (isNull(twoFactorEnabledAt)) means a second caller
   // matches zero rows; we skip the audit so concurrent tabs can't write
-  // duplicate `2fa.enrolled` entries.
+  // duplicate `2fa.enrolled` entries. UPDATE + audit inside one tx so a
+  // transient audit_log write failure rolls the UPDATE back and the
+  // next retry can reattempt both — same pattern as
+  // markBootstrapCompletedAction.
   const now = new Date();
-  const updated = await db
-    .update(users)
-    .set({ twoFactorEnabledAt: now, twoFactorEnabled: true, updatedAt: now })
-    .where(and(eq(users.id, session.user.id), isNull(users.twoFactorEnabledAt)))
-    .returning({ id: users.id });
-  if (updated.length === 0) return { ok: true };
+  await db.transaction(async (tx) => {
+    const updated = await tx
+      .update(users)
+      .set({ twoFactorEnabledAt: now, twoFactorEnabled: true, updatedAt: now })
+      .where(and(eq(users.id, session.user.id), isNull(users.twoFactorEnabledAt)))
+      .returning({ id: users.id });
+    if (updated.length === 0) return; // no-op: another tab won the race
 
-  await recordAudit(db, {
-    actorId: session.user.id,
-    actorKind: "user",
-    action: "2fa.enrolled",
+    await recordAudit(tx, {
+      actorId: session.user.id,
+      actorKind: "user",
+      action: "2fa.enrolled",
+    });
   });
   return { ok: true };
 }
