@@ -49,6 +49,17 @@ export async function createBootstrapAdminAction(input: {
   // compare) miss the row.
   const email = input.email.trim().toLowerCase();
 
+  // Atomicity story mirrors acceptInviteAction: signUpEmail runs its own
+  // transaction (BetterAuth HTTP call, not a DB op we control). If the
+  // subsequent promote-to-admin UPDATE or the audit write fails, we
+  // compensate by deleting the half-created user row so the invitee /
+  // operator can retry with the same email. Without this, a transient
+  // DB glitch between signup and promotion leaves a `member` user row
+  // that blocks re-bootstrap via the unique-email constraint, but
+  // `anyAdminUserExists()` still returns false so the setup wizard
+  // stays reachable — the original email is permanently unusable with
+  // no UI to recover.
+  let createdUserId: string | null = null;
   try {
     // `returnHeaders` is intentionally omitted — BetterAuth wraps the
     // payload as { headers, response } only when it's true, and we don't
@@ -65,23 +76,50 @@ export async function createBootstrapAdminAction(input: {
     if (!result?.user?.id) {
       return { ok: false, error: "Could not create admin user." };
     }
-    const userId = result.user.id;
-    // Promote to admin. The admin plugin stores role as a string but our
-    // column is the user_role enum; 'admin' is a valid value. users.updated_at
-    // has no ON UPDATE trigger, so every app-level mutation sets it
-    // explicitly — otherwise "last modified" queries would stall.
-    await db
-      .update(users)
-      .set({ role: "admin", updatedAt: new Date() })
-      .where(eq(users.id, userId));
-    await recordAudit(db, {
-      actorId: userId,
-      actorKind: "user",
-      action: "bootstrap.admin.created",
-      payload: { email },
+    createdUserId = result.user.id;
+    // Promotion + audit in one tx so either both land or neither does.
+    // If this throws, the outer catch runs the compensation. The admin
+    // plugin stores role as a string but our column is the user_role
+    // enum; 'admin' is a valid value. users.updated_at has no ON UPDATE
+    // trigger, so every app-level mutation sets it explicitly —
+    // otherwise "last modified" queries would stall.
+    const now = new Date();
+    await db.transaction(async (tx) => {
+      await tx
+        .update(users)
+        .set({ role: "admin", updatedAt: now })
+        .where(eq(users.id, createdUserId!));
+      await recordAudit(tx, {
+        actorId: createdUserId!,
+        actorKind: "user",
+        action: "bootstrap.admin.created",
+        payload: { email },
+      });
     });
-    return { ok: true, data: { userId } };
+    return { ok: true, data: { userId: createdUserId } };
   } catch (err) {
+    // Compensation: same chain used by acceptInviteAction. `sessions` and
+    // `permissions` have ON DELETE NO ACTION, so order matters. Bootstrap
+    // shouldn't have permissions rows (no invite scope was applied), but
+    // we include the delete defensively so a future refactor can't
+    // silently reintroduce an FK violation.
+    if (createdUserId) {
+      try {
+        await db.transaction(async (tx) => {
+          await tx.delete(sessions).where(eq(sessions.userId, createdUserId!));
+          await tx.delete(permissions).where(eq(permissions.userId, createdUserId!));
+          await tx.delete(twoFactors).where(eq(twoFactors.userId, createdUserId!));
+          await tx.delete(accounts).where(eq(accounts.userId, createdUserId!));
+          await tx.delete(users).where(eq(users.id, createdUserId!));
+        });
+      } catch {
+        // If compensation fails, the orphan survives. The setup wizard
+        // stays reachable (no admin row) but this specific email is
+        // blocked until an operator cleans up directly in the DB. Beats
+        // the alternative of silently leaving a `member` role user and
+        // pretending bootstrap succeeded.
+      }
+    }
     const msg = err instanceof Error ? err.message : "Signup failed.";
     return { ok: false, error: msg };
   }
