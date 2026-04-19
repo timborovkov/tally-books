@@ -1,21 +1,13 @@
-/**
- * Temporary actor resolver — TODO(auth) replace when BetterAuth lands.
- *
- * The Entities & Jurisdictions feature ships before the auth/IAM
- * milestone (see TODO.md "Auth & IAM" section). Server actions need
- * an actor id to attribute audit_log rows to, but there's no real
- * session yet. This shim returns the bootstrap admin user (created
- * by the seed script) so the audit chain isn't broken.
- *
- * When BetterAuth integrates, swap the body of `getCurrentActor` for
- * the real session lookup. Call sites — server actions, the audit
- * helper — never change.
- */
-import { eq } from "drizzle-orm";
-
+// Resolver for the authenticated actor attributed to audit_log writes and
+// edit-session ownership. Reads the real BetterAuth session via
+// getCurrentUser(); throws when no session is present so server actions
+// can't silently attribute a mutation to nobody.
+//
+// The `db` parameter is kept for call-site compatibility and to keep the
+// door open for a future per-tx actor resolver (e.g. impersonation
+// inside a transaction). It's unused today.
 import { type Db } from "@/db/client";
-import { users } from "@/db/schema";
-import { env } from "@/lib/env";
+import { getCurrentUser } from "@/lib/iam/session";
 
 import type { ActorKind } from "./domain-types";
 
@@ -24,23 +16,12 @@ export interface CurrentActor {
   kind: ActorKind;
 }
 
-let cachedAdminId: string | null = null;
-
-export async function getCurrentActor(db: Db): Promise<CurrentActor> {
-  if (!cachedAdminId) {
-    const [row] = await db
-      .select({ id: users.id })
-      .from(users)
-      .where(eq(users.email, env.SEED_ADMIN_EMAIL))
-      .limit(1);
-
-    if (!row) {
-      throw new Error(
-        `auth-shim: no user found for SEED_ADMIN_EMAIL=${env.SEED_ADMIN_EMAIL}. ` +
-          `Run \`pnpm db:seed\` first.`,
-      );
-    }
-    cachedAdminId = row.id;
+export async function getCurrentActor(_db: Db): Promise<CurrentActor> {
+  const user = await getCurrentUser();
+  if (!user) {
+    throw new Error(
+      "getCurrentActor: no authenticated session. Server actions in (app) must run behind the auth gate.",
+    );
   }
-  return { userId: cachedAdminId, kind: "user" };
+  return { userId: user.id, kind: "user" };
 }

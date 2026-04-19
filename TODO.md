@@ -45,14 +45,14 @@ The minimum scaffolding needed to start building features safely.
 
 ### Auth & IAM
 
-- [ ] BetterAuth integrated
-- [ ] 2FA mandatory (TOTP)
-- [ ] Strong password policy enforced
-- [ ] No SSO (explicitly disabled)
-- [ ] First-boot setup wizard: create admin → guided initial config
-- [ ] Invite flow: admin sends scoped invite → email → accept → account created
-- [ ] User & invite management UI for admin
-- [ ] Permission scope model (resource × access) wired into services
+- [x] BetterAuth integrated
+- [x] 2FA mandatory (TOTP)
+- [x] Strong password policy enforced
+- [x] No SSO (explicitly disabled)
+- [x] First-boot setup wizard: create admin → guided initial config
+- [x] Invite flow: admin sends scoped invite → email → accept → account created
+- [x] User & invite management UI for admin
+- [x] Permission scope model (resource × access) wired into services
 
 ### Entities & jurisdictions
 
