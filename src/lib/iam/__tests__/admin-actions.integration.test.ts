@@ -108,6 +108,51 @@ describe("removeUserTransaction (last-admin guard + serialization)", () => {
     expect(active).toHaveLength(1);
   });
 
+  it("is idempotent: removing an already-removed user is a no-op and writes no audit row", async () => {
+    // Two admin tabs racing to remove the same user, or an operator
+    // retrying after a network blip, hit this path. The transaction's
+    // UPDATE...WHERE removed_at IS NULL matches zero rows on the second
+    // call, and the audit row must NOT fire — otherwise the audit log
+    // records phantom removals.
+    const aId = await seedAdmin("a@example.test");
+    const bId = await seedAdmin("b@example.test");
+
+    const first = await removeUserTransaction({ targetUserId: bId, removerId: aId });
+    expect(first.removed).toBe(true);
+
+    const second = await removeUserTransaction({ targetUserId: bId, removerId: aId });
+    expect(second.removed).toBe(false);
+
+    const audits = await db
+      .select({ action: schema.auditLog.action })
+      .from(schema.auditLog)
+      .where(eq(schema.auditLog.action, "user.removed"));
+    expect(audits).toHaveLength(1);
+  });
+
+  it("writes the user.removed audit row atomically with the removal", async () => {
+    // Pre-fix: the audit row was written by removeUserAction AFTER the
+    // tx committed. If the audit write failed, the user ended up
+    // removed with no audit trail. Now the audit is inside the tx, so
+    // a single successful removal must have exactly one audit row.
+    const aId = await seedAdmin("a@example.test");
+    const bId = await seedAdmin("b@example.test");
+
+    await removeUserTransaction({ targetUserId: bId, removerId: aId });
+
+    const audits = await db
+      .select({
+        action: schema.auditLog.action,
+        actorId: schema.auditLog.actorId,
+        payload: schema.auditLog.payload,
+      })
+      .from(schema.auditLog)
+      .where(eq(schema.auditLog.action, "user.removed"));
+    expect(audits).toHaveLength(1);
+    expect(audits[0]?.actorId).toBe(aId);
+    expect(audits[0]?.payload).toMatchObject({ targetUserId: bId });
+  });
+
   it("revokes the target's permissions atomically with the removal", async () => {
     const aId = await seedAdmin("a@example.test");
     const bId = await seedAdmin("b@example.test");

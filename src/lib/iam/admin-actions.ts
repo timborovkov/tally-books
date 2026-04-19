@@ -123,8 +123,9 @@ export async function removeUserAction(formData: FormData): Promise<ActionResult
     return { ok: false, error: "You can't remove your own admin account." };
   }
 
+  let removed: boolean;
   try {
-    await removeUserTransaction({ targetUserId, removerId: admin.id });
+    ({ removed } = await removeUserTransaction({ targetUserId, removerId: admin.id }));
   } catch (err) {
     if (err instanceof LastAdminError) {
       return {
@@ -135,23 +136,31 @@ export async function removeUserAction(formData: FormData): Promise<ActionResult
     throw err;
   }
 
-  // Kill their live sessions via the admin plugin.
+  // No-op path: target was already removed (concurrent admin tab, retry
+  // after network blip). The tx's partial WHERE matched zero rows, so
+  // it did NOT write the audit row. Skip the side effects too so we
+  // don't revoke an empty session set or spam the path revalidation.
+  // Same idempotency contract as markBootstrapCompletedAction /
+  // markTwoFactorEnabledAction.
+  if (!removed) return { ok: true };
+
+  // Kill their live sessions via the admin plugin. Runs AFTER the tx
+  // commits (it's a BetterAuth HTTP call, not a DB op, so it can't be
+  // rolled into the tx). If BetterAuth's call throws — or partially
+  // succeeds and throws — the removal and audit are already durable,
+  // so we swallow the failure: the session cookie will fail its next
+  // server-side check against `users.removed_at IS NOT NULL` anyway.
   try {
     await auth.api.revokeUserSessions({
       body: { userId: targetUserId },
       headers: await headers(),
     });
   } catch {
-    // BetterAuth already throws if the user has no sessions; don't fail
-    // the remove for that.
+    // BetterAuth throws when the user has no sessions; don't fail the
+    // remove for that, and don't fail it on a transient revoke error
+    // either — the removal is already committed.
   }
 
-  await recordAudit(db, {
-    actorId: admin.id,
-    actorKind: "user",
-    action: "user.removed",
-    payload: { targetUserId },
-  });
   revalidatePath("/admin/users");
   return { ok: true };
 }
