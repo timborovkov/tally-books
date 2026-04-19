@@ -37,7 +37,15 @@ ALTER TABLE "users" ADD COLUMN "two_factor_enabled" boolean DEFAULT false NOT NU
 ALTER TABLE "users" ADD COLUMN "banned" boolean DEFAULT false NOT NULL;--> statement-breakpoint
 ALTER TABLE "users" ADD COLUMN "ban_reason" text;--> statement-breakpoint
 ALTER TABLE "users" ADD COLUMN "ban_expires" timestamp with time zone;--> statement-breakpoint
-ALTER TABLE "sessions" ADD COLUMN "token" text NOT NULL;--> statement-breakpoint
+-- Add `sessions.token` in three steps so the NOT NULL constraint lands
+-- even if any session rows already exist (e.g. a dev seeded one manually
+-- for testing on 0000-0002). The token column has a UNIQUE index too,
+-- so we can't DEFAULT to a constant — use gen_random_uuid() per-row for
+-- the backfill. Sessions predating BetterAuth have no usable token
+-- anyway; they'll fail the first cookie check and get pruned.
+ALTER TABLE "sessions" ADD COLUMN "token" text;--> statement-breakpoint
+UPDATE "sessions" SET "token" = gen_random_uuid()::text WHERE "token" IS NULL;--> statement-breakpoint
+ALTER TABLE "sessions" ALTER COLUMN "token" SET NOT NULL;--> statement-breakpoint
 ALTER TABLE "sessions" ADD COLUMN "impersonated_by" text;--> statement-breakpoint
 ALTER TABLE "sessions" ADD COLUMN "updated_at" timestamp with time zone DEFAULT now() NOT NULL;--> statement-breakpoint
 ALTER TABLE "accounts" ADD CONSTRAINT "accounts_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint

@@ -9,7 +9,7 @@ import { getDb } from "@/db/client";
 const db = getDb();
 import { newId } from "@/db/id";
 import { env } from "@/lib/env";
-import { adminExists } from "@/lib/iam/bootstrap";
+import { anyAdminUserExists } from "@/lib/iam/bootstrap";
 import { hasUsableInviteForEmail } from "@/lib/iam/invites";
 
 // BetterAuth is the owner of auth state. We map its expected schema
@@ -64,7 +64,12 @@ export const auth = betterAuth({
           : null;
       if (!email) throw new APIError("BAD_REQUEST", { message: "Email is required." });
 
-      if (!(await adminExists())) return; // bootstrap flow
+      // Use `anyAdminUserExists` (not `adminExists`). The stricter check
+      // flips true the moment the first admin row is inserted, even if
+      // they haven't completed 2FA yet. Without this, a second /setup
+      // visitor could slip through this gate by signing up as "bootstrap"
+      // before the first admin finishes enrollment.
+      if (!(await anyAdminUserExists())) return; // bootstrap flow
       if (await hasUsableInviteForEmail(email)) return; // invite-accept flow
 
       throw new APIError("FORBIDDEN", {

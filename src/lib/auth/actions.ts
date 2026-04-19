@@ -9,7 +9,7 @@ import { getDb } from "@/db/client";
 const db = getDb();
 import { accounts, sessions, twoFactors, users } from "@/db/schema";
 import { auth } from "@/lib/auth/auth";
-import { adminExists } from "@/lib/iam/bootstrap";
+import { anyAdminUserExists } from "@/lib/iam/bootstrap";
 import { recordAudit } from "@/lib/audit";
 import { finalizeInviteAcceptance, findUsableInvite } from "@/lib/iam/invites";
 
@@ -25,7 +25,17 @@ export async function createBootstrapAdminAction(input: {
   name: string;
   password: string;
 }): Promise<ActionResult<{ userId: string }>> {
-  if (await adminExists()) {
+  // Use the stricter `anyAdminUserExists` (not `adminExists`). The latter
+  // only flips after the first admin completes 2FA, which leaves a
+  // multi-minute window where a second /setup visitor could create
+  // another admin account under a different email. Guarding on the
+  // admin row's existence (regardless of bootstrap_completed_at) closes
+  // that window. Two simultaneous callers racing past this check at
+  // the same millisecond can still both reach signUpEmail, but they'd
+  // collide on users.email uniqueness (same email) or produce two rows
+  // that the wizard's second visit can surface for admin cleanup (different
+  // emails). DB-level advisory-lock serialization is a v1.0 item.
+  if (await anyAdminUserExists()) {
     return { ok: false, error: "An admin already exists. Setup is complete." };
   }
   const pw = validatePassword(input.password);
