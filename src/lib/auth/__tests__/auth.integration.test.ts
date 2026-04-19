@@ -229,6 +229,48 @@ describe("better-auth integration", () => {
     ).rejects.toBeTruthy();
   });
 
+  it("lowercases the email on signup so invite matching doesn't drift", async () => {
+    // Seed admin + a lowercased invite (createInvite always stores lowercase).
+    const adminId = newId();
+    await db.insert(schema.users).values({
+      id: adminId,
+      email: "admin@example.test",
+      role: "admin",
+      twoFactorEnabled: true,
+      twoFactorEnabledAt: new Date(),
+      bootstrapCompletedAt: new Date(),
+    });
+    await db.insert(schema.invites).values({
+      id: newId(),
+      email: "mixed@example.test",
+      scope: [{ resourceType: "expenses", access: "read" }],
+      tokenHash: "deadbeef-mixed",
+      createdBy: adminId,
+      expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+    });
+
+    // POST with a mixed-case email. Without the hook normalizing
+    // ctx.body.email, BetterAuth would persist "MiXeD@Example.Test"
+    // on the users row and the subsequent finalizeInviteAcceptance
+    // lookup (which compares against the lowercased invites.email)
+    // would miss.
+    const res = await auth.api.signUpEmail({
+      body: {
+        name: "Mixed",
+        email: "MiXeD@Example.Test",
+        password: "Sup3rStr0ng!Passphrase",
+      },
+    });
+    expect(res?.user?.email).toBe("mixed@example.test");
+
+    // Authoritative check: the users row itself was persisted lowercased.
+    const [row] = await db
+      .select({ email: schema.users.email })
+      .from(schema.users)
+      .where(eq(schema.users.email, "mixed@example.test"));
+    expect(row?.email).toBe("mixed@example.test");
+  });
+
   // Guards the 2FA bypass class: markTwoFactorEnabledAction rejects when
   // no verified two_factors row exists for the user. This is the DB-level
   // check the action performs — proving the query discriminates correctly

@@ -73,6 +73,17 @@ export const auth = betterAuth({
           : null;
       const email = typeof body?.email === "string" ? body.email.toLowerCase() : null;
       if (!email) throw new APIError("BAD_REQUEST", { message: "Email is required." });
+      // Normalize ctx.body.email to the lowered form so BetterAuth's
+      // handler persists the canonical value. Without this, a POST of
+      // `INVITED@example.test` would pass the invite check below (we
+      // lowercase the local copy) but BetterAuth would store the
+      // mixed-case email on the users row. That row no longer matches
+      // `invites.email` (which is stored lowercased by createInvite),
+      // so finalizeInviteAcceptance's hasUsableInviteForEmail check
+      // would miss, orphaning the new user from the invite flow.
+      // createBootstrapAdminAction does the same normalization before
+      // calling signUpEmail; this hook is the HTTP-boundary equivalent.
+      if (body) body.email = email;
 
       // Enforce the full complexity + common-password policy at the HTTP
       // boundary. BetterAuth's emailAndPassword.minPasswordLength is a
