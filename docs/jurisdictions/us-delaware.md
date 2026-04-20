@@ -13,11 +13,11 @@ Reference for Tally's Delaware jurisdiction config. Mirrors [`src/lib/jurisdicti
 
 ### Entity-type quick reference
 
-| Code        | Full name                   | Notes                                                                 |
-| ----------- | --------------------------- | --------------------------------------------------------------------- |
-| **LLC**     | Limited Liability Company    | Pass-through by default (members report income personally). Flat $300/year Delaware LLC tax. |
-| **C_CORP**  | C corporation                | Taxed at entity level; distributions to shareholders are taxed again (double taxation). |
-| **S_CORP**  | S corporation                | Pass-through for federal tax, with shareholder and ownership limits.  |
+| Code       | Full name                 | Notes                                                                                        |
+| ---------- | ------------------------- | -------------------------------------------------------------------------------------------- |
+| **LLC**    | Limited Liability Company | Pass-through by default (members report income personally). Flat $300/year Delaware LLC tax. |
+| **C_CORP** | C corporation             | Taxed at entity level; distributions to shareholders are taxed again (double taxation).      |
+| **S_CORP** | S corporation             | Pass-through for federal tax, with shareholder and ownership limits.                         |
 
 ## VAT / Sales tax
 
@@ -29,10 +29,10 @@ Reference for Tally's Delaware jurisdiction config. Mirrors [`src/lib/jurisdicti
 
 ## Filing schedules
 
-| Thing             | Cadence | Due rule                                                                      |
-| ----------------- | ------- | ----------------------------------------------------------------------------- |
-| Annual report     | Yearly  | 1 March (Delaware franchise tax + annual report).                             |
-| Income tax return | Yearly  | 15 April (federal personal); 15 March (S-corp / partnership).                 |
+| Thing             | Cadence | Due rule                                                      |
+| ----------------- | ------- | ------------------------------------------------------------- |
+| Annual report     | Yearly  | 1 March (Delaware franchise tax + annual report).             |
+| Income tax return | Yearly  | 15 April (federal personal); 15 March (S-corp / partnership). |
 
 Delaware's franchise tax and annual report are filed together via the Division of Corporations. Federal income tax goes to the IRS.
 
@@ -44,11 +44,11 @@ Delaware's franchise tax and annual report are filed together via the Division o
 
 ## Contributions
 
-| ID                     | Label                       | Default rate |
-| ---------------------- | --------------------------- | ------------ |
-| `fica_employer`        | FICA (employer share)        | 7.65 %       |
-| `fica_employee`        | FICA (employee share)        | 7.65 %       |
-| `self_employment_tax`  | Self-employment tax          | 15.3 %       |
+| ID                    | Label                 | Default rate |
+| --------------------- | --------------------- | ------------ |
+| `fica_employer`       | FICA (employer share) | 7.65 %       |
+| `fica_employee`       | FICA (employee share) | 7.65 %       |
+| `self_employment_tax` | Self-employment tax   | 15.3 %       |
 
 FICA = Social Security (6.2 %) + Medicare (1.45 %). The self-employment tax (15.3 %) is the combined employer+employee share that a self-employed person pays themselves.
 

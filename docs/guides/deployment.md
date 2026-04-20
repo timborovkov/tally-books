@@ -54,17 +54,17 @@ The `app` service is gated behind the `app` profile so `docker compose up -d` wi
 
 The canonical reference is [`.env.example`](../../.env.example) — every var has an inline comment explaining what it does and whether it's required. Summary:
 
-| Var                                     | Purpose                                                                     | Required?                              |
-| --------------------------------------- | --------------------------------------------------------------------------- | -------------------------------------- |
-| `APP_PORT`                              | Port the app listens on.                                                    | Default 3000.                          |
-| `APP_URL`                               | Public URL. Used as BetterAuth trusted origin and invite-link base.          | Required.                              |
-| `BETTER_AUTH_SECRET`                    | 32+ char random. Signs session cookies and 2FA challenges.                   | Required. **Must override in prod.**   |
-| `RESEND_API_KEY` / `RESEND_FROM_EMAIL`  | Transactional email for invites.                                             | Required. Placeholder rejected in prod.|
-| `DATABASE_URL`                          | Postgres connection string.                                                  | Required.                              |
-| `MINIO_ENDPOINT` / `_USE_SSL` / `_ACCESS_KEY` / `_SECRET_KEY` | S3 / MinIO connection.                                 | Required once blob writes land (v0.2). |
-| `QDRANT_URL` / `QDRANT_API_KEY`         | Vector store connection.                                                     | Required once embeddings land (v0.5).  |
-| `NEXT_PUBLIC_SENTRY_ENABLED` / `_DSN`   | Error reporting. See [`sentry.md`](../architecture/sentry.md).               | Optional; `false` disables everything. |
-| `SENTRY_*` (build-time)                 | Source-map upload. `SENTRY_AUTH_TOKEN` blank = skip upload.                  | Optional.                              |
+| Var                                                           | Purpose                                                             | Required?                               |
+| ------------------------------------------------------------- | ------------------------------------------------------------------- | --------------------------------------- |
+| `APP_PORT`                                                    | Port the app listens on.                                            | Default 3000.                           |
+| `APP_URL`                                                     | Public URL. Used as BetterAuth trusted origin and invite-link base. | Required.                               |
+| `BETTER_AUTH_SECRET`                                          | 32+ char random. Signs session cookies and 2FA challenges.          | Required. **Must override in prod.**    |
+| `RESEND_API_KEY` / `RESEND_FROM_EMAIL`                        | Transactional email for invites.                                    | Required. Placeholder rejected in prod. |
+| `DATABASE_URL`                                                | Postgres connection string.                                         | Required.                               |
+| `MINIO_ENDPOINT` / `_USE_SSL` / `_ACCESS_KEY` / `_SECRET_KEY` | S3 / MinIO connection.                                              | Required once blob writes land (v0.2).  |
+| `QDRANT_URL` / `QDRANT_API_KEY`                               | Vector store connection.                                            | Required once embeddings land (v0.5).   |
+| `NEXT_PUBLIC_SENTRY_ENABLED` / `_DSN`                         | Error reporting. See [`sentry.md`](../architecture/sentry.md).      | Optional; `false` disables everything.  |
+| `SENTRY_*` (build-time)                                       | Source-map upload. `SENTRY_AUTH_TOKEN` blank = skip upload.         | Optional.                               |
 
 The env schema lives in [`src/lib/env.ts`](../../src/lib/env.ts) — anything missing or malformed rejects at boot with a readable error instead of crashing mid-request. Adding a new var is a Zod entry in that file plus an `.env.example` line.
 

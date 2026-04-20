@@ -80,12 +80,12 @@ The "editing a VAT declaration while background rerun happens" problem.
 
 On every versioned parent row (spread from [`versionedColumns()`](../../src/db/schema/versioning.ts)):
 
-| Column                            | Type    | Meaning                                                                                  |
-| --------------------------------- | ------- | ---------------------------------------------------------------------------------------- |
-| `auto_refresh_locked`             | `bool`  | User pin. Recalc worker leaves this Thing alone.                                         |
-| `refresh_pending`                 | `bool`  | Source changed while the Thing was blocked (filed / period-locked / in edit session).    |
-| `underlying_data_changed`         | `bool`  | For filed Things: sources moved post-filing. UI surfaces this.                           |
-| `underlying_data_changed_payload` | `jsonb` | Describes what changed (new totals, added/removed source rows). Read by the amend flow.  |
+| Column                            | Type    | Meaning                                                                                 |
+| --------------------------------- | ------- | --------------------------------------------------------------------------------------- |
+| `auto_refresh_locked`             | `bool`  | User pin. Recalc worker leaves this Thing alone.                                        |
+| `refresh_pending`                 | `bool`  | Source changed while the Thing was blocked (filed / period-locked / in edit session).   |
+| `underlying_data_changed`         | `bool`  | For filed Things: sources moved post-filing. UI surfaces this.                          |
+| `underlying_data_changed_payload` | `jsonb` | Describes what changed (new totals, added/removed source rows). Read by the amend flow. |
 
 The `edit_sessions` table (also in [`versioning.ts`](../../src/db/schema/versioning.ts)) has one row per editor — `unique(thing_type, thing_id)` means one editor per Thing at a time. Second user hitting the editor gets a "this Thing is being edited by X" screen with a takeover option.
 

@@ -33,20 +33,20 @@ No UI or route handler touches the database directly. Every write flows through 
 
 ## The folders
 
-| Path                        | What lives there                                                                        |
-| --------------------------- | --------------------------------------------------------------------------------------- |
-| `src/app/(app)/**`          | Authenticated surface. Layout at `src/app/(app)/layout.tsx` enforces session + 2FA.     |
-| `src/app/setup/**`          | First-boot admin wizard — the only writable route when no admin exists.                 |
-| `src/app/login/**`          | Login, 2FA challenge, invite-accept flows.                                              |
-| `src/domains/<thing>`       | Business logic per versioned or semi-versioned Thing (entities, receipts, periods, …).  |
-| `src/lib/iam`               | `can` / `assertCan`, scope semantics, admin actions. See "IAM" below.                   |
-| `src/lib/versioning`        | Versioning engine: diff, state machine, period locks, errors. See [versioning.md](./versioning.md). |
-| `src/lib/audit.ts`          | The `recordAudit` chokepoint. Every mutation calls it exactly once.                     |
-| `src/lib/auth-shim.ts`      | `getCurrentActor` — resolves the BetterAuth session into a `CurrentActor`.              |
-| `src/db/schema/**`          | Drizzle table definitions, one file per concern. Exported through `src/db/schema/index.ts`. |
-| `src/db/migrations/**`      | Drizzle-kit output. Hand-edits are marked with an explicit comment (e.g. the DEFERRABLE FK in `0004_smooth_maria_hill.sql`). |
-| `src/components/**`         | React components. `ui/` is shadcn-derived primitives. `settings/` is per-page forms. `versioning/` is the thing-agnostic timeline. |
-| `docs/**`                   | This directory.                                                                         |
+| Path                   | What lives there                                                                                                                   |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `src/app/(app)/**`     | Authenticated surface. Layout at `src/app/(app)/layout.tsx` enforces session + 2FA.                                                |
+| `src/app/setup/**`     | First-boot admin wizard — the only writable route when no admin exists.                                                            |
+| `src/app/login/**`     | Login, 2FA challenge, invite-accept flows.                                                                                         |
+| `src/domains/<thing>`  | Business logic per versioned or semi-versioned Thing (entities, receipts, periods, …).                                             |
+| `src/lib/iam`          | `can` / `assertCan`, scope semantics, admin actions. See "IAM" below.                                                              |
+| `src/lib/versioning`   | Versioning engine: diff, state machine, period locks, errors. See [versioning.md](./versioning.md).                                |
+| `src/lib/audit.ts`     | The `recordAudit` chokepoint. Every mutation calls it exactly once.                                                                |
+| `src/lib/auth-shim.ts` | `getCurrentActor` — resolves the BetterAuth session into a `CurrentActor`.                                                         |
+| `src/db/schema/**`     | Drizzle table definitions, one file per concern. Exported through `src/db/schema/index.ts`.                                        |
+| `src/db/migrations/**` | Drizzle-kit output. Hand-edits are marked with an explicit comment (e.g. the DEFERRABLE FK in `0004_smooth_maria_hill.sql`).       |
+| `src/components/**`    | React components. `ui/` is shadcn-derived primitives. `settings/` is per-page forms. `versioning/` is the thing-agnostic timeline. |
+| `docs/**`              | This directory.                                                                                                                    |
 
 ## Request shape
 

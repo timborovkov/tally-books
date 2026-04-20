@@ -13,12 +13,12 @@ Reference for Tally's Estonia jurisdiction config. Mirrors [`src/lib/jurisdictio
 
 ### Entity-type quick reference
 
-| Code       | Full name                           | Notes                                                      |
-| ---------- | ----------------------------------- | ---------------------------------------------------------- |
-| **OU**     | Osaühing — private limited company  | The common "EE company". Shareholders + board, limited liability. |
-| **AS**     | Aktsiaselts — public limited company | Larger cap, shares, board + supervisory board.             |
-| **MTU**    | Mittetulundusühing — non-profit      | Non-distributing.                                           |
-| **FIE**    | Füüsilisest isikust ettevõtja — sole trader | Self-employed individual; pays personal income tax on profit. |
+| Code    | Full name                                   | Notes                                                             |
+| ------- | ------------------------------------------- | ----------------------------------------------------------------- |
+| **OU**  | Osaühing — private limited company          | The common "EE company". Shareholders + board, limited liability. |
+| **AS**  | Aktsiaselts — public limited company        | Larger cap, shares, board + supervisory board.                    |
+| **MTU** | Mittetulundusühing — non-profit             | Non-distributing.                                                 |
+| **FIE** | Füüsilisest isikust ettevõtja — sole trader | Self-employed individual; pays personal income tax on profit.     |
 
 ## VAT
 
@@ -36,11 +36,11 @@ Reference for Tally's Estonia jurisdiction config. Mirrors [`src/lib/jurisdictio
 
 ## Filing schedules
 
-| Thing                  | Cadence  | Due rule                          |
-| ---------------------- | -------- | --------------------------------- |
-| VAT declaration        | Monthly  | 20th of the following month       |
-| Annual report          | Yearly   | Within 6 months of financial-year end |
-| Income tax return      | Yearly   | 30 April                          |
+| Thing             | Cadence | Due rule                              |
+| ----------------- | ------- | ------------------------------------- |
+| VAT declaration   | Monthly | 20th of the following month           |
+| Annual report     | Yearly  | Within 6 months of financial-year end |
+| Income tax return | Yearly  | 30 April                              |
 
 ## Payout options
 
@@ -52,12 +52,12 @@ For `OU` / `AS`:
 
 ## Contributions
 
-| ID                                   | Label                            | Default rate |
-| ------------------------------------ | -------------------------------- | ------------ |
-| `social_tax`                         | Social tax                        | 33 %         |
-| `unemployment_insurance_employer`    | Unemployment insurance (employer) | 0.8 %        |
-| `unemployment_insurance_employee`    | Unemployment insurance (employee) | 1.6 %        |
-| `funded_pension`                     | Funded pension (II pillar)        | 2 %          |
+| ID                                | Label                             | Default rate |
+| --------------------------------- | --------------------------------- | ------------ |
+| `social_tax`                      | Social tax                        | 33 %         |
+| `unemployment_insurance_employer` | Unemployment insurance (employer) | 0.8 %        |
+| `unemployment_insurance_employee` | Unemployment insurance (employee) | 1.6 %        |
+| `funded_pension`                  | Funded pension (II pillar)        | 2 %          |
 
 ## Portals and guides
 

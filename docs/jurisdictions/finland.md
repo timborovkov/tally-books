@@ -13,12 +13,12 @@ Reference for Tally's Finland jurisdiction config. Mirrors [`src/lib/jurisdictio
 
 ### Entity-type quick reference
 
-| Code           | Full name                                  | Notes                                                                |
-| -------------- | ------------------------------------------ | -------------------------------------------------------------------- |
-| **TOIMINIMI**  | Sole trader                                | **Not a separate legal person**. Profit is personal income.          |
-| **OY**         | Osakeyhtiö — private limited company        | The common "FI company". Shareholders + board, limited liability.    |
-| **AY**         | Avoin yhtiö — general partnership           | Two+ partners, unlimited liability.                                  |
-| **KY**         | Kommandiittiyhtiö — limited partnership     | At least one general partner (unlimited) + limited partners.         |
+| Code          | Full name                               | Notes                                                             |
+| ------------- | --------------------------------------- | ----------------------------------------------------------------- |
+| **TOIMINIMI** | Sole trader                             | **Not a separate legal person**. Profit is personal income.       |
+| **OY**        | Osakeyhtiö — private limited company    | The common "FI company". Shareholders + board, limited liability. |
+| **AY**        | Avoin yhtiö — general partnership       | Two+ partners, unlimited liability.                               |
+| **KY**        | Kommandiittiyhtiö — limited partnership | At least one general partner (unlimited) + limited partners.      |
 
 ## VAT
 
@@ -37,10 +37,10 @@ Reference for Tally's Finland jurisdiction config. Mirrors [`src/lib/jurisdictio
 
 ## Filing schedules
 
-| Thing             | Cadence | Due rule                                                                      |
-| ----------------- | ------- | ----------------------------------------------------------------------------- |
+| Thing             | Cadence | Due rule                                                                     |
+| ----------------- | ------- | ---------------------------------------------------------------------------- |
 | VAT declaration   | Monthly | 12th of the second month after the period (cadence depends on registration). |
-| Income tax return | Yearly  | Pre-filled return verified by April–May.                                      |
+| Income tax return | Yearly  | Pre-filled return verified by April–May.                                     |
 
 ## Payout options
 
@@ -50,11 +50,11 @@ Reference for Tally's Finland jurisdiction config. Mirrors [`src/lib/jurisdictio
 
 ## Contributions
 
-| ID                           | Label                                       | Default rate |
-| ---------------------------- | ------------------------------------------- | ------------ |
-| `yel`                        | YEL self-employed pension                    | Age- and income-dependent — no single default. |
-| `tyel`                       | TyEL employee pension                        | 24.6 %       |
-| `social_security_employer`   | Employer's health insurance contribution      | 1.53 %       |
+| ID                         | Label                                    | Default rate                                   |
+| -------------------------- | ---------------------------------------- | ---------------------------------------------- |
+| `yel`                      | YEL self-employed pension                | Age- and income-dependent — no single default. |
+| `tyel`                     | TyEL employee pension                    | 24.6 %                                         |
+| `social_security_employer` | Employer's health insurance contribution | 1.53 %                                         |
 
 **YEL** is mandatory above the income threshold for toiminimi / self-employed. The rate depends on age bracket and confirmed YEL income (the figure you declare, which feeds into future pension + sickness benefits). It's a deductible expense.
 
