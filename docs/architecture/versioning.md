@@ -33,13 +33,13 @@ draft ──► ready ──► filed ──► amending ──► filed …
 
 Allowed transitions (base machine, enforced by [`assertTransition`](../../src/lib/versioning/state-machine.ts)):
 
-| From        | To                          |
-| ----------- | --------------------------- |
-| `draft`     | `ready`, `void`             |
-| `ready`     | `draft`, `filed`, `void`    |
-| `filed`     | `amending` (only)           |
-| `amending`  | `filed`, `void`             |
-| `void`      | terminal                    |
+| From       | To                       |
+| ---------- | ------------------------ |
+| `draft`    | `ready`, `void`          |
+| `ready`    | `draft`, `filed`, `void` |
+| `filed`    | `amending` (only)        |
+| `amending` | `filed`, `void`          |
+| `void`     | terminal                 |
 
 A filed Thing **cannot** be voided directly — it must go through `amending` first. Voiding a filed receipt is an accounting correction (it changes what the filed period contains), and the correction needs its own version row so the audit trail captures the amendment reason.
 
