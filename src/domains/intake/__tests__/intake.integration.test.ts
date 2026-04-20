@@ -336,7 +336,7 @@ describe("bulk actions", () => {
       await routeIntakeItem(h.db, h.actor, {
         id,
         isPersonal: id === item1.id ? false : true,
-        entityId: entityId,
+        entityId,
         targetFlow: "expense",
       });
     });

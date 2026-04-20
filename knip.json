@@ -13,13 +13,7 @@
   "ignoreDependencies": [
     "tailwindcss",
     "busboy",
-    "react-dropzone",
     "@types/busboy"
-  ],
-  "ignore": [
-    "src/lib/jobs/index.ts",
-    "src/lib/jobs/send.ts",
-    "src/lib/storage/download.ts"
   ],
   "ignoreExportsUsedInFile": true
 }

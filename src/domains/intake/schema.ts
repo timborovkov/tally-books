@@ -29,8 +29,6 @@ export const intakeRoutingInput = z
     { message: "personal routing must not have entityId; business routing must have entityId" },
   );
 
-export type IntakeRoutingInput = z.infer<typeof intakeRoutingInput>;
-
 export const routeIntakeInput = z
   .object({
     id: z.string().min(1),

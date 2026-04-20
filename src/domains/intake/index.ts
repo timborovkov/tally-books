@@ -25,7 +25,6 @@ export {
   rejectIntakeInput,
   routeIntakeInput,
   type ConfirmIntakeInput,
-  type IntakeRoutingInput,
   type RejectIntakeInput,
   type RouteIntakeInput,
 } from "./schema";

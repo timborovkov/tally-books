@@ -16,30 +16,6 @@ import { getCurrentActor } from "@/lib/auth-shim";
 import { parseDateInput, str, strOrNull } from "@/lib/form-helpers";
 import { sendJob, QUEUES } from "@/lib/jobs";
 
-// ── Routing form handler ────────────────────────────────────────────
-// Sets the isPersonal / entityId / targetFlow triplet. Used by the
-// review page when the user picks where a scan is going.
-export async function routeIntakeAction(form: FormData): Promise<void> {
-  const db = getDb();
-  const actor = await getCurrentActor(db);
-
-  const id = str(form, "id");
-  const isPersonalRaw = strOrNull(form, "isPersonal");
-  const entityIdRaw = strOrNull(form, "entityId");
-  const targetFlowRaw = str(form, "targetFlow");
-
-  const input: RouteIntakeInput = {
-    id,
-    isPersonal: isPersonalRaw === null ? null : isPersonalRaw === "true",
-    entityId: entityIdRaw,
-    targetFlow: targetFlowRaw as RouteIntakeInput["targetFlow"],
-  };
-
-  await routeIntakeItem(db, actor, input);
-  revalidatePath("/intake");
-  revalidatePath(`/intake/${id}`);
-}
-
 // ── Confirm form handler ────────────────────────────────────────────
 // The review form POSTs both the routing (if not yet set) AND the
 // final field values the user edited on top of OCR. If the item
