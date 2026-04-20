@@ -39,10 +39,3 @@ export function getStorageClient(): Client {
   return cached;
 }
 
-/**
- * Test-only hook to reset the singleton between runs. Never call from
- * production code.
- */
-export function __resetStorageClientForTests(): void {
-  cached = null;
-}

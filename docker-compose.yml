@@ -91,6 +91,29 @@ services:
       qdrant:
         condition: service_healthy
 
+  # Background-job worker. Same image as `app`, different entrypoint.
+  # pg-boss polls Postgres for work — no extra broker needed. Scale
+  # independently of the web tier: `docker compose --profile app up --scale worker=3`.
+  worker:
+    profiles: ["app"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    command: ["pnpm", "worker"]
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-tally}:${POSTGRES_PASSWORD:-tally}@postgres:5432/${POSTGRES_DB:-tally}
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_USE_SSL: "false"
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-tally}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-tally-dev-secret}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+
 volumes:
   postgres-data:
   minio-data:
