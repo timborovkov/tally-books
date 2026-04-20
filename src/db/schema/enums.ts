@@ -69,3 +69,48 @@ export const entityKindEnum = pgEnum("entity_kind", ["legal", "personal"]);
 
 // docs/data-model.md §5.5.
 export const periodKindEnum = pgEnum("period_kind", ["month", "quarter", "year", "custom"]);
+
+// ── Intake inbox (v0.2) ────────────────────────────────────────────────
+// Unified cross-entity intake queue. See docs/architecture/intake.md.
+
+// Lifecycle of an intake_item. Receipts-TODO §"Unified intake inbox".
+//   new            → just uploaded, OCR may or may not have run
+//   needs_review   → OCR finished, waiting on a human to route/confirm
+//   routed         → user chose target, hasn't finalised the downstream
+//                    Thing yet (split for cases where routing + creation
+//                    happen in separate actions, e.g. bulk triage)
+//   confirmed      → downstream artifact (receipt, expense, …) created,
+//                    item is the audit anchor for that artifact's origin
+//   rejected       → user discarded; blob kept for orphan-cleanup stats
+export const intakeStatusEnum = pgEnum("intake_status", [
+  "new",
+  "needs_review",
+  "routed",
+  "confirmed",
+  "rejected",
+]);
+
+// OCR job lifecycle on an intake_item. Separate from `intake_status`
+// because the two axes are orthogonal — an item can be `confirmed`
+// (user already routed it manually) with `ocr_status='failed'`.
+export const intakeOcrStatusEnum = pgEnum("intake_ocr_status", [
+  "queued",
+  "running",
+  "succeeded",
+  "failed",
+  "skipped",
+]);
+
+// Target downstream flow the user is routing the intake item into.
+// Null = undecided (default on a fresh upload). The set matches the
+// TODO's "expense/trip/mileage/benefit/compliance evidence" list;
+// only `expense` has a real downstream Thing today (receipt). The
+// others are surfaced in the UI with a "not available yet" state
+// until v0.6 (trips, mileage, benefits) and v0.6+ (compliance) land.
+export const intakeTargetFlowEnum = pgEnum("intake_target_flow", [
+  "expense",
+  "trip",
+  "mileage",
+  "benefit",
+  "compliance_evidence",
+]);
