@@ -84,7 +84,7 @@ The recipe, cross-referenced against the receipt implementation:
 
 `financial_periods` rows have `locked`, `locked_at`, `locked_by`, `lock_reason`. Lock / unlock via [`src/domains/periods`](../../src/domains/periods) (`lockPeriod` / `unlockPeriod`) — both audit `period.locked` / `period.unlocked`.
 
-Enforcement at the service layer: every mutation on a Thing with an economic date calls `assertPeriodUnlocked(db, { entityId, occurredAt })` before writing. The check uses inclusive bounds (`start_at ≤ occurredAt ≤ end_at`) — a period "covers" its last day.
+Enforcement at the service layer: every mutation on a Thing with an economic date calls `assertPeriodUnlocked(db, { entityId, occurredAt })` before writing. Periods are stored as **half-open intervals `[start_at, end_at)`** — `start_at` is inclusive, `end_at` is exclusive. FY2025 is stored as `2025-01-01T00:00:00Z` through `2026-01-01T00:00:00Z` (the next period's start). The user-facing label is still "FY2025"; only the internal representation is half-open, matching Postgres `tstzrange` and most BI tools. Avoids the sub-microsecond boundary gap a closed `[start, end]` interval has at `23:59:59.999Z`.
 
 ## Audit trail
 

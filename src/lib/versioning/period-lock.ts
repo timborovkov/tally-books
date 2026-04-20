@@ -1,4 +1,4 @@
-import { and, eq, lte, gte } from "drizzle-orm";
+import { and, eq, gt, lte } from "drizzle-orm";
 
 import type { Db } from "@/db/client";
 import { financialPeriods } from "@/db/schema";
@@ -11,10 +11,14 @@ import { PeriodLockedError } from "./errors";
  * versioned-Thing mutation on a Thing with an economic date
  * (receipts.occurred_at, invoices.issue_date, …).
  *
- * Uses inclusive bounds on both sides — a period covers
- * `[startAt, endAt]` — matching how humans talk about "FY2024" including
- * its last day. If we discover the product wants half-open intervals we
- * migrate the comparison here.
+ * **Interval convention: half-open `[startAt, endAt)`.** `startAt` is
+ * inclusive, `endAt` is exclusive — a "FY2025" row spans
+ * `2025-01-01T00:00:00Z` (inclusive) through `2026-01-01T00:00:00Z`
+ * (exclusive). This is the Postgres `tstzrange`/BI-tool standard and
+ * avoids sub-microsecond boundary games at period ends (with a closed
+ * `[start, end]` interval and `endAt = 23:59:59Z`, anything in the last
+ * 999 ms of Dec 31 would slip through). Users still label the period
+ * as "FY2025"; only the internal endAt representation is half-open.
  */
 export async function assertPeriodUnlocked(
   db: Db,
@@ -32,7 +36,7 @@ export async function assertPeriodUnlocked(
         eq(financialPeriods.entityId, opts.entityId),
         eq(financialPeriods.locked, true),
         lte(financialPeriods.startAt, opts.occurredAt),
-        gte(financialPeriods.endAt, opts.occurredAt),
+        gt(financialPeriods.endAt, opts.occurredAt),
       ),
     )
     .limit(1);

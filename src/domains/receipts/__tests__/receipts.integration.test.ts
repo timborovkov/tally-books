@@ -346,7 +346,7 @@ describe("period lock enforcement", () => {
       kind: "year",
       label: "FY2025",
       startAt: new Date("2025-01-01T00:00:00Z"),
-      endAt: new Date("2025-12-31T23:59:59Z"),
+      endAt: new Date("2026-01-01T00:00:00Z"),
     });
     await lockPeriod(h.db, h.actor, { periodId: period.id, reason: "filed" });
 
@@ -378,7 +378,7 @@ describe("period lock enforcement", () => {
       kind: "year",
       label: "FY2025",
       startAt: new Date("2025-01-01T00:00:00Z"),
-      endAt: new Date("2025-12-31T23:59:59Z"),
+      endAt: new Date("2026-01-01T00:00:00Z"),
     });
     await lockPeriod(h.db, h.actor, { periodId: period.id, reason: "filed" });
 
@@ -404,7 +404,7 @@ describe("period lock enforcement", () => {
       kind: "year",
       label: "FY2025",
       startAt: new Date("2025-01-01T00:00:00Z"),
-      endAt: new Date("2025-12-31T23:59:59Z"),
+      endAt: new Date("2026-01-01T00:00:00Z"),
     });
     await lockPeriod(h.db, h.actor, { periodId: period.id, reason: "filed" });
 
@@ -432,7 +432,7 @@ describe("period lock enforcement", () => {
       kind: "year",
       label: "FY2025",
       startAt: new Date("2025-01-01T00:00:00Z"),
-      endAt: new Date("2025-12-31T23:59:59Z"),
+      endAt: new Date("2026-01-01T00:00:00Z"),
     });
     await lockPeriod(h.db, h.actor, { periodId: period.id, reason: "filed" });
 
@@ -460,7 +460,7 @@ describe("period lock enforcement", () => {
       kind: "year",
       label: "FY2025",
       startAt: new Date("2025-01-01T00:00:00Z"),
-      endAt: new Date("2025-12-31T23:59:59Z"),
+      endAt: new Date("2026-01-01T00:00:00Z"),
     });
     await lockPeriod(h.db, h.actor, { periodId: period.id, reason: "filed" });
 
@@ -483,7 +483,7 @@ describe("period lock enforcement", () => {
       kind: "year",
       label: "FY2025",
       startAt: new Date("2025-01-01T00:00:00Z"),
-      endAt: new Date("2025-12-31T23:59:59Z"),
+      endAt: new Date("2026-01-01T00:00:00Z"),
     });
     await lockPeriod(h.db, h.actor, { periodId: period.id, reason: "filed" });
 
@@ -508,7 +508,7 @@ describe("period lock enforcement", () => {
       kind: "year",
       label: "FY2025",
       startAt: new Date("2025-01-01T00:00:00Z"),
-      endAt: new Date("2025-12-31T23:59:59Z"),
+      endAt: new Date("2026-01-01T00:00:00Z"),
     });
     await lockPeriod(h.db, h.actor, { periodId: period.id, reason: "filed" });
 
@@ -523,7 +523,7 @@ describe("period lock enforcement", () => {
       kind: "year",
       label: "FY2025",
       startAt: new Date("2025-01-01T00:00:00Z"),
-      endAt: new Date("2025-12-31T23:59:59Z"),
+      endAt: new Date("2026-01-01T00:00:00Z"),
     });
     await lockPeriod(h.db, h.actor, { periodId: period.id, reason: "filed" });
 
@@ -594,7 +594,7 @@ describe("period service audit", () => {
       kind: "year",
       label: "FY2025",
       startAt: new Date("2025-01-01T00:00:00Z"),
-      endAt: new Date("2025-12-31T23:59:59Z"),
+      endAt: new Date("2026-01-01T00:00:00Z"),
     });
     await lockPeriod(h.db, h.actor, { periodId: period.id, reason: "filed with EMTA" });
 

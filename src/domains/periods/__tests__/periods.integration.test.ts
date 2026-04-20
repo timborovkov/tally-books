@@ -49,11 +49,14 @@ beforeEach(() => {
   seedCounter = 0;
 });
 
+// Half-open [startAt, endAt): FY2025 = 2025-01-01 inclusive →
+// 2026-01-01 exclusive. See src/lib/versioning/period-lock.ts for
+// why we don't use 2025-12-31T23:59:59Z.
 const FY2025 = {
   kind: "year" as const,
   label: "FY2025",
   startAt: new Date("2025-01-01T00:00:00Z"),
-  endAt: new Date("2025-12-31T23:59:59Z"),
+  endAt: new Date("2026-01-01T00:00:00Z"),
 };
 
 describe("createPeriod", () => {
@@ -184,7 +187,7 @@ describe("unlockPeriod", () => {
   });
 });
 
-describe("assertPeriodUnlocked — boundary semantics", () => {
+describe("assertPeriodUnlocked — half-open [startAt, endAt) boundary semantics", () => {
   it("rejects when occurredAt equals startAt (inclusive lower bound)", async () => {
     const entityId = await seedEntity();
     const p = await createPeriod(h.db, h.actor, { entityId, ...FY2025 });
@@ -194,12 +197,28 @@ describe("assertPeriodUnlocked — boundary semantics", () => {
     ).rejects.toBeInstanceOf(PeriodLockedError);
   });
 
-  it("rejects when occurredAt equals endAt (inclusive upper bound)", async () => {
+  it("passes when occurredAt equals endAt (exclusive upper bound — belongs to the next period)", async () => {
     const entityId = await seedEntity();
     const p = await createPeriod(h.db, h.actor, { entityId, ...FY2025 });
     await lockPeriod(h.db, h.actor, { periodId: p.id, reason: "x" });
     await expect(
       assertPeriodUnlocked(h.db, { entityId, occurredAt: FY2025.endAt }),
+    ).resolves.toBeUndefined();
+  });
+
+  it("rejects the last microsecond inside the period", async () => {
+    // Guards the original bug: with a closed interval and
+    // endAt = 23:59:59Z, the last 999 ms of Dec 31 slipped through.
+    // Half-open + endAt = next-day-midnight closes the gap — the last
+    // possible instant < endAt must still be locked.
+    const entityId = await seedEntity();
+    const p = await createPeriod(h.db, h.actor, { entityId, ...FY2025 });
+    await lockPeriod(h.db, h.actor, { periodId: p.id, reason: "x" });
+    await expect(
+      assertPeriodUnlocked(h.db, {
+        entityId,
+        occurredAt: new Date(FY2025.endAt.getTime() - 1),
+      }),
     ).rejects.toBeInstanceOf(PeriodLockedError);
   });
 
