@@ -42,6 +42,20 @@ describe("state-machine — base transitions", () => {
     expect(canTransition("filed", "ready", { thingType: "receipt" })).toBe(false);
   });
 
+  it("rejects filed → void (must amend first; void lives off the amending branch)", () => {
+    // Accounting semantics: a filed artifact is submitted to an
+    // authority. Undoing it directly would lose the amendment
+    // reason / audit trail. The correct path is filed → amending →
+    // void, which records WHY it was voided in the amending version
+    // row before the final void transition.
+    expect(canTransition("filed", "void", { thingType: "receipt" })).toBe(false);
+  });
+
+  it("allows the filed → amending → void escape hatch", () => {
+    expect(canTransition("filed", "amending", { thingType: "receipt" })).toBe(true);
+    expect(canTransition("amending", "void", { thingType: "receipt" })).toBe(true);
+  });
+
   it("rejects same-state self-transition", () => {
     expect(canTransition("draft", "draft", { thingType: "receipt" })).toBe(false);
   });

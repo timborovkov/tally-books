@@ -25,15 +25,27 @@ The versions table carries `version_num` (monotonic, unique per parent), `state_
 
 ```
 draft ──► ready ──► filed ──► amending ──► filed …
-  │         │          │                     │
-  └──► void ◄┴──────────┴─────────────────────┘
+  │        │                       │
+  ├──► void ◄──────────────────────┘
+  │        ▲
+  └────────┘
 ```
+
+Allowed transitions (base machine, enforced by [`assertTransition`](../../src/lib/versioning/state-machine.ts)):
+
+| From        | To                          |
+| ----------- | --------------------------- |
+| `draft`     | `ready`, `void`             |
+| `ready`     | `draft`, `filed`, `void`    |
+| `filed`     | `amending` (only)           |
+| `amending`  | `filed`, `void`             |
+| `void`      | terminal                    |
+
+A filed Thing **cannot** be voided directly — it must go through `amending` first. Voiding a filed receipt is an accounting correction (it changes what the filed period contains), and the correction needs its own version row so the audit trail captures the amendment reason.
 
 `sent` is an invoice-only additional state between `ready` and `filed`; the base state machine for every other Thing does not include it.
 
 "**Amended**" is a UI label, not a state. A receipt is shown as "amended" when it has more than one `filed` version in its history. The enum stays `amending` (the active editing state after filing).
-
-Transitions are enforced by [`assertTransition(from, to, { thingType })`](../../src/lib/versioning/state-machine.ts).
 
 ## The helpers
 
