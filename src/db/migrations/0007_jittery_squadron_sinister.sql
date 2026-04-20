@@ -1,0 +1,2 @@
+ALTER TABLE "receipts" ADD COLUMN "blob_id" text;--> statement-breakpoint
+ALTER TABLE "receipts" ADD CONSTRAINT "receipts_blob_id_blobs_id_fk" FOREIGN KEY ("blob_id") REFERENCES "public"."blobs"("id") ON DELETE restrict ON UPDATE no action;

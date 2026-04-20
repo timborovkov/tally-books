@@ -10,4 +10,6 @@ export * from "./versioning";
 export * from "./jurisdictions";
 export * from "./persons";
 export * from "./entities";
+export * from "./blobs";
 export * from "./receipts";
+export * from "./intake";

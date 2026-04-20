@@ -23,6 +23,7 @@ function mockReceipt(overrides: Partial<Receipt> = {}): Receipt {
     amount: "9.9900",
     currency: "EUR",
     notes: "lunch receipt",
+    blobId: null,
     currentVersionId: "ver_1",
     state: "draft",
     autoRefreshLocked: false,

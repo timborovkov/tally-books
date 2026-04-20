@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { optionalString, optionalUrl, sampleRate } from "@/lib/env.shared";
+import { booleanFlag, optionalString, optionalUrl, sampleRate } from "@/lib/env.shared";
 
 /**
  * Server-only environment schema.
@@ -83,6 +83,28 @@ const serverSchema = z.object({
       "RESEND_API_KEY must be set to a real key in production — the dev placeholder is not allowed.",
     ),
   RESEND_FROM_EMAIL: z.string().email().default("noreply@tally.local"),
+
+  // ── MinIO / S3-compatible blob storage ────────────────────────────────
+  // Connection vars for the MinIO SDK client. The endpoint is a full URL
+  // (http[s]://host:port) so one var captures host + port + TLS mode; the
+  // SDK itself takes those as separate fields, so we parse them out in
+  // `src/lib/storage/client.ts`. For production S3 / hosted MinIO, set
+  // MINIO_ENDPOINT to the public endpoint and flip MINIO_USE_SSL to true.
+  MINIO_ENDPOINT: z.string().url().default("http://localhost:9000"),
+  MINIO_USE_SSL: booleanFlag,
+  MINIO_ACCESS_KEY: z.string().min(1).default("tally"),
+  MINIO_SECRET_KEY: z.string().min(1).default("tally-dev-secret"),
+
+  // ── OpenAI (vision OCR for receipt intake) ───────────────────────────
+  // Optional everywhere so the app boots without a key (dev + CI). OCR
+  // jobs fail fast with a clear ocrError when the key is absent, which
+  // is surfaced in the intake UI. Provide a real key in production /
+  // any environment where you want extraction to actually run.
+  OPENAI_API_KEY: optionalString,
+  // Vision-capable model. Left overridable so we can bump without a deploy.
+  // 2024-08-06 + later support structured outputs / response_format with
+  // json_schema; we default to the current recommended model.
+  OPENAI_VISION_MODEL: z.string().trim().default("gpt-4o-2024-08-06"),
 });
 
 export type Env = z.infer<typeof serverSchema>;

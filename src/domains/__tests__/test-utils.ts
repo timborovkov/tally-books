@@ -95,8 +95,10 @@ export async function truncateAll(db: TestDb): Promise<void> {
     TRUNCATE TABLE
       audit_log,
       edit_sessions,
+      intake_items,
       receipt_versions,
       receipts,
+      blobs,
       permissions,
       invites,
       sessions,
