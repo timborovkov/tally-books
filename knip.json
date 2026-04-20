@@ -13,7 +13,6 @@
   "ignoreDependencies": [
     "tailwindcss",
     "busboy",
-    "openai",
     "react-dropzone",
     "@types/busboy"
   ],
