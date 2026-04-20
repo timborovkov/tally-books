@@ -243,6 +243,13 @@ function collectIds(form: FormData): string[] {
 // an error instead of returning a silent "success" when some rows
 // failed. Revalidation has already run at the call site, so partial
 // successes remain reflected in the inbox.
+//
+// TODO(ux): throwing from a server action shows Next.js's generic
+// error page in production (messages are scrubbed) and triggers the
+// nearest error boundary rather than an in-place toast. Migrate the
+// bulk forms to `useActionState` so the failure detail (ids + reason)
+// renders inline on the inbox without a navigation. Tracked as a
+// follow-up — this helper stays as the minimum "not silent" guard.
 function throwIfAnyFailed<T>(
   results: Array<{ id: string; result: { ok: true; value: T } | { ok: false; error: string } }>,
   verb: string,
