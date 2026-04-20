@@ -93,14 +93,14 @@ The minimum scaffolding needed to start building features safely.
 
 ### Docs (started in v0.1, kept current as we build)
 
-- [ ] `docs/architecture/overview.md`
+- [x] `docs/architecture/overview.md`
 - [x] `docs/architecture/versioning.md`
-- [ ] `docs/architecture/auto-refresh.md`
-- [ ] `docs/data-model.md` (initial)
-- [ ] `docs/guides/deployment.md` (initial)
-- [ ] `docs/jurisdictions/estonia.md`
-- [ ] `docs/jurisdictions/finland.md`
-- [ ] `docs/jurisdictions/us-delaware.md`
+- [x] `docs/architecture/auto-refresh.md`
+- [x] `docs/data-model.md` (initial)
+- [x] `docs/guides/deployment.md` (initial)
+- [x] `docs/jurisdictions/estonia.md`
+- [x] `docs/jurisdictions/finland.md`
+- [x] `docs/jurisdictions/us-delaware.md`
 
 ---
 
