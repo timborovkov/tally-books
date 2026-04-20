@@ -37,12 +37,12 @@ Transitions are enforced by [`assertTransition(from, to, { thingType })`](../../
 
 ## The helpers
 
-| Helper                                                      | Purpose                                                               |
-| ----------------------------------------------------------- | --------------------------------------------------------------------- |
-| `createPatch(from, to)` / `applyPatch(base, patch)`         | RFC 6902 JSON Patch wrappers around [`rfc6902`](https://www.npmjs.com/package/rfc6902). |
-| `pickSnapshot(row, fields)`                                 | Extract the domain-field subset of a parent row, normalising `Date` → ISO string. |
-| `assertTransition(from, to, { thingType })`                 | Throw `InvalidStateTransitionError` on illegal transitions.            |
-| `assertPeriodUnlocked(db, { entityId, occurredAt })`        | Throw `PeriodLockedError` if the Thing's economic date sits inside any `financial_periods` row with `locked=true`. |
+| Helper                                               | Purpose                                                                                                            |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `createPatch(from, to)` / `applyPatch(base, patch)`  | RFC 6902 JSON Patch wrappers around [`rfc6902`](https://www.npmjs.com/package/rfc6902).                            |
+| `pickSnapshot(row, fields)`                          | Extract the domain-field subset of a parent row, normalising `Date` → ISO string.                                  |
+| `assertTransition(from, to, { thingType })`          | Throw `InvalidStateTransitionError` on illegal transitions.                                                        |
+| `assertPeriodUnlocked(db, { entityId, occurredAt })` | Throw `PeriodLockedError` if the Thing's economic date sits inside any `financial_periods` row with `locked=true`. |
 
 All helpers are exported from the `@/lib/versioning` barrel.
 
@@ -58,7 +58,7 @@ The recipe, cross-referenced against the receipt implementation:
      - Take `SELECT ... FOR UPDATE` on the parent to serialise concurrent writers.
      - Compare `expectedVersionNum` (if supplied) to the latest version — throw `VersionConflictError` on mismatch.
      - Build the next parent row by spreading `existing` and applying the caller's patch.
-     - Call `assertPeriodUnlocked` on the *target* `occurredAt` (a move into a locked period is blocked too).
+     - Call `assertPeriodUnlocked` on the _target_ `occurredAt` (a move into a locked period is blocked too).
      - Compute `createPatch(prevSnapshot, nextSnapshot)`. If the patch is empty, early-return without writing.
      - Insert the new version row (`version_num = prev + 1`); the unique constraint is the concurrency backstop.
      - Update the parent row, including `current_version_id` pointing at the new version.
