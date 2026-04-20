@@ -4,6 +4,7 @@ import type { Db } from "@/db/client";
 import { entities, jurisdictions, type Jurisdiction } from "@/db/schema";
 import { recordAudit } from "@/lib/audit";
 import type { CurrentActor } from "@/lib/auth-shim";
+import { assertCan } from "@/lib/iam/permissions";
 
 import { ConflictError, NotFoundError } from "../errors";
 
@@ -19,6 +20,10 @@ export async function createJurisdiction(
   actor: CurrentActor,
   raw: CreateJurisdictionInput,
 ): Promise<Jurisdiction> {
+  // Jurisdictions are global config — mutations require an unscoped
+  // `business_details` write grant, which only admins hold by default
+  // (`can()` short-circuits on `role === 'admin'`).
+  await assertCan(actor.user, "business_details", "write");
   const input = createJurisdictionInput.parse(raw);
 
   const existing = await db
@@ -60,6 +65,7 @@ export async function updateJurisdiction(
   actor: CurrentActor,
   raw: UpdateJurisdictionInput,
 ): Promise<Jurisdiction> {
+  await assertCan(actor.user, "business_details", "write");
   const input = updateJurisdictionInput.parse(raw);
 
   const patch: Partial<typeof jurisdictions.$inferInsert> & { updatedAt: Date } = {
@@ -89,6 +95,7 @@ export async function updateJurisdiction(
 }
 
 export async function deleteJurisdiction(db: Db, actor: CurrentActor, id: string): Promise<void> {
+  await assertCan(actor.user, "business_details", "write");
   const [usage] = await db
     .select({ n: count() })
     .from(entities)

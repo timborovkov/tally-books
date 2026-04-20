@@ -31,3 +31,24 @@ export function int(form: FormData, key: string): number {
   if (Number.isNaN(parsed)) throw new Error(`Form field ${key} is not an integer: ${v}`);
   return parsed;
 }
+
+/**
+ * Parse a `<input type="date">` value as UTC midnight. The project-wide
+ * rule is no local-timezone leaks (docs/architecture/dates.md) — form
+ * inputs arrive as `YYYY-MM-DD` and we pin them to `T00:00:00Z` so the
+ * server never invents a local-time interpretation.
+ *
+ * Returns `undefined` for missing or blank values. Throws on values
+ * that don't match the expected shape rather than emitting an
+ * `Invalid Date` that would silently poison downstream code.
+ */
+export function parseDateInput(form: FormData, key: string): Date | undefined {
+  const v = form.get(key);
+  if (typeof v !== "string" || v.trim() === "") return undefined;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) {
+    throw new Error(`Form field ${key} is not a YYYY-MM-DD date: ${v}`);
+  }
+  const d = new Date(`${v}T00:00:00Z`);
+  if (Number.isNaN(d.getTime())) throw new Error(`Form field ${key} is not a valid date: ${v}`);
+  return d;
+}

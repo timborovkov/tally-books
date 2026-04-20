@@ -11,6 +11,7 @@ const NAV = [
   { href: "/settings/entities", label: "Entities" },
   { href: "/settings/persons", label: "Persons" },
   { href: "/settings/jurisdictions", label: "Jurisdictions" },
+  { href: "/settings/receipts", label: "Receipts" },
 ] as const;
 
 // Wrapped in AppShell (`(app)/layout.tsx`) — that layout renders the

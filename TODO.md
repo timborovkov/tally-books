@@ -82,10 +82,10 @@ The minimum scaffolding needed to start building features safely.
 
 ### Versioning engine
 
-- [ ] `versioned<T>.update()` helper with diff computation
-- [ ] Version timeline UI component (Google Docs-style history)
-- [ ] State machine helper for `draft → ready → filed → amended`
-- [ ] Period lock model + enforcement at service layer
+- [x] `versioned<T>.update()` helper with diff computation
+- [x] Version timeline UI component (Google Docs-style history)
+- [x] State machine helper for `draft → ready → filed → amended`
+- [x] Period lock model + enforcement at service layer
 
 > The `auto_refresh_locked` toggle lives with the Editor-safety work in v0.3
 > (§"Editor-safety"). The toggle has nothing to gate on until the recalc
@@ -94,7 +94,7 @@ The minimum scaffolding needed to start building features safely.
 ### Docs (started in v0.1, kept current as we build)
 
 - [ ] `docs/architecture/overview.md`
-- [ ] `docs/architecture/versioning.md`
+- [x] `docs/architecture/versioning.md`
 - [ ] `docs/architecture/auto-refresh.md`
 - [ ] `docs/data-model.md` (initial)
 - [ ] `docs/guides/deployment.md` (initial)
