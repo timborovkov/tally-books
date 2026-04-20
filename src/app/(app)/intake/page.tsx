@@ -1,43 +1,22 @@
 import Link from "next/link";
-import Image from "next/image";
 
+import { InboxTable, type InboxRow } from "@/components/intake/InboxTable";
 import { UploadDropzone } from "@/components/intake/UploadDropzone";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { getDb } from "@/db/client";
+import { listEntities } from "@/domains/entities";
 import { listIntakeItems, type IntakeListRow } from "@/domains/intake";
 import { cn } from "@/lib/utils";
 
-import { IntakeStatusBadge } from "@/components/intake/IntakeStatusBadge";
+import {
+  bulkAttachAction,
+  bulkMarkPersonalAction,
+  bulkRejectAction,
+  bulkRequestEvidenceAction,
+  bulkRouteAction,
+  reExtractIntakeAction,
+} from "./actions";
 
 export const dynamic = "force-dynamic";
-
-function OcrBadge({ status }: { status: IntakeListRow["ocrStatus"] }): React.ReactElement {
-  const tone =
-    status === "succeeded"
-      ? "bg-green-100 text-green-900 dark:bg-green-900/40 dark:text-green-200"
-      : status === "failed"
-        ? "bg-red-100 text-red-900 dark:bg-red-900/40 dark:text-red-200"
-        : status === "running"
-          ? "bg-blue-100 text-blue-900 dark:bg-blue-900/40 dark:text-blue-200"
-          : "bg-muted text-muted-foreground";
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center rounded px-1.5 py-0.5 font-mono text-[10px] uppercase",
-        tone,
-      )}
-    >
-      {status}
-    </span>
-  );
-}
 
 interface IntakePageProps {
   searchParams: Promise<{ status?: string }>;
@@ -51,7 +30,38 @@ export default async function IntakePage({ searchParams }: IntakePageProps): Pro
       ) as IntakeListRow["status"][])
     : undefined;
 
-  const rows = await listIntakeItems(getDb(), { statuses });
+  const db = getDb();
+  const [rawRows, entities] = await Promise.all([
+    listIntakeItems(db, { statuses }),
+    listEntities(db, { includeArchived: false }),
+  ]);
+
+  // Narrow projection for the client table so jsonb payloads don't
+  // cross the server/client boundary.
+  const rows: InboxRow[] = rawRows.map((r) => {
+    const extraction = r.extraction as
+      | {
+          vendor?: { value: string | null };
+          amount?: { value: string | null };
+          currency?: { value: string | null };
+        }
+      | null;
+    return {
+      id: r.id,
+      uploadedAt: r.uploadedAt.toISOString(),
+      status: r.status,
+      ocrStatus: r.ocrStatus,
+      entityName: r.entityName,
+      isPersonal: r.isPersonal,
+      vendor: extraction?.vendor?.value ?? null,
+      amount: extraction?.amount?.value ?? null,
+      currency: extraction?.currency?.value ?? null,
+      blob: {
+        id: r.blob.id,
+        contentType: r.blob.contentType,
+      },
+    };
+  });
 
   return (
     <div className="flex flex-col gap-6">
@@ -73,80 +83,18 @@ export default async function IntakePage({ searchParams }: IntakePageProps): Pro
         <FilterLink current={status} value="rejected" label="Rejected" />
       </div>
 
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-14">Scan</TableHead>
-            <TableHead>Vendor</TableHead>
-            <TableHead className="text-right">Amount</TableHead>
-            <TableHead>Entity</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>OCR</TableHead>
-            <TableHead>Uploaded</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {rows.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={7} className="text-muted-foreground py-8 text-center">
-                Inbox is empty. Drop a receipt above.
-              </TableCell>
-            </TableRow>
-          ) : (
-            rows.map((row) => {
-              const extraction = row.extraction as
-                | {
-                    vendor?: { value: string | null };
-                    amount?: { value: string | null };
-                    currency?: { value: string | null };
-                    overallConfidence?: number;
-                  }
-                | null;
-              const vendor = extraction?.vendor?.value ?? "—";
-              const amount = extraction?.amount?.value ?? "—";
-              const currency = extraction?.currency?.value ?? "";
-              return (
-                <TableRow key={row.id}>
-                  <TableCell>
-                    {row.blob.contentType.startsWith("image/") ? (
-                      <Image
-                        src={`/api/blobs/${row.blob.id}`}
-                        alt=""
-                        width={40}
-                        height={40}
-                        unoptimized
-                        className="h-10 w-10 rounded border object-cover"
-                      />
-                    ) : (
-                      <div className="bg-muted flex h-10 w-10 items-center justify-center rounded border text-[10px] uppercase">
-                        PDF
-                      </div>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Link href={`/intake/${row.id}`} className="font-medium hover:underline">
-                      {vendor}
-                    </Link>
-                  </TableCell>
-                  <TableCell className="text-right font-mono text-xs">
-                    {amount} {currency}
-                  </TableCell>
-                  <TableCell>{row.entityName ?? (row.isPersonal === "true" ? "Personal" : "—")}</TableCell>
-                  <TableCell>
-                    <IntakeStatusBadge status={row.status} />
-                  </TableCell>
-                  <TableCell>
-                    <OcrBadge status={row.ocrStatus} />
-                  </TableCell>
-                  <TableCell className="text-muted-foreground text-xs">
-                    {row.uploadedAt.toISOString().slice(0, 16).replace("T", " ")}
-                  </TableCell>
-                </TableRow>
-              );
-            })
-          )}
-        </TableBody>
-      </Table>
+      <InboxTable
+        rows={rows}
+        entities={entities.map((e) => ({ id: e.id, name: e.name, kind: e.kind }))}
+        serverActions={{
+          bulkRoute: bulkRouteAction,
+          bulkMarkPersonal: bulkMarkPersonalAction,
+          bulkReExtract: reExtractIntakeAction,
+          bulkReject: bulkRejectAction,
+          bulkAttach: bulkAttachAction,
+          bulkRequestEvidence: bulkRequestEvidenceAction,
+        }}
+      />
     </div>
   );
 }

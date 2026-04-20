@@ -124,11 +124,7 @@ export async function reRouteIntakeAction(form: FormData): Promise<void> {
 // Re-enqueue the OCR job for one or many items. Useful when the
 // initial extraction was poor or a new model is available.
 export async function reExtractIntakeAction(form: FormData): Promise<void> {
-  const ids = form.getAll("ids").map(String).filter(Boolean);
-  if (ids.length === 0) {
-    const id = strOrNull(form, "id");
-    if (id) ids.push(id);
-  }
+  const ids = collectIds(form);
   if (ids.length === 0) return;
 
   await bulkMutate(ids, async (id) => {
@@ -137,4 +133,122 @@ export async function reExtractIntakeAction(form: FormData): Promise<void> {
 
   revalidatePath("/intake");
   for (const id of ids) revalidatePath(`/intake/${id}`);
+}
+
+// ── Bulk mark personal ──────────────────────────────────────────────
+// Routes every selected item to personal scope + expense flow. The
+// user still has to open each (or run a second bulk-confirm) to
+// finalise — we don't auto-confirm because the extracted fields
+// usually need at least a glance.
+export async function bulkMarkPersonalAction(form: FormData): Promise<void> {
+  const ids = collectIds(form);
+  if (ids.length === 0) return;
+  const db = getDb();
+  const actor = await getCurrentActor(db);
+
+  await bulkMutate(ids, async (id) => {
+    await routeIntakeItem(db, actor, {
+      id,
+      isPersonal: true,
+      entityId: null,
+      targetFlow: "expense",
+    });
+  });
+
+  revalidatePath("/intake");
+}
+
+// ── Bulk route to a business entity + flow ──────────────────────────
+// The inbox bar POSTs the selected ids, entityId and targetFlow.
+// Useful when the user realises a batch of uploads all belong on
+// the same entity (e.g. a month of one company's receipts).
+export async function bulkRouteAction(form: FormData): Promise<void> {
+  const ids = collectIds(form);
+  if (ids.length === 0) return;
+  const entityId = strOrNull(form, "entityId");
+  const targetFlow = str(form, "targetFlow") as RouteIntakeInput["targetFlow"];
+  if (!entityId) return;
+
+  const db = getDb();
+  const actor = await getCurrentActor(db);
+
+  await bulkMutate(ids, async (id) => {
+    await routeIntakeItem(db, actor, {
+      id,
+      isPersonal: false,
+      entityId,
+      targetFlow,
+    });
+  });
+
+  revalidatePath("/intake");
+}
+
+// ── Bulk reject ─────────────────────────────────────────────────────
+export async function bulkRejectAction(form: FormData): Promise<void> {
+  const ids = collectIds(form);
+  if (ids.length === 0) return;
+  const reason = strOrNull(form, "reason") ?? undefined;
+
+  const db = getDb();
+  const actor = await getCurrentActor(db);
+  await bulkMutate(ids, async (id) => {
+    await rejectIntakeItem(db, actor, { id, reason });
+  });
+  revalidatePath("/intake");
+}
+
+// ── Bulk attach to trip / claim ────────────────────────────────────
+// Stub for v0.2. Trip / claim domains don't exist yet — mark the
+// items as `trip`-routed so when the downstream confirm lands in
+// v0.6 it can pick up the batch. Today this only sets the target
+// flow + requires an entity; confirm is a no-op until trips ship.
+export async function bulkAttachAction(form: FormData): Promise<void> {
+  const ids = collectIds(form);
+  if (ids.length === 0) return;
+  const entityId = strOrNull(form, "entityId");
+  const targetFlow = strOrNull(form, "targetFlow") as
+    | RouteIntakeInput["targetFlow"]
+    | null;
+  if (!entityId || !targetFlow) return;
+
+  const db = getDb();
+  const actor = await getCurrentActor(db);
+  await bulkMutate(ids, async (id) => {
+    await routeIntakeItem(db, actor, {
+      id,
+      isPersonal: false,
+      entityId,
+      targetFlow,
+    });
+  });
+  revalidatePath("/intake");
+}
+
+// ── Bulk request missing evidence ──────────────────────────────────
+// In v1.0 this emails uploaders asking them to supply the missing
+// scan metadata. For v0.2 we just reject with a canned reason so
+// the items leave the inbox; a future revision replaces the body
+// with a real notification hook.
+export async function bulkRequestEvidenceAction(form: FormData): Promise<void> {
+  const ids = collectIds(form);
+  if (ids.length === 0) return;
+
+  const db = getDb();
+  const actor = await getCurrentActor(db);
+  await bulkMutate(ids, async (id) => {
+    await rejectIntakeItem(db, actor, {
+      id,
+      reason: "Missing evidence — uploader notified (placeholder)",
+    });
+  });
+  revalidatePath("/intake");
+}
+
+// Collect ids from either `ids` (array) or single `id` form field.
+function collectIds(form: FormData): string[] {
+  const multi = form.getAll("ids").map(String).filter(Boolean);
+  if (multi.length > 0) return multi;
+  const single = strOrNull(form, "id");
+  return single ? [single] : [];
 }
