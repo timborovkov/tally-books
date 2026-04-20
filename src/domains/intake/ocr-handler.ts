@@ -59,12 +59,11 @@ export async function processIntakeOcrJob(intakeItemId: string): Promise<void> {
       return;
     }
 
-    await markIntakeOcrRunning(db, intakeItemId);
-
-    const bytes = await readBlobBytes(row.blob.bucket as BucketName, row.blob.objectKey);
     // Sanity: the bucket must be the receipts bucket for v0.2
     // intake. If someone wired another bucket by accident, prefer
-    // an explicit failure over a silent misroute.
+    // an explicit failure over a silent misroute. Check *before*
+    // streaming bytes so a misrouted blob doesn't cost us a full
+    // MinIO download just to reject.
     if (row.blob.bucket !== BUCKETS.receipts) {
       await markIntakeOcrFailed(db, {
         intakeItemId,
@@ -72,6 +71,10 @@ export async function processIntakeOcrJob(intakeItemId: string): Promise<void> {
       });
       return;
     }
+
+    await markIntakeOcrRunning(db, intakeItemId);
+
+    const bytes = await readBlobBytes(row.blob.bucket as BucketName, row.blob.objectKey);
 
     const provider = getVisionProvider();
     const extraction = await provider.extractReceipt({

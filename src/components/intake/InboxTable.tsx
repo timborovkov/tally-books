@@ -85,9 +85,13 @@ export function InboxTable({ rows, entities, serverActions }: InboxTableProps): 
   };
 
   const toggleAll = (): void => {
+    // Check membership of the currently-visible rows rather than set
+    // size: selected may carry stale ids from a previous filter, so
+    // size-equality alone can coincidentally match and flip the
+    // toggle the wrong way.
     setSelected((prev) => {
-      if (prev.size === rows.length) return new Set();
-      return new Set(rows.map((r) => r.id));
+      const allVisibleSelected = rows.length > 0 && rows.every((r) => prev.has(r.id));
+      return allVisibleSelected ? new Set() : new Set(rows.map((r) => r.id));
     });
   };
 

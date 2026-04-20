@@ -76,22 +76,20 @@ export async function putBlob(db: Db, input: PutBlobInput): Promise<PutBlobResul
   const objectKey = makeObjectKey(input.filename);
 
   // Fan the readable into two consumers: one to MinIO, one to the
-  // hasher / counter. A PassThrough pair is the stdlib-idiomatic way
-  // to do this without pulling in a 3rd-party library.
+  // hasher / counter. We `pipe()` into both PassThroughs so Node
+  // handles backpressure — if MinIO's multipart upload falls behind
+  // the incoming stream, the source pauses rather than buffering the
+  // whole upload in memory. A raw `on("data") + write()` fan-out
+  // would ignore the boolean return from `write()` and grow
+  // unbounded on large receipts.
   const toMinio = new PassThrough();
   const toHasher = new PassThrough();
   input.stream.on("error", (err) => {
     toMinio.destroy(err);
     toHasher.destroy(err);
   });
-  input.stream.on("data", (chunk: Buffer) => {
-    toMinio.write(chunk);
-    toHasher.write(chunk);
-  });
-  input.stream.on("end", () => {
-    toMinio.end();
-    toHasher.end();
-  });
+  input.stream.pipe(toMinio);
+  input.stream.pipe(toHasher);
 
   const hasher = createHash("sha256");
   let sizeBytes = 0;
