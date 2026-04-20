@@ -22,9 +22,9 @@ describe("pickSnapshot", () => {
   });
 
   it("coerces undefined to null", () => {
-    expect(pickSnapshot({ notes: undefined } as unknown as { notes: unknown }, ["notes"] as const)).toEqual(
-      { notes: null },
-    );
+    expect(
+      pickSnapshot({ notes: undefined } as unknown as { notes: unknown }, ["notes"] as const),
+    ).toEqual({ notes: null });
   });
 
   it("passes numeric-as-string through untouched (Postgres numeric shape)", () => {

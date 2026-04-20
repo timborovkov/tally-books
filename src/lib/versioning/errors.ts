@@ -8,11 +8,11 @@ import type { ThingState } from "./types";
  */
 export class InvalidStateTransitionError extends DomainError {
   constructor(from: ThingState, to: ThingState, thingType: string) {
-    super(
-      "invalid_state_transition",
-      `Invalid ${thingType} state transition: ${from} → ${to}`,
-      { from, to, thingType },
-    );
+    super("invalid_state_transition", `Invalid ${thingType} state transition: ${from} → ${to}`, {
+      from,
+      to,
+      thingType,
+    });
     this.name = "InvalidStateTransitionError";
   }
 }

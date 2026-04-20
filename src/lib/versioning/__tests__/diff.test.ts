@@ -38,8 +38,8 @@ describe("versioning/diff", () => {
   });
 
   it("throws on unapplicable patches", () => {
-    expect(() =>
-      applyPatch({}, [{ op: "replace", path: "/missing/nested", value: 1 }]),
-    ).toThrow(/applyPatch failed/);
+    expect(() => applyPatch({}, [{ op: "replace", path: "/missing/nested", value: 1 }])).toThrow(
+      /applyPatch failed/,
+    );
   });
 });

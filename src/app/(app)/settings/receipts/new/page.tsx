@@ -14,8 +14,8 @@ export default async function NewReceiptPage() {
       <header>
         <h1 className="text-2xl font-semibold">New receipt</h1>
         <p className="text-muted-foreground text-sm">
-          Drafts can be edited freely. Transition to <code>ready</code> and <code>filed</code>{" "}
-          from the detail page.
+          Drafts can be edited freely. Transition to <code>ready</code> and <code>filed</code> from
+          the detail page.
         </p>
       </header>
 

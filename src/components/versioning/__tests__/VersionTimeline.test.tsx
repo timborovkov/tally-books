@@ -2,10 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { StateBadge } from "@/components/versioning/StateBadge";
-import {
-  VersionTimeline,
-  type TimelineVersion,
-} from "@/components/versioning/VersionTimeline";
+import { VersionTimeline, type TimelineVersion } from "@/components/versioning/VersionTimeline";
 import type { AuditLogEntry } from "@/db/schema";
 
 function makeVersion(

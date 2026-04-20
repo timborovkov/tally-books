@@ -1,11 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { InvalidStateTransitionError } from "@/lib/versioning/errors";
-import {
-  assertTransition,
-  canTransition,
-  TERMINAL_STATES,
-} from "@/lib/versioning/state-machine";
+import { assertTransition, canTransition, TERMINAL_STATES } from "@/lib/versioning/state-machine";
 
 describe("state-machine — base transitions", () => {
   it("allows draft → ready", () => {

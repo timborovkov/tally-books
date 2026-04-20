@@ -226,7 +226,11 @@ export async function updateReceipt(
       action: "receipt.updated",
       thingType: "receipt",
       thingId: row.id,
-      payload: { fromVersion: prevVersionNum, toVersion: newVersion.versionNum, diffLen: patch.length },
+      payload: {
+        fromVersion: prevVersionNum,
+        toVersion: newVersion.versionNum,
+        diffLen: patch.length,
+      },
     });
 
     return row;
@@ -263,7 +267,10 @@ export async function transitionReceipt(
     }
 
     const [latest] = await tx
-      .select({ versionNum: receiptVersions.versionNum, stateSnapshot: receiptVersions.stateSnapshot })
+      .select({
+        versionNum: receiptVersions.versionNum,
+        stateSnapshot: receiptVersions.stateSnapshot,
+      })
       .from(receiptVersions)
       .where(eq(receiptVersions.receiptId, input.id))
       .orderBy(desc(receiptVersions.versionNum))
@@ -304,13 +311,7 @@ export async function transitionReceipt(
     }
 
     const row = assertReturning(
-      (
-        await tx
-          .update(receipts)
-          .set(parentPatch)
-          .where(eq(receipts.id, input.id))
-          .returning()
-      )[0],
+      (await tx.update(receipts).set(parentPatch).where(eq(receipts.id, input.id)).returning())[0],
       "receipt transition update",
     );
 

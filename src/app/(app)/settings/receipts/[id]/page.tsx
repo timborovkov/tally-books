@@ -17,11 +17,7 @@ import { StateBadge } from "@/components/versioning/StateBadge";
 import { VersionTimeline } from "@/components/versioning/VersionTimeline";
 import { getDb } from "@/db/client";
 import { listEntities } from "@/domains/entities";
-import {
-  getReceipt,
-  getReceiptAuditEntries,
-  getReceiptHistory,
-} from "@/domains/receipts";
+import { getReceipt, getReceiptAuditEntries, getReceiptHistory } from "@/domains/receipts";
 import { assertPeriodUnlocked, canTransition } from "@/lib/versioning";
 import { RECEIPT_TRANSITION_TARGETS } from "@/lib/versioning/state-machine";
 import { NotFoundError } from "@/domains/errors";

@@ -76,7 +76,13 @@ describe("createPeriod", () => {
     const entityId = await seedEntity();
     const d = new Date("2025-01-01T00:00:00Z");
     await expect(
-      createPeriod(h.db, h.actor, { entityId, kind: "custom", label: "zero", startAt: d, endAt: d }),
+      createPeriod(h.db, h.actor, {
+        entityId,
+        kind: "custom",
+        label: "zero",
+        startAt: d,
+        endAt: d,
+      }),
     ).rejects.toBeInstanceOf(ValidationError);
   });
 
@@ -166,15 +172,15 @@ describe("unlockPeriod", () => {
   it("rejects unlocking an unlocked period with ConflictError", async () => {
     const entityId = await seedEntity();
     const p = await createPeriod(h.db, h.actor, { entityId, ...FY2025 });
-    await expect(
-      unlockPeriod(h.db, h.actor, { periodId: p.id }),
-    ).rejects.toBeInstanceOf(ConflictError);
+    await expect(unlockPeriod(h.db, h.actor, { periodId: p.id })).rejects.toBeInstanceOf(
+      ConflictError,
+    );
   });
 
   it("rejects unknown periodId with NotFoundError", async () => {
-    await expect(
-      unlockPeriod(h.db, h.actor, { periodId: "fp_nope" }),
-    ).rejects.toBeInstanceOf(NotFoundError);
+    await expect(unlockPeriod(h.db, h.actor, { periodId: "fp_nope" })).rejects.toBeInstanceOf(
+      NotFoundError,
+    );
   });
 });
 

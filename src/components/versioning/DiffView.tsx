@@ -23,10 +23,7 @@ function pathLabel(path: string): string {
   return pathSegments(path).join(" › ");
 }
 
-function resolveBefore(
-  snapshot: Record<string, unknown> | null,
-  path: string,
-): unknown {
+function resolveBefore(snapshot: Record<string, unknown> | null, path: string): unknown {
   if (!snapshot) return undefined;
   let cur: unknown = snapshot;
   for (const seg of pathSegments(path)) {
@@ -62,9 +59,7 @@ export function DiffView({
     <dl className="divide-border grid grid-cols-[minmax(8rem,auto)_1fr] gap-x-4 text-xs">
       {patch.map((op, i) => (
         <div key={`${op.path}-${i}`} className="contents">
-          <dt className="text-muted-foreground truncate py-1 font-medium">
-            {pathLabel(op.path)}
-          </dt>
+          <dt className="text-muted-foreground truncate py-1 font-medium">{pathLabel(op.path)}</dt>
           <dd className="py-1">{renderOp(op, previousSnapshot)}</dd>
         </div>
       ))}

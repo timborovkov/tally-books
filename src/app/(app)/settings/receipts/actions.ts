@@ -5,11 +5,7 @@ import { redirect } from "next/navigation";
 
 import { thingStateEnum } from "@/db/schema/enums";
 import { getDb } from "@/db/client";
-import {
-  createReceipt,
-  transitionReceipt,
-  updateReceipt,
-} from "@/domains/receipts";
+import { createReceipt, transitionReceipt, updateReceipt } from "@/domains/receipts";
 import { getCurrentActor } from "@/lib/auth-shim";
 import { parseDateInput, str, strOrNull } from "@/lib/form-helpers";
 import type { ThingState } from "@/lib/versioning";

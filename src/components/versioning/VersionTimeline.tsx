@@ -86,10 +86,10 @@ export function VersionTimeline({
         return (
           <li
             key={v.version.id}
-            className="relative pl-6 pb-6 before:absolute before:top-1.5 before:-left-[5px] before:h-2.5 before:w-2.5 before:rounded-full before:bg-primary"
+            className="before:bg-primary relative pb-6 pl-6 before:absolute before:top-1.5 before:-left-[5px] before:h-2.5 before:w-2.5 before:rounded-full"
           >
             <div className="flex flex-wrap items-baseline gap-2">
-              <span className="font-medium text-sm">Version {v.version.versionNum}</span>
+              <span className="text-sm font-medium">Version {v.version.versionNum}</span>
               <span className="text-muted-foreground text-xs">
                 {v.version.createdAt.toISOString().slice(0, 16).replace("T", " ")} UTC
               </span>

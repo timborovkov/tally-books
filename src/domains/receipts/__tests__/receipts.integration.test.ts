@@ -450,7 +450,10 @@ describe("period service audit", () => {
     const { unlockPeriod } = await import("@/domains/periods");
     await unlockPeriod(h.db, h.actor, { periodId: period.id, reason: "correction needed" });
 
-    const rows = await h.db.select().from(schema.auditLog).where(eq(schema.auditLog.action, "period.locked"));
+    const rows = await h.db
+      .select()
+      .from(schema.auditLog)
+      .where(eq(schema.auditLog.action, "period.locked"));
     expect(rows).toHaveLength(1);
     expect(rows[0]?.payload).toMatchObject({ periodId: period.id, reason: "filed with EMTA" });
 

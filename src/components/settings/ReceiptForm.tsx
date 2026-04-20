@@ -29,8 +29,7 @@ export function ReceiptForm(props: {
   action: (formData: FormData) => void | Promise<void>;
   submitLabel: string;
 }) {
-  const defaultCurrency =
-    props.receipt?.currency ?? props.entities[0]?.baseCurrency ?? "EUR";
+  const defaultCurrency = props.receipt?.currency ?? props.entities[0]?.baseCurrency ?? "EUR";
 
   return (
     <form action={props.action} className="flex max-w-2xl flex-col gap-4">
