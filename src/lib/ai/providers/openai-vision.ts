@@ -19,10 +19,7 @@ import OpenAI from "openai";
 import { zodResponseFormat } from "openai/helpers/zod";
 
 import { env } from "@/lib/env";
-import {
-  receiptExtraction,
-  type ReceiptExtraction,
-} from "@/lib/ai/schemas/receipt-extraction";
+import { receiptExtraction, type ReceiptExtraction } from "@/lib/ai/schemas/receipt-extraction";
 
 import type { VisionExtractInput, VisionProvider } from "./types";
 
@@ -53,9 +50,7 @@ export class OpenAIVisionProvider implements VisionProvider {
 
   constructor() {
     if (!env.OPENAI_API_KEY) {
-      throw new Error(
-        "OpenAIVisionProvider: OPENAI_API_KEY is not set. OCR jobs need a real key.",
-      );
+      throw new Error("OpenAIVisionProvider: OPENAI_API_KEY is not set. OCR jobs need a real key.");
     }
     this.#client = new OpenAI({ apiKey: env.OPENAI_API_KEY });
     this.#model = env.OPENAI_VISION_MODEL;

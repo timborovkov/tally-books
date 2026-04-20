@@ -69,11 +69,7 @@ function OcrPill({ status }: { status: string }): React.ReactElement {
   );
 }
 
-export function InboxTable({
-  rows,
-  entities,
-  serverActions,
-}: InboxTableProps): React.ReactElement {
+export function InboxTable({ rows, entities, serverActions }: InboxTableProps): React.ReactElement {
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const allSelected = rows.length > 0 && rows.every((r) => selected.has(r.id));
@@ -159,10 +155,7 @@ export function InboxTable({
                   )}
                 </TableCell>
                 <TableCell>
-                  <Link
-                    href={`/intake/${row.id}`}
-                    className="font-medium hover:underline"
-                  >
+                  <Link href={`/intake/${row.id}`} className="font-medium hover:underline">
                     {row.vendor ?? "—"}
                   </Link>
                 </TableCell>

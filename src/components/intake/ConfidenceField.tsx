@@ -22,7 +22,8 @@ export interface ConfidenceFieldProps extends React.InputHTMLAttributes<HTMLInpu
 function toneForConfidence(c: number | null | undefined): string {
   if (c === null || c === undefined) return "";
   if (c < 0.4) return "border-red-500/60 bg-red-50 dark:border-red-500/50 dark:bg-red-950/40";
-  if (c < 0.6) return "border-amber-500/60 bg-amber-50 dark:border-amber-500/50 dark:bg-amber-950/40";
+  if (c < 0.6)
+    return "border-amber-500/60 bg-amber-50 dark:border-amber-500/50 dark:bg-amber-950/40";
   return "";
 }
 
@@ -44,9 +45,7 @@ export function ConfidenceField({
     <label htmlFor={fieldId} className="flex flex-col gap-1 text-sm">
       <span className="flex items-center justify-between">
         <span className="font-medium">{label}</span>
-        {pct && (
-          <span className="text-muted-foreground text-[10px] font-mono">{pct}</span>
-        )}
+        {pct && <span className="text-muted-foreground font-mono text-[10px]">{pct}</span>}
       </span>
       <Input id={fieldId} {...props} className={cn(toneForConfidence(confidence), className)} />
       {helpText && <span className="text-muted-foreground text-xs">{helpText}</span>}

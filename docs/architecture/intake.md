@@ -2,7 +2,7 @@
 
 Every uploaded scan lands in the unified intake inbox before it becomes a receipt, expense, or anything else. The inbox is a **cross-entity queue** — a single place to triage, route, and confirm everything that comes in.
 
-Source of truth: [`src/domains/intake/`](../../src/domains/intake) + [`src/app/(app)/intake/`](../../src/app/(app)/intake).
+Source of truth: [`src/domains/intake/`](../../src/domains/intake) + [`src/app/(app)/intake/`](<../../src/app/(app)/intake>).
 
 > **Naming note.** [`docs/data-model.md`](../data-model.md) §8.2.1 sketches the table with slightly different column names (`source_blob_id`, `route_scope` enum, `route_target`, `source_kind`). The shipped v0.2 schema uses shorter code-style names (`blob_id`, tri-state `is_personal` text, `target_flow`). The semantics match. A follow-up rename-to-spec PR will reconcile once the v0.6 domains (trip, mileage, benefit, compliance) land and depend on the fully-specified shape.
 
@@ -29,13 +29,13 @@ new ──OCR──► needs_review ──route──► routed ──confirm─
 
 States (enum `intake_status`):
 
-| State          | Meaning                                                                             |
-| -------------- | ----------------------------------------------------------------------------------- |
-| `new`          | Just uploaded. OCR may or may not have finished.                                    |
-| `needs_review` | OCR done, waiting for a human to route.                                             |
-| `routed`       | User picked scope / entity / target flow; confirm hasn't happened.                  |
-| `confirmed`    | Downstream Thing created (for `targetFlow='expense'`, a receipt; others pending).   |
-| `rejected`     | User discarded. Operational cancel, not destructive — the blob row stays.           |
+| State          | Meaning                                                                           |
+| -------------- | --------------------------------------------------------------------------------- |
+| `new`          | Just uploaded. OCR may or may not have finished.                                  |
+| `needs_review` | OCR done, waiting for a human to route.                                           |
+| `routed`       | User picked scope / entity / target flow; confirm hasn't happened.                |
+| `confirmed`    | Downstream Thing created (for `targetFlow='expense'`, a receipt; others pending). |
+| `rejected`     | User discarded. Operational cancel, not destructive — the blob row stays.         |
 
 OCR runs on its own axis (`intake_ocr_status`: `queued` → `running` → `succeeded`/`failed`/`skipped`) so `confirmed` items can still be re-extracted without walking backwards through routing state.
 
@@ -58,7 +58,10 @@ OCR runs on its own axis (`intake_ocr_status`: `queued` → `running` → `succe
 ## Confirm
 
 ```ts
-await confirmIntakeItem(db, actor, { id, receipt: { vendor, amount, currency, occurredAt, notes } });
+await confirmIntakeItem(db, actor, {
+  id,
+  receipt: { vendor, amount, currency, occurredAt, notes },
+});
 ```
 
 Only `targetFlow='expense'` creates a downstream artifact. The confirm mutation:
@@ -105,15 +108,15 @@ Every intake mutation has a batch form via `bulkMutate()`:
 
 Loose verb-noun strings under `intake.*`:
 
-| Action                 | When                                                     | Payload includes                                     |
-| ---------------------- | -------------------------------------------------------- | ---------------------------------------------------- |
-| `intake.uploaded`      | Blob stored + intake row created                          | `intakeItemId`, `blobId`                             |
-| `intake.ocr_applied`   | Vision provider returned, row now `needs_review`          | `provider`, `overallConfidence`                      |
-| `intake.ocr_failed`    | Provider threw or API key missing                         | `error`                                              |
-| `intake.routed`        | `routeIntakeItem` wrote routing fields                    | `isPersonal`, `entityId`, `targetFlow`               |
-| `intake.confirmed`     | `confirmIntakeItem` created the downstream artifact       | `targetFlow`, `receiptId`                            |
-| `intake.rejected`      | `rejectIntakeItem` discarded the item                     | `reason`                                             |
-| `intake.wrong_route`   | `reRouteIntakeItem` snapshotted previous routing          | `previousRouteSnapshot`                              |
-| `intake.re_routed`     | `reRouteIntakeItem` committed the new routing             | `from`, `to`                                         |
+| Action               | When                                                | Payload includes                       |
+| -------------------- | --------------------------------------------------- | -------------------------------------- |
+| `intake.uploaded`    | Blob stored + intake row created                    | `intakeItemId`, `blobId`               |
+| `intake.ocr_applied` | Vision provider returned, row now `needs_review`    | `provider`, `overallConfidence`        |
+| `intake.ocr_failed`  | Provider threw or API key missing                   | `error`                                |
+| `intake.routed`      | `routeIntakeItem` wrote routing fields              | `isPersonal`, `entityId`, `targetFlow` |
+| `intake.confirmed`   | `confirmIntakeItem` created the downstream artifact | `targetFlow`, `receiptId`              |
+| `intake.rejected`    | `rejectIntakeItem` discarded the item               | `reason`                               |
+| `intake.wrong_route` | `reRouteIntakeItem` snapshotted previous routing    | `previousRouteSnapshot`                |
+| `intake.re_routed`   | `reRouteIntakeItem` committed the new routing       | `from`, `to`                           |
 
 Scoped lookup: the intake audit query filters by `payload->>'intakeItemId' = ?` alongside the action set. For v0.2 the full scan is cheap; if inbox detail pages start to dominate audit reads, a generated column + composite index are the drop-in upgrade.

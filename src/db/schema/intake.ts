@@ -4,11 +4,7 @@ import { newId } from "@/db/id";
 
 import { blobs } from "./blobs";
 import { entities } from "./entities";
-import {
-  intakeOcrStatusEnum,
-  intakeStatusEnum,
-  intakeTargetFlowEnum,
-} from "./enums";
+import { intakeOcrStatusEnum, intakeStatusEnum, intakeTargetFlowEnum } from "./enums";
 import { receipts } from "./receipts";
 import { users } from "./users";
 

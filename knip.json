@@ -10,10 +10,6 @@
     "src/lib/jobs/worker-entry.ts"
   ],
   "project": ["src/**/*.{ts,tsx}", "*.{ts,mts,mjs}"],
-  "ignoreDependencies": [
-    "tailwindcss",
-    "busboy",
-    "@types/busboy"
-  ],
+  "ignoreDependencies": ["tailwindcss", "busboy", "@types/busboy"],
   "ignoreExportsUsedInFile": true
 }

@@ -61,11 +61,7 @@ export function RoutingPanel({
 
       <div className="flex flex-col gap-1 text-sm">
         <Label htmlFor={`routing-scope-${item.id}`}>Scope</Label>
-        <Select
-          name="isPersonal"
-          defaultValue={defaultIsPersonal}
-          disabled={disabled}
-        >
+        <Select name="isPersonal" defaultValue={defaultIsPersonal} disabled={disabled}>
           <SelectTrigger id={`routing-scope-${item.id}`}>
             <SelectValue placeholder="Choose business or personal" />
           </SelectTrigger>
@@ -78,11 +74,7 @@ export function RoutingPanel({
 
       <div className="flex flex-col gap-1 text-sm">
         <Label htmlFor={`routing-entity-${item.id}`}>Entity</Label>
-        <Select
-          name="entityId"
-          defaultValue={defaultEntityId}
-          disabled={disabled}
-        >
+        <Select name="entityId" defaultValue={defaultEntityId} disabled={disabled}>
           <SelectTrigger id={`routing-entity-${item.id}`}>
             <SelectValue placeholder="Select entity" />
           </SelectTrigger>
@@ -94,18 +86,12 @@ export function RoutingPanel({
             ))}
           </SelectContent>
         </Select>
-        <span className="text-muted-foreground text-xs">
-          Leave blank when routing to Personal.
-        </span>
+        <span className="text-muted-foreground text-xs">Leave blank when routing to Personal.</span>
       </div>
 
       <div className="flex flex-col gap-1 text-sm">
         <Label htmlFor={`routing-flow-${item.id}`}>Target flow</Label>
-        <Select
-          name="targetFlow"
-          defaultValue={defaultTargetFlow}
-          disabled={disabled}
-        >
+        <Select name="targetFlow" defaultValue={defaultTargetFlow} disabled={disabled}>
           <SelectTrigger id={`routing-flow-${item.id}`}>
             <SelectValue />
           </SelectTrigger>
@@ -114,9 +100,7 @@ export function RoutingPanel({
             <SelectItem value="trip">Trip evidence · not yet wired</SelectItem>
             <SelectItem value="mileage">Mileage claim · not yet wired</SelectItem>
             <SelectItem value="benefit">Employer benefit · not yet wired</SelectItem>
-            <SelectItem value="compliance_evidence">
-              Compliance evidence · not yet wired
-            </SelectItem>
+            <SelectItem value="compliance_evidence">Compliance evidence · not yet wired</SelectItem>
           </SelectContent>
         </Select>
       </div>

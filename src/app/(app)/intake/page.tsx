@@ -22,12 +22,16 @@ interface IntakePageProps {
   searchParams: Promise<{ status?: string }>;
 }
 
-export default async function IntakePage({ searchParams }: IntakePageProps): Promise<React.ReactElement> {
+export default async function IntakePage({
+  searchParams,
+}: IntakePageProps): Promise<React.ReactElement> {
   const { status } = await searchParams;
   const statuses = status
-    ? (status.split(",").filter((s) =>
-        ["new", "needs_review", "routed", "confirmed", "rejected"].includes(s),
-      ) as IntakeListRow["status"][])
+    ? (status
+        .split(",")
+        .filter((s) =>
+          ["new", "needs_review", "routed", "confirmed", "rejected"].includes(s),
+        ) as IntakeListRow["status"][])
     : undefined;
 
   const db = getDb();
@@ -39,13 +43,11 @@ export default async function IntakePage({ searchParams }: IntakePageProps): Pro
   // Narrow projection for the client table so jsonb payloads don't
   // cross the server/client boundary.
   const rows: InboxRow[] = rawRows.map((r) => {
-    const extraction = r.extraction as
-      | {
-          vendor?: { value: string | null };
-          amount?: { value: string | null };
-          currency?: { value: string | null };
-        }
-      | null;
+    const extraction = r.extraction as {
+      vendor?: { value: string | null };
+      amount?: { value: string | null };
+      currency?: { value: string | null };
+    } | null;
     return {
       id: r.id,
       uploadedAt: r.uploadedAt.toISOString(),

@@ -12,11 +12,8 @@ One interface exists today: `VisionProvider`, used by the intake-inbox OCR pipel
 
 ```ts
 interface VisionProvider {
-  readonly id: string;                   // "openai:gpt-4o-2024-08-06"
-  extractReceipt(input: {
-    bytes: Buffer;
-    contentType: string;
-  }): Promise<ReceiptExtraction>;
+  readonly id: string; // "openai:gpt-4o-2024-08-06"
+  extractReceipt(input: { bytes: Buffer; contentType: string }): Promise<ReceiptExtraction>;
 }
 ```
 

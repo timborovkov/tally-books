@@ -8,12 +8,12 @@ Source of truth for the code: [`src/lib/storage/`](../../src/lib/storage).
 
 Declared in [`src/lib/storage/buckets.ts`](../../src/lib/storage/buckets.ts):
 
-| Constant                  | Bucket         | Contents                                                            |
-| ------------------------- | -------------- | ------------------------------------------------------------------- |
-| `BUCKETS.receipts`        | `receipts`     | Receipt scans uploaded through the intake inbox.                    |
-| `BUCKETS.invoices`        | `invoices`     | Generated invoice PDFs.                                             |
-| `BUCKETS.legalDocs`       | `legal-docs`   | Contracts, certificates, entity-registration documents.             |
-| `BUCKETS.exports`         | `exports`      | CSV / XLSX / ZIP exports the user requests.                         |
+| Constant            | Bucket       | Contents                                                |
+| ------------------- | ------------ | ------------------------------------------------------- |
+| `BUCKETS.receipts`  | `receipts`   | Receipt scans uploaded through the intake inbox.        |
+| `BUCKETS.invoices`  | `invoices`   | Generated invoice PDFs.                                 |
+| `BUCKETS.legalDocs` | `legal-docs` | Contracts, certificates, entity-registration documents. |
+| `BUCKETS.exports`   | `exports`    | CSV / XLSX / ZIP exports the user requests.             |
 
 `ensureBuckets()` is called once at boot from [`src/instrumentation.ts`](../../src/instrumentation.ts). It's idempotent (`bucketExists` → `makeBucket` only when missing), so fresh MinIO deployments get provisioned automatically and existing ones pay four HEAD requests per cold start.
 

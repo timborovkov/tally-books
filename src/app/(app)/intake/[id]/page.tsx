@@ -125,8 +125,8 @@ export default async function IntakeDetailPage({
             <input type="hidden" name="id" value={item.id} />
             <h2 className="text-sm font-semibold">Extracted fields</h2>
             <p className="text-muted-foreground text-xs">
-              Low-confidence fields are highlighted. Edit before confirming — the values
-              here populate the created receipt.
+              Low-confidence fields are highlighted. Edit before confirming — the values here
+              populate the created receipt.
             </p>
 
             <ConfidenceField
@@ -142,9 +142,7 @@ export default async function IntakeDetailPage({
               type="date"
               name="occurredAt"
               defaultValue={
-                extraction?.occurredAt.value
-                  ? extraction.occurredAt.value.slice(0, 10)
-                  : ""
+                extraction?.occurredAt.value ? extraction.occurredAt.value.slice(0, 10) : ""
               }
               confidence={extraction?.occurredAt.confidence}
               required
@@ -213,8 +211,8 @@ export default async function IntakeDetailPage({
             <div className="border-border flex flex-col gap-3 rounded-md border p-4">
               <h2 className="text-sm font-semibold">Wrong route?</h2>
               <p className="text-muted-foreground text-xs">
-                Re-route voids the current receipt, resets this item to needs-review,
-                and preserves the prior routing in the audit trail.
+                Re-route voids the current receipt, resets this item to needs-review, and preserves
+                the prior routing in the audit trail.
               </p>
               <RoutingPanel
                 item={item}

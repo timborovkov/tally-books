@@ -8,9 +8,7 @@ describe("ai/schemas/receipt-extraction", () => {
     occurredAt: { value: "2026-04-20T12:15:00Z", confidence: 0.98 },
     amount: { value: "12.5000", confidence: 0.95 },
     currency: { value: "EUR", confidence: 0.99 },
-    taxLines: [
-      { rate: "24%", base: "10.0800", tax: "2.4200", confidence: 0.9 },
-    ],
+    taxLines: [{ rate: "24%", base: "10.0800", tax: "2.4200", confidence: 0.9 }],
     categoryHint: "groceries",
     notes: null,
     overallConfidence: 0.9,

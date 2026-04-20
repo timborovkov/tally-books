@@ -38,4 +38,3 @@ export function getStorageClient(): Client {
   }
   return cached;
 }
-

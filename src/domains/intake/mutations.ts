@@ -18,12 +18,7 @@
 import { eq } from "drizzle-orm";
 
 import type { Db } from "@/db/client";
-import {
-  intakeItems,
-  receipts,
-  type IntakeItem,
-  type NewIntakeItem,
-} from "@/db/schema";
+import { intakeItems, receipts, type IntakeItem, type NewIntakeItem } from "@/db/schema";
 import type { ReceiptExtraction } from "@/lib/ai";
 import { recordAudit } from "@/lib/audit";
 import type { CurrentActor } from "@/lib/auth-shim";
@@ -227,9 +222,7 @@ export async function routeIntakeItem(
 
 // ── Confirm ──────────────────────────────────────────────────────────
 
-function extractionToReceiptFields(
-  extraction: ReceiptExtraction | null,
-): {
+function extractionToReceiptFields(extraction: ReceiptExtraction | null): {
   occurredAt: Date | null;
   vendor: string | null;
   amount: string | null;
@@ -239,9 +232,7 @@ function extractionToReceiptFields(
   if (!extraction) {
     return { occurredAt: null, vendor: null, amount: null, currency: null, notes: null };
   }
-  const occurredAt = extraction.occurredAt.value
-    ? new Date(extraction.occurredAt.value)
-    : null;
+  const occurredAt = extraction.occurredAt.value ? new Date(extraction.occurredAt.value) : null;
   return {
     occurredAt: occurredAt && !Number.isNaN(occurredAt.getTime()) ? occurredAt : null,
     vendor: extraction.vendor.value,
@@ -319,8 +310,7 @@ export async function confirmIntakeItem(
         entityId,
         occurredAt,
         vendor,
-        amount:
-          typeof amountRaw === "number" ? amountRaw : String(amountRaw),
+        amount: typeof amountRaw === "number" ? amountRaw : String(amountRaw),
         currency,
         notes,
         blobId: existing.blobId,

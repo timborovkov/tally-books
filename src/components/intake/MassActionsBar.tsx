@@ -58,9 +58,7 @@ export function MassActionsBar(props: MassActionsBarProps): React.ReactElement |
       aria-label={`Bulk actions for ${props.selectedIds.length} selected item(s)`}
       className="bg-background sticky bottom-4 z-20 flex flex-wrap items-center gap-3 rounded-md border p-3 shadow-md"
     >
-      <span className="text-sm font-medium">
-        {props.selectedIds.length} selected
-      </span>
+      <span className="text-sm font-medium">{props.selectedIds.length} selected</span>
 
       {/* Bulk route: entity + flow + submit */}
       <form action={props.bulkRoute} className="flex items-center gap-1.5">
@@ -89,12 +87,7 @@ export function MassActionsBar(props: MassActionsBarProps): React.ReactElement |
             <SelectItem value="compliance_evidence">Compliance</SelectItem>
           </SelectContent>
         </Select>
-        <Button
-          type="submit"
-          variant="outline"
-          size="sm"
-          disabled={!routeEntityId}
-        >
+        <Button type="submit" variant="outline" size="sm" disabled={!routeEntityId}>
           Route
         </Button>
       </form>
@@ -138,12 +131,7 @@ export function MassActionsBar(props: MassActionsBarProps): React.ReactElement |
             <SelectItem value="compliance_evidence">Compliance</SelectItem>
           </SelectContent>
         </Select>
-        <Button
-          type="submit"
-          variant="outline"
-          size="sm"
-          disabled={!attachEntityId}
-        >
+        <Button type="submit" variant="outline" size="sm" disabled={!attachEntityId}>
           Attach
         </Button>
       </form>
@@ -162,13 +150,7 @@ export function MassActionsBar(props: MassActionsBarProps): React.ReactElement |
         </Button>
       </form>
 
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        onClick={props.onClear}
-        className="ml-auto"
-      >
+      <Button type="button" variant="ghost" size="sm" onClick={props.onClear} className="ml-auto">
         Clear
       </Button>
     </div>

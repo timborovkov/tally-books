@@ -82,13 +82,15 @@ async function seedBlob(): Promise<string> {
   return row.id;
 }
 
-function sampleExtraction(overrides: Partial<{
-  vendor: string;
-  amount: string;
-  currency: string;
-  occurredAt: string;
-  overallConfidence: number;
-}> = {}) {
+function sampleExtraction(
+  overrides: Partial<{
+    vendor: string;
+    amount: string;
+    currency: string;
+    occurredAt: string;
+    overallConfidence: number;
+  }> = {},
+) {
   return {
     vendor: { value: overrides.vendor ?? "Prisma", confidence: 0.9 },
     occurredAt: {
@@ -218,9 +220,7 @@ describe("intake lifecycle", () => {
     });
     await confirmIntakeItem(h.db, h.actor, { id: item.id });
 
-    await expect(
-      rejectIntakeItem(h.db, h.actor, { id: item.id }),
-    ).rejects.toThrow(/confirmed/i);
+    await expect(rejectIntakeItem(h.db, h.actor, { id: item.id })).rejects.toThrow(/confirmed/i);
   });
 });
 
@@ -309,11 +309,7 @@ describe("bulk actions", () => {
     const routedAudit = await h.db
       .select()
       .from(schema.auditLog)
-      .where(
-        and(
-          eq(schema.auditLog.action, "intake.routed"),
-        ),
-      );
+      .where(and(eq(schema.auditLog.action, "intake.routed")));
     expect(routedAudit.length).toBe(3);
   });
 

@@ -55,7 +55,10 @@ export async function POST(request: Request): Promise<NextResponse> {
   const formData = await request.formData();
   const files = formData.getAll("files").filter((v): v is File => v instanceof File);
   if (files.length === 0) {
-    return NextResponse.json({ error: "No files provided (expect 'files' field)" }, { status: 400 });
+    return NextResponse.json(
+      { error: "No files provided (expect 'files' field)" },
+      { status: 400 },
+    );
   }
 
   const db = getDb();
@@ -92,7 +95,11 @@ export async function POST(request: Request): Promise<NextResponse> {
 
       const intakeItem = await createIntakeItem(
         db,
-        { userId: user.id, kind: "user", user: { id: user.id, role: user.role, removedAt: user.removedAt } },
+        {
+          userId: user.id,
+          kind: "user",
+          user: { id: user.id, role: user.role, removedAt: user.removedAt },
+        },
         { blobId: blob.id, uploadedById: user.id },
       );
 

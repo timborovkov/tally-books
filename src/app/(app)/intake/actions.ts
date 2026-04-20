@@ -183,9 +183,7 @@ export async function bulkAttachAction(form: FormData): Promise<void> {
   const ids = collectIds(form);
   if (ids.length === 0) return;
   const entityId = strOrNull(form, "entityId");
-  const targetFlow = strOrNull(form, "targetFlow") as
-    | RouteIntakeInput["targetFlow"]
-    | null;
+  const targetFlow = strOrNull(form, "targetFlow") as RouteIntakeInput["targetFlow"] | null;
   if (!entityId || !targetFlow) return;
 
   const db = getDb();

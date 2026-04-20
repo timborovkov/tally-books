@@ -11,13 +11,7 @@ export const intakeRoutingInput = z
   .object({
     isPersonal: z.boolean().nullable(),
     entityId: z.string().min(1).nullable(),
-    targetFlow: z.enum([
-      "expense",
-      "trip",
-      "mileage",
-      "benefit",
-      "compliance_evidence",
-    ]),
+    targetFlow: z.enum(["expense", "trip", "mileage", "benefit", "compliance_evidence"]),
   })
   .refine(
     // A business-route must name an entity; a personal route must NOT.
@@ -41,31 +35,31 @@ export type RouteIntakeInput = z.infer<typeof routeIntakeInput>;
 // for the downstream artifact (overriding whatever the user edited
 // on top of the OCR extraction). Sparse — unspecified fields are
 // taken from the current extraction.
-export const confirmIntakeInput = z
-  .object({
-    id: z.string().min(1),
-    // Receipt-target fields. Other target flows add their own slot
-    // as the domains land.
-    receipt: z
-      .object({
-        occurredAt: z.date().optional(),
-        vendor: z.string().min(1).max(200).optional(),
-        amount: z
-          .union([
-            z.number().finite(),
-            z
-              .string()
-              .regex(
-                /^-?\d+(\.\d{1,4})?$/,
-                "must be a decimal with up to 4 fractional digits",
-              ),
-          ])
-          .optional(),
-        currency: z.string().length(3).regex(/^[A-Z]{3}$/).optional(),
-        notes: z.string().max(2000).nullable().optional(),
-      })
-      .optional(),
-  });
+export const confirmIntakeInput = z.object({
+  id: z.string().min(1),
+  // Receipt-target fields. Other target flows add their own slot
+  // as the domains land.
+  receipt: z
+    .object({
+      occurredAt: z.date().optional(),
+      vendor: z.string().min(1).max(200).optional(),
+      amount: z
+        .union([
+          z.number().finite(),
+          z
+            .string()
+            .regex(/^-?\d+(\.\d{1,4})?$/, "must be a decimal with up to 4 fractional digits"),
+        ])
+        .optional(),
+      currency: z
+        .string()
+        .length(3)
+        .regex(/^[A-Z]{3}$/)
+        .optional(),
+      notes: z.string().max(2000).nullable().optional(),
+    })
+    .optional(),
+});
 
 export type ConfirmIntakeInput = z.infer<typeof confirmIntakeInput>;
 

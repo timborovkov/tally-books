@@ -21,11 +21,7 @@ import { getVisionProvider } from "@/lib/ai";
 import { env } from "@/lib/env";
 import { BUCKETS, getBlobStream, type BucketName } from "@/lib/storage";
 
-import {
-  applyExtraction,
-  markIntakeOcrFailed,
-  markIntakeOcrRunning,
-} from "./mutations";
+import { applyExtraction, markIntakeOcrFailed, markIntakeOcrRunning } from "./mutations";
 
 async function readBlobBytes(bucket: BucketName, objectKey: string): Promise<Buffer> {
   const stream = await getBlobStream(bucket, objectKey);
