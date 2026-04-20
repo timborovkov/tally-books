@@ -192,7 +192,9 @@ describe("permissions.can", () => {
     const user = await loadUser(userId);
     // Request adds fyYear — grant doesn't mention it, so it's not a
     // restriction dimension; entityId matches → allow.
-    expect(await can(db, user, "expenses", "read", { entityId: "ent_1", fyYear: "FY2024" })).toBe(true);
+    expect(await can(db, user, "expenses", "read", { entityId: "ent_1", fyYear: "FY2024" })).toBe(
+      true,
+    );
     // Changing the mentioned dimension still denies.
     expect(await can(db, user, "expenses", "read", { entityId: "ent_2", fyYear: "FY2024" })).toBe(
       false,
@@ -213,7 +215,9 @@ describe("permissions.can", () => {
     // Request matches only entityId; fyYear on the grant isn't satisfied.
     expect(await can(db, user, "expenses", "read", { entityId: "ent_1" })).toBe(false);
     // Full match succeeds.
-    expect(await can(db, user, "expenses", "read", { entityId: "ent_1", fyYear: "FY2024" })).toBe(true);
+    expect(await can(db, user, "expenses", "read", { entityId: "ent_1", fyYear: "FY2024" })).toBe(
+      true,
+    );
     // Different year denies.
     expect(await can(db, user, "expenses", "read", { entityId: "ent_1", fyYear: "FY2023" })).toBe(
       false,
