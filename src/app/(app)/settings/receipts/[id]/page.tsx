@@ -18,7 +18,7 @@ import { VersionTimeline } from "@/components/versioning/VersionTimeline";
 import { getDb } from "@/db/client";
 import { listEntities } from "@/domains/entities";
 import { getReceipt, getReceiptAuditEntries, getReceiptHistory } from "@/domains/receipts";
-import { assertPeriodUnlocked, canTransition } from "@/lib/versioning";
+import { assertPeriodUnlocked, canTransition, PeriodLockedError } from "@/lib/versioning";
 import { RECEIPT_TRANSITION_TARGETS } from "@/lib/versioning/state-machine";
 import { NotFoundError } from "@/domains/errors";
 import { getCurrentActor } from "@/lib/auth-shim";
@@ -62,7 +62,13 @@ export default async function ReceiptDetailPage({ params }: ReceiptDetailPagePro
       occurredAt: receipt.occurredAt,
     })
       .then(() => false)
-      .catch(() => true),
+      .catch((err: unknown) => {
+        // Only swallow the period-lock signal — any other failure (DB
+        // outage, permission error) should propagate and surface as a
+        // real 500, not render as a misleading "In period lock" badge.
+        if (err instanceof PeriodLockedError) return true;
+        throw err;
+      }),
   ]);
 
   const allowedStates = RECEIPT_TRANSITION_TARGETS.filter((s) =>

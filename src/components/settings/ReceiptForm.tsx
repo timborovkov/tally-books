@@ -37,18 +37,36 @@ export function ReceiptForm(props: {
 
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="entityId">Entity</Label>
-        <Select name="entityId" defaultValue={props.receipt?.entityId ?? props.entities[0]?.id}>
-          <SelectTrigger id="entityId">
-            <SelectValue placeholder="Select entity" />
-          </SelectTrigger>
-          <SelectContent>
-            {props.entities.map((e) => (
-              <SelectItem key={e.id} value={e.id}>
-                {e.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {props.receipt ? (
+          <>
+            {/*
+              Moving a receipt across entities is not just a field edit —
+              it shifts period-lock scope and audit/IAM grants. Keep the
+              entity read-only in edit mode; a "move to another entity"
+              flow can ship separately when there's a clear product need.
+            */}
+            <Input
+              id="entityId"
+              value={props.entities.find((e) => e.id === props.receipt!.entityId)?.name ?? ""}
+              disabled
+              readOnly
+            />
+            <input type="hidden" name="entityId" value={props.receipt.entityId} />
+          </>
+        ) : (
+          <Select name="entityId" defaultValue={props.entities[0]?.id}>
+            <SelectTrigger id="entityId">
+              <SelectValue placeholder="Select entity" />
+            </SelectTrigger>
+            <SelectContent>
+              {props.entities.map((e) => (
+                <SelectItem key={e.id} value={e.id}>
+                  {e.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
       <div className="flex flex-col gap-1.5">

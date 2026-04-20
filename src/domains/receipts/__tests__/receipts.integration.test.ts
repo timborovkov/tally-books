@@ -292,6 +292,35 @@ describe("period lock enforcement", () => {
     ).rejects.toBeInstanceOf(PeriodLockedError);
   });
 
+  it("rejects updateReceipt that would move occurred_at OUT of a locked period", async () => {
+    // Receipt sits inside the locked period. Moving its date to an
+    // unlocked date still mutates what the locked period "contains",
+    // so the source side must be checked too.
+    const entityId = await seedEntity();
+    const r = await createReceipt(h.db, h.actor, {
+      entityId,
+      occurredAt: new Date("2025-06-15T00:00:00Z"),
+      vendor: "Lidl",
+      amount: "9.99",
+      currency: "EUR",
+    });
+    const period = await createPeriod(h.db, h.actor, {
+      entityId,
+      kind: "year",
+      label: "FY2025",
+      startAt: new Date("2025-01-01T00:00:00Z"),
+      endAt: new Date("2025-12-31T23:59:59Z"),
+    });
+    await lockPeriod(h.db, h.actor, { periodId: period.id, reason: "filed" });
+
+    await expect(
+      updateReceipt(h.db, h.actor, {
+        id: r.id,
+        occurredAt: new Date("2026-06-15T00:00:00Z"), // unlocked year
+      }),
+    ).rejects.toBeInstanceOf(PeriodLockedError);
+  });
+
   it("rejects updateReceipt that would move occurred_at into a locked period", async () => {
     const entityId = await seedEntity();
     const r = await createReceipt(h.db, h.actor, {

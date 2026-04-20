@@ -1,6 +1,5 @@
 import { sql } from "drizzle-orm";
 import {
-  foreignKey,
   index,
   integer,
   jsonb,
@@ -82,14 +81,6 @@ export const receiptVersions = pgTable(
     unique("receipt_versions_monotonic").on(t.receiptId, t.versionNum),
     index("receipt_versions_receipt_ver_idx").on(t.receiptId, t.versionNum.desc()),
     index("receipt_versions_created_at_idx").on(t.createdAt),
-    // Drizzle-generated `.references(() => receipts.id)` on a column the
-    // parent table also FKs at — circular. Declared here explicitly so
-    // drizzle-kit doesn't try to bake both at once.
-    foreignKey({
-      columns: [t.receiptId],
-      foreignColumns: [receipts.id],
-      name: "receipt_versions_receipt_id_receipts_id_fk",
-    }).onDelete("cascade"),
   ],
 );
 

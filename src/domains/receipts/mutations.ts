@@ -165,12 +165,22 @@ export async function updateReceipt(
       ...(input.notes !== undefined ? { notes: input.notes } : {}),
     };
 
-    // Period-lock check runs against the *target* occurred_at — a move
-    // into a locked period is just as blocked as a write inside one.
+    // Period-lock check runs against BOTH sides when occurred_at moves.
+    // A write inside a locked period is obviously blocked; moving a
+    // receipt OUT of a locked period is also a change to that period's
+    // contents (it no longer contains this receipt) so it's equally a
+    // violation of the lock's "this period is frozen" contract. When
+    // source == target, one of these is a no-op.
     await assertPeriodUnlocked(tx, {
-      entityId: nextRow.entityId,
-      occurredAt: nextRow.occurredAt,
+      entityId: existing.entityId,
+      occurredAt: existing.occurredAt,
     });
+    if (nextRow.occurredAt.getTime() !== existing.occurredAt.getTime()) {
+      await assertPeriodUnlocked(tx, {
+        entityId: nextRow.entityId,
+        occurredAt: nextRow.occurredAt,
+      });
+    }
 
     const prevSnapshot = pickSnapshot(existing, RECEIPT_DOMAIN_FIELDS);
     const nextSnapshot = pickSnapshot(nextRow, RECEIPT_DOMAIN_FIELDS);
