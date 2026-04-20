@@ -110,23 +110,23 @@ Get the inputs in: receipts, expenses, invoices, clients, categories.
 
 ### Files & storage
 
-- [ ] MinIO client wired up
-- [ ] `blob` table + upload service (streaming, no base64 in DB)
-- [ ] Buckets: `receipts/`, `invoices/`, `legal-docs/`, `exports/`
+- [x] MinIO client wired up
+- [x] `blob` table + upload service (streaming, no base64 in DB)
+- [x] Buckets: `receipts/`, `invoices/`, `legal-docs/`, `exports/`
 
 ### Receipts
 
-- [ ] `receipt` table with versioning
-- [ ] Single + bulk upload UI (drag and drop)
-- [ ] OCR/vision job queued via pg-boss on upload
-- [ ] OpenAI vision provider with structured output schema
-- [ ] Confidence highlighting in UI for low-confidence fields
-- [ ] User review/edit/confirm flow
-- [ ] Mass actions: bulk re-extract, bulk assign entity/category, bulk delete
-- [ ] **Unified intake inbox** (cross-entity queue) with status: `new`, `needs_review`, `routed`, `confirmed`, `rejected`
-- [ ] Routing fields in queue: business vs personal, entity, target flow (expense/trip/mileage/benefit/compliance evidence)
-- [ ] Bulk triage actions: mass route, mass mark personal, mass attach to trip/claim, mass request missing evidence
-- [ ] Wrong-route recovery flow with audit trail and downstream re-evaluation signals
+- [x] `receipt` table with versioning
+- [x] Single + bulk upload UI (drag and drop)
+- [x] OCR/vision job queued via pg-boss on upload
+- [x] OpenAI vision provider with structured output schema
+- [x] Confidence highlighting in UI for low-confidence fields
+- [x] User review/edit/confirm flow
+- [x] Mass actions: bulk re-extract, bulk assign entity/category, bulk delete
+- [x] **Unified intake inbox** (cross-entity queue) with status: `new`, `needs_review`, `routed`, `confirmed`, `rejected`
+- [x] Routing fields in queue: business vs personal, entity, target flow (expense/trip/mileage/benefit/compliance evidence)
+- [x] Bulk triage actions: mass route, mass mark personal, mass attach to trip/claim, mass request missing evidence
+- [x] Wrong-route recovery flow with audit trail and downstream re-evaluation signals
 
 ### Expenses
 
@@ -169,15 +169,15 @@ Get the inputs in: receipts, expenses, invoices, clients, categories.
 
 ### pg-boss
 
-- [ ] pg-boss installed and running in dev compose
-- [ ] Job queue conventions documented
-- [ ] Worker process boots alongside app
+- [x] pg-boss installed and running in dev compose
+- [x] Job queue conventions documented
+- [x] Worker process boots alongside app
 
 ### Tests
 
-- [ ] Integration test: upload receipt → OCR → user confirms → expense created
+- [x] Integration test: upload receipt → OCR → user confirms → expense created
 - [ ] Integration test: create internal invoice toiminimi → OÜ → both sides booked
-- [ ] Integration test: cross-entity intake queue routing (business/personal/entity/flow) creates the correct downstream draft artifacts + audit entries
+- [x] Integration test: cross-entity intake queue routing (business/personal/entity/flow) creates the correct downstream draft artifacts + audit entries
 
 ---
 

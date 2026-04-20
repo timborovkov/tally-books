@@ -13,6 +13,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **v0.2 Files & Storage + Receipts intake vertical:**
+  - MinIO client singleton with `BUCKETS.{receipts,invoices,legalDocs,exports}` registry and idempotent `ensureBuckets()` called at boot. Streaming `putBlob()` fans the readable through a sha256 hasher + byte counter while piping to MinIO — no full-file buffering. Dedupe by `(bucket, sha256)` so duplicate uploads reuse the existing row.
+  - `blobs` table: content-addressable pointer, immutable once written. Includes `sha256` + `size_bytes` + `content_type` + `uploaded_by_id`.
+  - Receipt `blob_id` column (nullable FK with `onDelete: restrict`), part of `RECEIPT_DOMAIN_FIELDS` so replacing the scan produces a new version row.
+  - `intake_items` table + three enums (`intake_status`, `intake_ocr_status`, `intake_target_flow`) — unified cross-entity queue. Not versioned; audit trail via `intake.*` loose-verb-noun actions.
+  - Intake domain module (`src/domains/intake/`) with `createIntakeItem`, OCR lifecycle (`markIntakeOcrRunning`, `applyExtraction`, `markIntakeOcrFailed`), routing (`routeIntakeItem`), confirm (`confirmIntakeItem` — creates the downstream receipt for `targetFlow=expense`), reject, and wrong-route recovery (`reRouteIntakeItem` voids the downstream receipt, resets routing, stashes `previousRouteSnapshot`, writes the `intake.wrong_route` + `intake.re_routed` audit pair).
+  - `bulkMutate` helper + bulk server actions: `bulkRoute`, `bulkMarkPersonal`, `bulkReExtract`, `bulkReject`, `bulkAttach` (trip/mileage/benefit/compliance stubs), `bulkRequestEvidence`. Partial-success tolerated.
+  - pg-boss wired with a singleton `getBoss()`, `QUEUES` registry + Zod payload schemas, typed `sendJob()` helper, and a worker entry point (`pnpm worker`). First queue: `intake.ocr`. Sibling `worker` service in docker-compose.
+  - Vision provider interface in `src/lib/ai/` — `VisionProvider` with `extractReceipt(bytes, contentType) → ReceiptExtraction`. `OpenAIVisionProvider` implementation uses `chat.completions.parse` + `zodResponseFormat`. Missing `OPENAI_API_KEY` surfaces as a per-intake-item `ocr_error`, not a boot failure.
+  - `ReceiptExtraction` Zod schema with per-field `{ value, confidence }` wrapping — drives the UI's confidence highlighting.
+  - Upload surface: `POST /api/intake/upload` (multipart, 15MB cap, streams into MinIO); `GET /api/blobs/:id` (authed presigned-URL redirect).
+  - Inbox UI: `/intake` list page with filter chips + client-side row selection; `/intake/[id]` review page with scan preview, confidence-shaded fields, routing panel, re-route + re-extract + reject actions, audit trail. Quick-add `+` dialog's "Upload receipt" stub replaced with the live dropzone. Sidebar gains an Inbox entry.
+  - New architecture docs: `storage.md`, `jobs.md`, `ai-providers.md`, `intake.md`.
+
+### Added
+
 - Next.js 16 (App Router) + TypeScript (strict, with `noUncheckedIndexedAccess` and friends).
 - Tailwind v4 with shadcn/ui base setup (`Button`, `Input`, `cn` utility, slate theme tokens).
 - Strict ESLint flat config (Next core-web-vitals + TypeScript, unused-imports, prettier-compat).
