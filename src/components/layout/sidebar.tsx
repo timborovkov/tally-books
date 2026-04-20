@@ -3,6 +3,7 @@ import {
   BookOpen,
   Building2,
   FileText,
+  Inbox,
   LayoutDashboard,
   MessageSquare,
   Receipt,
@@ -28,6 +29,7 @@ interface NavItem {
 // which lists every settings section.
 const NAV: readonly NavItem[] = [
   { label: "Dashboard", href: "/", Icon: LayoutDashboard },
+  { label: "Inbox", href: "/intake", Icon: Inbox },
   { label: "Entities", href: "/settings/entities", Icon: Building2 },
   { label: "Expenses", href: "/expenses", Icon: Wallet },
   { label: "Receipts", href: "/receipts", Icon: Receipt },
