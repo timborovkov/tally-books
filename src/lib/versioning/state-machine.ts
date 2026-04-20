@@ -10,7 +10,7 @@ import type { ThingState } from "./types";
  * `filed → amending` is the only route out of `filed`. `amending` folds
  * back into `filed` when the amendment is accepted, and the UI surfaces
  * "amended" by observing that the thing has more than one `filed`
- * version in its history (data-structure.md §3.2). No separate
+ * version in its history (docs/data-model.md §3.2). No separate
  * `amended` enum value — the word is a derived label, not a state.
  */
 const BASE_TRANSITIONS: Record<ThingState, readonly ThingState[]> = {

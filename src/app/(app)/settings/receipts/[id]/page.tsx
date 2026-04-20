@@ -51,7 +51,7 @@ export default async function ReceiptDetailPage({ params }: ReceiptDetailPagePro
   // handler today; when non-admin surfaces ship we may want a dedicated
   // 403 page.
   const actor = await getCurrentActor(db);
-  await assertCan(actor.user, "receipts", "read", { entityId: receipt.entityId });
+  await assertCan(db, actor.user, "receipts", "read", { entityId: receipt.entityId });
 
   const [entities, history, audit, inPeriodLock] = await Promise.all([
     listEntities(db, { includeArchived: false }),

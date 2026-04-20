@@ -93,7 +93,7 @@ describe("permissions.can", () => {
   it("lets admins through without hitting the permissions table", async () => {
     const adminId = await seedUser({ email: "admin@example.test", role: "admin" });
     const admin = await loadUser(adminId);
-    expect(await can(admin, "expenses", "write")).toBe(true);
+    expect(await can(db, admin, "expenses", "write")).toBe(true);
   });
 
   it("denies removed users even if they had a grant", async () => {
@@ -106,7 +106,7 @@ describe("permissions.can", () => {
       access: "write",
     });
     const user = await loadUser(userId);
-    expect(await can(user, "expenses", "read")).toBe(false);
+    expect(await can(db, user, "expenses", "read")).toBe(false);
   });
 
   it("allows explicit grant, denies revoked grant", async () => {
@@ -119,8 +119,8 @@ describe("permissions.can", () => {
       access: "read",
     });
     const user = await loadUser(userId);
-    expect(await can(user, "expenses", "read")).toBe(true);
-    expect(await can(user, "invoices", "read")).toBe(false);
+    expect(await can(db, user, "expenses", "read")).toBe(true);
+    expect(await can(db, user, "invoices", "read")).toBe(false);
 
     await seedPermission({
       userId,
@@ -129,7 +129,7 @@ describe("permissions.can", () => {
       access: "read",
       revoked: true,
     });
-    expect(await can(user, "invoices", "read")).toBe(false);
+    expect(await can(db, user, "invoices", "read")).toBe(false);
   });
 
   it("treats write grants as satisfying read requests", async () => {
@@ -142,8 +142,8 @@ describe("permissions.can", () => {
       access: "write",
     });
     const user = await loadUser(userId);
-    expect(await can(user, "expenses", "read")).toBe(true);
-    expect(await can(user, "expenses", "write")).toBe(true);
+    expect(await can(db, user, "expenses", "read")).toBe(true);
+    expect(await can(db, user, "expenses", "write")).toBe(true);
   });
 
   it("matches empty-scope grants as wildcards", async () => {
@@ -156,7 +156,7 @@ describe("permissions.can", () => {
       access: "read",
     });
     const user = await loadUser(userId);
-    expect(await can(user, "expenses", "read", { entityId: "ent_1" })).toBe(true);
+    expect(await can(db, user, "expenses", "read", { entityId: "ent_1" })).toBe(true);
   });
 
   it("enforces scope subset matching on scoped grants", async () => {
@@ -170,10 +170,10 @@ describe("permissions.can", () => {
       scope: { entityId: "ent_1" },
     });
     const user = await loadUser(userId);
-    expect(await can(user, "expenses", "read", { entityId: "ent_1" })).toBe(true);
-    expect(await can(user, "expenses", "read", { entityId: "ent_2" })).toBe(false);
+    expect(await can(db, user, "expenses", "read", { entityId: "ent_1" })).toBe(true);
+    expect(await can(db, user, "expenses", "read", { entityId: "ent_2" })).toBe(false);
     // Caller didn't supply scope, but grant is scoped — denies.
-    expect(await can(user, "expenses", "read")).toBe(false);
+    expect(await can(db, user, "expenses", "read")).toBe(false);
   });
 
   // Locks in the intentional subset-match behavior: a scoped grant does
@@ -192,9 +192,9 @@ describe("permissions.can", () => {
     const user = await loadUser(userId);
     // Request adds fyYear — grant doesn't mention it, so it's not a
     // restriction dimension; entityId matches → allow.
-    expect(await can(user, "expenses", "read", { entityId: "ent_1", fyYear: "FY2024" })).toBe(true);
+    expect(await can(db, user, "expenses", "read", { entityId: "ent_1", fyYear: "FY2024" })).toBe(true);
     // Changing the mentioned dimension still denies.
-    expect(await can(user, "expenses", "read", { entityId: "ent_2", fyYear: "FY2024" })).toBe(
+    expect(await can(db, user, "expenses", "read", { entityId: "ent_2", fyYear: "FY2024" })).toBe(
       false,
     );
   });
@@ -211,11 +211,11 @@ describe("permissions.can", () => {
     });
     const user = await loadUser(userId);
     // Request matches only entityId; fyYear on the grant isn't satisfied.
-    expect(await can(user, "expenses", "read", { entityId: "ent_1" })).toBe(false);
+    expect(await can(db, user, "expenses", "read", { entityId: "ent_1" })).toBe(false);
     // Full match succeeds.
-    expect(await can(user, "expenses", "read", { entityId: "ent_1", fyYear: "FY2024" })).toBe(true);
+    expect(await can(db, user, "expenses", "read", { entityId: "ent_1", fyYear: "FY2024" })).toBe(true);
     // Different year denies.
-    expect(await can(user, "expenses", "read", { entityId: "ent_1", fyYear: "FY2023" })).toBe(
+    expect(await can(db, user, "expenses", "read", { entityId: "ent_1", fyYear: "FY2023" })).toBe(
       false,
     );
   });
@@ -223,7 +223,7 @@ describe("permissions.can", () => {
   it("assertCan throws PermissionDeniedError on deny", async () => {
     const userId = await seedUser({ email: "u@example.test", role: "member" });
     const user = await loadUser(userId);
-    await expect(assertCan(user, "expenses", "write")).rejects.toBeInstanceOf(
+    await expect(assertCan(db, user, "expenses", "write")).rejects.toBeInstanceOf(
       PermissionDeniedError,
     );
   });

@@ -19,7 +19,7 @@ import { jurisdictions } from "./jurisdictions";
 import { persons } from "./persons";
 import { users } from "./users";
 
-// data-structure.md §5.2. Every Thing in Tally points at an entity (or
+// docs/data-model.md §5.2. Every Thing in Tally points at an entity (or
 // the personal pseudo-entity, modelled as kind = 'personal'). Ownership
 // lives entirely in entity_person_links — there is no `ownership jsonb`
 // here; resolved I8 in the spec.
@@ -62,7 +62,7 @@ export const entities = pgTable(
   ],
 );
 
-// data-structure.md §5.4. Bitemporal-ish: valid_from / valid_to lets us
+// docs/data-model.md §5.4. Bitemporal-ish: valid_from / valid_to lets us
 // answer "who was on the board on 2024-03-15?" without a separate audit
 // table. Setting valid_to closes a link rather than deleting it.
 export const entityPersonLinks = pgTable(
@@ -97,7 +97,7 @@ export const entityPersonLinks = pgTable(
   ],
 );
 
-// data-structure.md §5.5.
+// docs/data-model.md §5.5.
 export const financialPeriods = pgTable(
   "financial_periods",
   {

@@ -20,7 +20,7 @@ export async function createPerson(
   actor: CurrentActor,
   raw: CreatePersonInput,
 ): Promise<Person> {
-  await assertCan(actor.user, "personal_details", "write");
+  await assertCan(db, actor.user, "personal_details", "write");
   const input = createPersonInput.parse(raw);
 
   const [row] = await db
@@ -54,7 +54,7 @@ export async function updatePerson(
   raw: UpdatePersonInput,
 ): Promise<Person> {
   const input = updatePersonInput.parse(raw);
-  await assertCan(actor.user, "personal_details", "write", { personId: input.id });
+  await assertCan(db, actor.user, "personal_details", "write", { personId: input.id });
 
   const patch: Partial<typeof persons.$inferInsert> & { updatedAt: Date } = {
     updatedAt: new Date(),
@@ -81,7 +81,7 @@ export async function updatePerson(
 }
 
 export async function deletePerson(db: Db, actor: CurrentActor, id: string): Promise<void> {
-  await assertCan(actor.user, "personal_details", "write", { personId: id });
+  await assertCan(db, actor.user, "personal_details", "write", { personId: id });
   // Block when active links exist. Inactive (closed) links stay so
   // historical reports keep working.
   const [active] = await db

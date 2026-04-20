@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 
 /**
  * Guard against drizzle-kit silently regenerating a non-DEFERRABLE FK on
- * `receipts.current_version_id`. data-structure.md §3.1 requires the FK
+ * `receipts.current_version_id`. docs/data-model.md §3.1 requires the FK
  * between a versioned Thing's parent row and its `<thing>_versions.id`
  * to be `DEFERRABLE INITIALLY DEFERRED` so both rows can be inserted in
  * the same transaction. drizzle-kit can't emit that clause, so the FK

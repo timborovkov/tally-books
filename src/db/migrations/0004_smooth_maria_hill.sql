@@ -42,7 +42,7 @@ CREATE INDEX "receipt_versions_created_at_idx" ON "receipt_versions" USING btree
 CREATE INDEX "receipts_entity_occurred_idx" ON "receipts" USING btree ("entity_id","occurred_at" DESC NULLS LAST);--> statement-breakpoint
 CREATE INDEX "receipts_state_active_idx" ON "receipts" USING btree ("state") WHERE "receipts"."state" <> 'void';--> statement-breakpoint
 -- Hand-edited: DEFERRABLE INITIALLY DEFERRED FK so the parent row and its
--- first version row can be inserted in the same transaction (data-structure.md §3.1).
+-- first version row can be inserted in the same transaction (docs/data-model.md §3.1).
 -- drizzle-kit can't emit DEFERRABLE today, so this constraint is added
 -- by hand. Do not regenerate — this file is append-only.
 ALTER TABLE "receipts" ADD CONSTRAINT "receipts_current_version_id_receipt_versions_id_fk" FOREIGN KEY ("current_version_id") REFERENCES "public"."receipt_versions"("id") ON DELETE set null ON UPDATE no action DEFERRABLE INITIALLY DEFERRED;

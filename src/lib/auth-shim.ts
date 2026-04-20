@@ -17,7 +17,7 @@ import type { ActorKind } from "./domain-types";
  * fields `audit_log` needs (userId, kind) **and** the fields `assertCan`
  * needs (role, removedAt) so mutations can enforce IAM without making a
  * second query. Agent origination is represented via `kind='user'` with
- * `agentId` set on the version row — see data-structure.md §2.2.
+ * `agentId` set on the version row — see docs/data-model.md §2.2.
  */
 export interface CurrentActor {
   userId: string;

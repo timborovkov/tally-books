@@ -5,7 +5,7 @@ import { newId } from "@/db/id";
 
 import { userRoleEnum } from "./enums";
 
-// data-structure.md §4.1.
+// docs/data-model.md §4.1.
 //
 // BetterAuth also writes here. The extra columns below (emailVerified,
 // image, twoFactorEnabled, banned/banReason/banExpires, updatedAt) are
@@ -26,7 +26,7 @@ export const users = pgTable(
 
     role: userRoleEnum("role").notNull().default("member"),
 
-    // Kept per data-structure.md §4.1. BetterAuth's twoFactor plugin stores
+    // Kept per docs/data-model.md §4.1. BetterAuth's twoFactor plugin stores
     // the live TOTP secret in the `two_factors` table (see src/db/schema/two-factors.ts)
     // — this column is reserved by the spec and currently not written to
     // by our code. If we ever take the secret back from the plugin, this

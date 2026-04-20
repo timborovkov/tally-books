@@ -25,7 +25,7 @@ export async function createPeriod(
   const input = createPeriodInput.parse(raw);
   // Period lifecycle is a filing-adjacent concern; `filings` scoped by
   // entity is the closest fit in the IAM resource enum.
-  await assertCan(actor.user, "filings", "write", { entityId: input.entityId });
+  await assertCan(db, actor.user, "filings", "write", { entityId: input.entityId });
 
   if (input.endAt <= input.startAt) {
     throw new ValidationError("endAt must be after startAt", {
@@ -81,7 +81,7 @@ export async function lockPeriod(
       .for("update")
       .limit(1);
     if (!existing) throw new NotFoundError("financial_period", input.periodId);
-    await assertCan(actor.user, "filings", "write", { entityId: existing.entityId });
+    await assertCan(tx, actor.user, "filings", "write", { entityId: existing.entityId });
     if (existing.locked) {
       throw new ConflictError("Period is already locked", {
         periodId: existing.id,
@@ -132,7 +132,7 @@ export async function unlockPeriod(
       .for("update")
       .limit(1);
     if (!existing) throw new NotFoundError("financial_period", input.periodId);
-    await assertCan(actor.user, "filings", "write", { entityId: existing.entityId });
+    await assertCan(tx, actor.user, "filings", "write", { entityId: existing.entityId });
     if (!existing.locked) {
       throw new ConflictError("Period is not locked", { periodId: existing.id });
     }

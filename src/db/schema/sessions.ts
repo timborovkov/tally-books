@@ -4,7 +4,7 @@ import { newId } from "@/db/id";
 
 import { users } from "./users";
 
-// data-structure.md §4.2 — BetterAuth owns the shape; mirrored so Drizzle can join.
+// docs/data-model.md §4.2 — BetterAuth owns the shape; mirrored so Drizzle can join.
 //
 // BetterAuth's session schema adds `token` (unique session token) and
 // `updatedAt`. The admin plugin adds `impersonatedBy`. Those columns

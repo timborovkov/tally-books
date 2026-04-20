@@ -3,7 +3,7 @@ import { jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 
 import { newId } from "@/db/id";
 
-// data-structure.md §5.1. Jurisdiction is a country-level config bundle
+// docs/data-model.md §5.1. Jurisdiction is a country-level config bundle
 // (entity types, VAT rules, filing schedules, portal/guide links, ...).
 // `config` is jsonb in the database; the application boundary parses it
 // against the JurisdictionConfig Zod schema in src/lib/jurisdictions/types.ts.

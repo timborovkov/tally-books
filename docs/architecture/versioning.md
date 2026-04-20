@@ -4,7 +4,7 @@
 
 The versioning engine lives in [`src/lib/versioning/`](../../src/lib/versioning). This doc is the working reference for what's there and how to add a new versioned Thing.
 
-Source of truth for the data shape: [`data-structure.md`](../../data-structure.md) §2.1, §3.1–§3.4.
+Source of truth for the data shape: [`data-model.md`](../data-model.md) §2.1, §3.1–§3.4.
 
 ## The shape
 

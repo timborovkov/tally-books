@@ -48,7 +48,7 @@ export async function createReceipt(
   raw: CreateReceiptInput,
 ): Promise<Receipt> {
   const input = createReceiptInput.parse(raw);
-  await assertCan(actor.user, "receipts", "write", { entityId: input.entityId });
+  await assertCan(db, actor.user, "receipts", "write", { entityId: input.entityId });
 
   return db.transaction(async (tx) => {
     // Inside the tx so a concurrent lockPeriod commit can't land between
@@ -139,7 +139,7 @@ export async function updateReceipt(
       .for("update")
       .limit(1);
     if (!existing) throw new NotFoundError("receipt", input.id);
-    await assertCan(actor.user, "receipts", "write", { entityId: existing.entityId });
+    await assertCan(tx, actor.user, "receipts", "write", { entityId: existing.entityId });
 
     const [latest] = await tx
       .select({ versionNum: receiptVersions.versionNum })
@@ -262,7 +262,7 @@ export async function transitionReceipt(
       .for("update")
       .limit(1);
     if (!existing) throw new NotFoundError("receipt", input.id);
-    await assertCan(actor.user, "receipts", "write", { entityId: existing.entityId });
+    await assertCan(tx, actor.user, "receipts", "write", { entityId: existing.entityId });
 
     assertTransition(existing.state, input.nextState, { thingType: "receipt" });
 
@@ -316,8 +316,16 @@ export async function transitionReceipt(
       updatedAt: new Date(),
     };
     if (input.nextState === "filed") {
+      // Always reset filedAt + filedRef when entering `filed`. Without
+      // the explicit null, a re-file after `amending` would silently
+      // inherit the previous filing's ref/timestamp.
       parentPatch.filedAt = new Date();
-      if (input.filedRef) parentPatch.filedRef = input.filedRef;
+      parentPatch.filedRef = input.filedRef ?? null;
+    } else if (input.nextState === "amending") {
+      // Leaving `filed` → clear both so the next filing starts fresh.
+      // The version row still carries the old snapshot for history.
+      parentPatch.filedAt = null;
+      parentPatch.filedRef = null;
     }
 
     const row = assertReturning(

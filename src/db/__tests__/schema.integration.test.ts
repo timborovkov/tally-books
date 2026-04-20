@@ -144,7 +144,7 @@ describe("tables", () => {
 });
 
 describe("indexes", () => {
-  it("creates the named indexes from data-structure.md §16", async () => {
+  it("creates the named indexes from docs/data-model.md §16", async () => {
     const rows = await db.execute<{ indexname: string; indexdef: string }>(sql`
       SELECT indexname, indexdef
       FROM pg_indexes

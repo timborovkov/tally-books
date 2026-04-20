@@ -18,7 +18,7 @@ import { users } from "./users";
 import { versionedColumns } from "./versioning";
 
 /**
- * First real versioned Thing. data-structure.md §3.1–§3.2 + v0.1 TODO
+ * First real versioned Thing. docs/data-model.md §3.1–§3.2 + v0.1 TODO
  * "Versioning engine". Minimal v0.1 shape — OCR, vision, intake inbox
  * etc. arrive in v0.2 and extend this table rather than replace it.
  *

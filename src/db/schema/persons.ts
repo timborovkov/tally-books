@@ -5,7 +5,7 @@ import { newId } from "@/db/id";
 
 import { users } from "./users";
 
-// data-structure.md §5.3. A `person` is a real human — the user themself,
+// docs/data-model.md §5.3. A `person` is a real human — the user themself,
 // a co-founder, an employee, a contractor, an external counterparty.
 // `user_id` is set when the person is also a platform user.
 export const persons = pgTable("persons", {

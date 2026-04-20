@@ -245,6 +245,36 @@ describe("transitionReceipt", () => {
     ).rejects.toBeInstanceOf(InvalidStateTransitionError);
   });
 
+  it("clears filedAt and filedRef on filed → amending; re-file without filedRef stays null", async () => {
+    const entityId = await seedEntity();
+    const r = await createReceipt(h.db, h.actor, {
+      entityId,
+      occurredAt: new Date("2026-04-20T00:00:00Z"),
+      vendor: "Lidl",
+      amount: "9.99",
+      currency: "EUR",
+    });
+    await transitionReceipt(h.db, h.actor, { id: r.id, nextState: "ready" });
+    const filed = await transitionReceipt(h.db, h.actor, {
+      id: r.id,
+      nextState: "filed",
+      filedRef: "EMTA-2026-001",
+    });
+    expect(filed.filedRef).toBe("EMTA-2026-001");
+    expect(filed.filedAt).toBeInstanceOf(Date);
+
+    const amending = await transitionReceipt(h.db, h.actor, { id: r.id, nextState: "amending" });
+    expect(amending.filedRef).toBeNull();
+    expect(amending.filedAt).toBeNull();
+
+    // Re-file WITHOUT a new filedRef. Before the fix this silently kept
+    // the old EMTA-2026-001 reference. After the fix, the new filing
+    // starts at null and the user must supply a fresh ref.
+    const refiledBlank = await transitionReceipt(h.db, h.actor, { id: r.id, nextState: "filed" });
+    expect(refiledBlank.filedRef).toBeNull();
+    expect(refiledBlank.filedAt).toBeInstanceOf(Date);
+  });
+
   it("supports amending cycle: filed → amending → filed", async () => {
     const entityId = await seedEntity();
     const r = await createReceipt(h.db, h.actor, {
