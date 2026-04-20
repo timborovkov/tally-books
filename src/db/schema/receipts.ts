@@ -12,6 +12,7 @@ import {
 
 import { newId } from "@/db/id";
 
+import { blobs } from "./blobs";
 import { entities } from "./entities";
 import { actorKindEnum } from "./enums";
 import { users } from "./users";
@@ -44,6 +45,14 @@ export const receipts = pgTable(
     amount: numeric("amount", { precision: 20, scale: 4 }).notNull(),
     currency: text("currency").notNull(),
     notes: text("notes"),
+    // Optional link to the uploaded scan. Nullable so manually-entered
+    // receipts (no image) remain valid. Versioned: swapping the scan
+    // produces a new version row because `blobId` is in
+    // RECEIPT_DOMAIN_FIELDS. `onDelete: restrict` — deleting a blob
+    // that's still referenced by a receipt must go through a domain
+    // flow (void the receipt first), not a cascade that silently
+    // breaks history.
+    blobId: text("blob_id").references(() => blobs.id, { onDelete: "restrict" }),
     // Hand-wired DEFERRABLE FK in migration SQL (see above).
     currentVersionId: text("current_version_id"),
     ...versionedColumns(),

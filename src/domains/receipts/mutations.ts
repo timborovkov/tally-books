@@ -40,6 +40,7 @@ const RECEIPT_DOMAIN_FIELDS = [
   "amount",
   "currency",
   "notes",
+  "blobId",
 ] as const satisfies ReadonlyArray<keyof Receipt>;
 
 export async function createReceipt(
@@ -70,6 +71,7 @@ export async function createReceipt(
             amount: input.amount,
             currency: input.currency,
             notes: input.notes ?? null,
+            blobId: input.blobId ?? null,
           })
           .returning()
       )[0],
@@ -177,6 +179,7 @@ export async function updateReceipt(
       ...(input.amount !== undefined ? { amount: input.amount } : {}),
       ...(input.currency !== undefined ? { currency: input.currency } : {}),
       ...(input.notes !== undefined ? { notes: input.notes } : {}),
+      ...(input.blobId !== undefined ? { blobId: input.blobId } : {}),
     };
 
     // Period-lock check runs against BOTH sides when occurred_at moves.
@@ -235,6 +238,7 @@ export async function updateReceipt(
             amount: nextRow.amount,
             currency: nextRow.currency,
             notes: nextRow.notes,
+            blobId: nextRow.blobId,
             currentVersionId: newVersion.id,
             updatedAt: new Date(),
           })

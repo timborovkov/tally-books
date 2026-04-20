@@ -22,6 +22,13 @@ export const createReceiptInput = z.object({
   amount: amountInput,
   currency: currencyInput,
   notes: z.string().max(2000).nullable().optional(),
+  /**
+   * Optional link to the uploaded scan. Carrying the blob id into
+   * the first version's snapshot means swapping the scan later
+   * (intake re-routing, user-driven replace) produces a diff row
+   * exactly like editing any other domain field.
+   */
+  blobId: z.string().min(1).nullable().optional(),
 });
 
 export type CreateReceiptInput = z.input<typeof createReceiptInput>;
@@ -33,6 +40,7 @@ export const updateReceiptInput = z.object({
   amount: amountInput.optional(),
   currency: currencyInput.optional(),
   notes: z.string().max(2000).nullable().optional(),
+  blobId: z.string().min(1).nullable().optional(),
   reason: z.string().max(500).optional(),
   // Optimistic concurrency guard — caller reads a receipt, sees version N,
   // and submits the update with `expectedVersionNum: N`. If another writer
