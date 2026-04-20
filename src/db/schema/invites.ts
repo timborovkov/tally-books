@@ -4,7 +4,7 @@ import { newId } from "@/db/id";
 
 import { users } from "./users";
 
-// data-structure.md §4.3.
+// docs/data-model.md §4.3.
 export const invites = pgTable(
   "invites",
   {

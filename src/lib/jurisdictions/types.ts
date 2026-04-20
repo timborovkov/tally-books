@@ -3,7 +3,7 @@ import { z } from "zod";
 /**
  * JurisdictionConfig — the typed shape of `jurisdictions.config` jsonb.
  *
- * data-structure.md §5.1 lists the fields a jurisdiction bundles up:
+ * docs/data-model.md §5.1 lists the fields a jurisdiction bundles up:
  * entity types, tax types, VAT rules, per-diem, filing schedules, portal
  * and guide links, payout options, social-security contributions, and a
  * payout-kind display map.
@@ -64,7 +64,7 @@ const contributionSchema = z.object({
 });
 
 // Obligation catalogs — the compliance evaluator (brief §5.4.2,
-// data-structure.md §9.8) diffs these against entity/employment state
+// docs/data-model.md §9.8) diffs these against entity/employment state
 // to surface compliance tasks. They're defined alongside the
 // evaluator itself in v0.6 (employment) and v0.7 (tax/payment/
 // reporting) — no v0.1 stub needed; Zod schemas extend cheaply and

@@ -7,13 +7,23 @@
 // door open for a future per-tx actor resolver (e.g. impersonation
 // inside a transaction). It's unused today.
 import { type Db } from "@/db/client";
+import type { User } from "@/db/schema";
 import { getCurrentUser } from "@/lib/iam/session";
 
 import type { ActorKind } from "./domain-types";
 
+/**
+ * The actor attribution every domain mutation receives. Carries the
+ * fields `audit_log` needs (userId, kind) **and** the fields `assertCan`
+ * needs (role, removedAt) so mutations can enforce IAM without making a
+ * second query. Agent origination is represented via `kind='user'` with
+ * `agentId` set on the version row — see docs/data-model.md §2.2.
+ */
 export interface CurrentActor {
   userId: string;
   kind: ActorKind;
+  /** Narrow User projection with the fields `assertCan` reads. */
+  user: Pick<User, "id" | "role" | "removedAt">;
 }
 
 export async function getCurrentActor(_db: Db): Promise<CurrentActor> {
@@ -23,5 +33,9 @@ export async function getCurrentActor(_db: Db): Promise<CurrentActor> {
       "getCurrentActor: no authenticated session. Server actions in (app) must run behind the auth gate.",
     );
   }
-  return { userId: user.id, kind: "user" };
+  return {
+    userId: user.id,
+    kind: "user",
+    user: { id: user.id, role: user.role, removedAt: user.removedAt },
+  };
 }

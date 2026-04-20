@@ -29,6 +29,20 @@
       "when": 1776553917704,
       "tag": "0003_breezy_sabretooth",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1776678610258,
+      "tag": "0004_smooth_maria_hill",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1776680000000,
+      "tag": "0005_period_lock_lookup_index",
+      "breakpoints": true
     }
   ]
 }

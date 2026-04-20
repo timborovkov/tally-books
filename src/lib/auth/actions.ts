@@ -232,7 +232,7 @@ export async function markTwoFactorEnabledAction(): Promise<ActionResult> {
 // the invitee can retry.
 //
 // `sessions.user_id` and `permissions.user_id` are both ON DELETE
-// NO ACTION per data-structure.md §4.2 and §4.4. BetterAuth may have
+// NO ACTION per docs/data-model.md §4.2 and §4.4. BetterAuth may have
 // issued a session even with `autoSignIn: false` (the request headers
 // drive cookie setup), so we delete sessions explicitly before users.
 // `permissions` is included defensively: the finalize tx is

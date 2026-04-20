@@ -12,6 +12,7 @@ import {
 } from "@/db/schema";
 import { recordAudit } from "@/lib/audit";
 import type { CurrentActor } from "@/lib/auth-shim";
+import { assertCan } from "@/lib/iam/permissions";
 import { jurisdictionConfigSchema } from "@/lib/jurisdictions/types";
 
 import { ConflictError, NotFoundError, ValidationError } from "../errors";
@@ -59,6 +60,7 @@ export async function createEntity(
   actor: CurrentActor,
   raw: CreateEntityInput,
 ): Promise<Entity> {
+  await assertCan(db, actor.user, "business_details", "write");
   const input = createEntityInput.parse(raw);
 
   // Check FK ourselves so the error message is actionable instead of a
@@ -113,6 +115,7 @@ export async function updateEntity(
   raw: UpdateEntityInput,
 ): Promise<Entity> {
   const input = updateEntityInput.parse(raw);
+  await assertCan(db, actor.user, "business_details", "write", { entityId: input.id });
 
   // Pull the existing entity so we can validate the (jurisdiction,
   // entityType) pair against the *target* jurisdiction — which may be
@@ -172,6 +175,7 @@ export async function updateEntity(
 }
 
 export async function archiveEntity(db: Db, actor: CurrentActor, id: string): Promise<Entity> {
+  await assertCan(db, actor.user, "business_details", "write", { entityId: id });
   const [row] = await db
     .update(entities)
     .set({ archivedAt: new Date(), updatedAt: new Date() })
@@ -189,6 +193,7 @@ export async function archiveEntity(db: Db, actor: CurrentActor, id: string): Pr
 }
 
 export async function unarchiveEntity(db: Db, actor: CurrentActor, id: string): Promise<Entity> {
+  await assertCan(db, actor.user, "business_details", "write", { entityId: id });
   const [row] = await db
     .update(entities)
     .set({ archivedAt: null, updatedAt: new Date() })
@@ -211,6 +216,7 @@ export async function linkPersonToEntity(
   raw: LinkPersonInput,
 ): Promise<EntityPersonLink> {
   const input = linkPersonInput.parse(raw);
+  await assertCan(db, actor.user, "business_details", "write", { entityId: input.entityId });
 
   // Validate FKs explicitly (better errors than raw 23503).
   const [e] = await db
@@ -266,6 +272,19 @@ export async function unlinkPersonFromEntity(
   actor: CurrentActor,
   linkId: string,
 ): Promise<EntityPersonLink> {
+  // Authz needs the entityId scope; the link is the one thing that
+  // knows it. The atomic close below still handles the unlink race —
+  // this preliminary read is only for authz and does not create a
+  // new TOCTOU (if the row is closed between this SELECT and the
+  // UPDATE, the atomic close below returns ConflictError correctly).
+  const [scope] = await db
+    .select({ entityId: entityPersonLinks.entityId })
+    .from(entityPersonLinks)
+    .where(eq(entityPersonLinks.id, linkId))
+    .limit(1);
+  if (!scope) throw new NotFoundError("entity_person_link", linkId);
+  await assertCan(db, actor.user, "business_details", "write", { entityId: scope.entityId });
+
   // Atomic close: only update rows that are still open. If 0 rows
   // come back, a separate SELECT distinguishes "not found" from
   // "already closed" so the API surface stays unambiguous. This

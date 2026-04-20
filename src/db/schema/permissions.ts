@@ -6,7 +6,7 @@ import { newId } from "@/db/id";
 import { accessLevelEnum, resourceTypeEnum } from "./enums";
 import { users } from "./users";
 
-// data-structure.md §4.4.
+// docs/data-model.md §4.4.
 export const permissions = pgTable(
   "permissions",
   {

@@ -40,7 +40,11 @@ export async function makeTestHarness(): Promise<TestHarness> {
     client,
     // Filled in lazily — tests that need an actor call seedAdmin() and
     // overwrite this. Default keeps the type happy.
-    actor: { userId: "pending", kind: "user" },
+    actor: {
+      userId: "pending",
+      kind: "user",
+      user: { id: "pending", role: "admin", removedAt: null },
+    },
     async seedAdmin() {
       const id = newId();
       await db.insert(schema.users).values({
@@ -48,7 +52,11 @@ export async function makeTestHarness(): Promise<TestHarness> {
         email: `admin-${id}@tally.test`,
         role: "admin",
       });
-      harness.actor = { userId: id, kind: "user" };
+      harness.actor = {
+        userId: id,
+        kind: "user",
+        user: { id, role: "admin", removedAt: null },
+      };
       return id;
     },
     async seedJurisdiction(code = "EE") {
@@ -87,6 +95,8 @@ export async function truncateAll(db: TestDb): Promise<void> {
     TRUNCATE TABLE
       audit_log,
       edit_sessions,
+      receipt_versions,
+      receipts,
       permissions,
       invites,
       sessions,

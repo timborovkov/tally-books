@@ -7,7 +7,7 @@ import { actorKindEnum, thingStateEnum, thingTypeEnum } from "./enums";
 import { users } from "./users";
 
 /**
- * Columns every versioned Thing shares (data-structure.md §3.1).
+ * Columns every versioned Thing shares (docs/data-model.md §3.1).
  *
  * Spread into a versioned table:
  *
@@ -46,7 +46,7 @@ export function versionedColumns() {
   };
 }
 
-// data-structure.md §3.3 — soft locks. One editor per Thing at a time.
+// docs/data-model.md §3.3 — soft locks. One editor per Thing at a time.
 export const editSessions = pgTable(
   "edit_sessions",
   {
@@ -67,7 +67,7 @@ export const editSessions = pgTable(
   ],
 );
 
-// data-structure.md §3.4.
+// docs/data-model.md §3.4.
 export const auditLog = pgTable(
   "audit_log",
   {

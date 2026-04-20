@@ -1,8 +1,6 @@
 import { and, eq, isNull } from "drizzle-orm";
 
-import { getDb } from "@/db/client";
-
-const db = getDb();
+import type { Db } from "@/db/client";
 import type { User } from "@/db/schema";
 import { permissions } from "@/db/schema";
 
@@ -61,7 +59,19 @@ function levelSatisfies(granted: AccessLevel, requested: AccessLevel): boolean {
   return granted === "write" && requested === "read";
 }
 
+/**
+ * `db` is the caller's Drizzle handle — the root client for non-
+ * transactional checks (pages, API handlers) or the current `tx`
+ * handle when invoked inside `db.transaction(async (tx) => ...)`.
+ *
+ * Taking `db` as an argument (rather than importing a module-level
+ * singleton) is load-bearing: when a mutation holds a `SELECT ... FOR
+ * UPDATE` inside a transaction, its authz check needs to read the
+ * same snapshot. Querying a separate connection would miss uncommitted
+ * state from earlier in the tx and skip the row lock's serialisation.
+ */
 export async function can(
+  db: Db,
   user: Pick<User, "id" | "role" | "removedAt">,
   resourceType: ResourceType,
   access: AccessLevel,
@@ -88,11 +98,12 @@ export async function can(
 }
 
 export async function assertCan(
+  db: Db,
   user: Pick<User, "id" | "role" | "removedAt">,
   resourceType: ResourceType,
   access: AccessLevel,
   scope?: ScopeObject,
 ): Promise<void> {
-  const ok = await can(user, resourceType, access, scope);
+  const ok = await can(db, user, resourceType, access, scope);
   if (!ok) throw new PermissionDeniedError(resourceType, access);
 }
