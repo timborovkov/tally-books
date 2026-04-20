@@ -32,7 +32,14 @@ import { createReceipt, transitionReceipt } from "@/domains/receipts";
 
 import { ConflictError, NotFoundError } from "../errors";
 
-import type { ConfirmIntakeInput, RejectIntakeInput, RouteIntakeInput } from "./schema";
+import {
+  confirmIntakeInput,
+  rejectIntakeInput,
+  routeIntakeInput,
+  type ConfirmIntakeInput,
+  type RejectIntakeInput,
+  type RouteIntakeInput,
+} from "./schema";
 
 // ── Create ───────────────────────────────────────────────────────────
 
@@ -151,8 +158,14 @@ export async function markIntakeOcrFailed(db: Db, input: MarkOcrFailedInput): Pr
 export async function routeIntakeItem(
   db: Db,
   actor: CurrentActor,
-  input: RouteIntakeInput,
+  raw: RouteIntakeInput,
 ): Promise<IntakeItem> {
+  // Validate here — the mutation is the server of record. Callers
+  // from typed paths (server actions) already shape correct inputs,
+  // but bulk-mutate callers and future integrations can pass
+  // anything. The refined schema catches "personal + entityId" and
+  // "business + null entityId" violations.
+  const input = routeIntakeInput.parse(raw);
   return db.transaction(async (tx) => {
     const [existing] = await tx
       .select()
@@ -248,8 +261,9 @@ function extractionToReceiptFields(
 export async function confirmIntakeItem(
   db: Db,
   actor: CurrentActor,
-  input: ConfirmIntakeInput,
+  raw: ConfirmIntakeInput,
 ): Promise<IntakeItem> {
+  const input = confirmIntakeInput.parse(raw);
   return db.transaction(async (tx) => {
     const [existing] = await tx
       .select()
@@ -348,8 +362,9 @@ export async function confirmIntakeItem(
 export async function rejectIntakeItem(
   db: Db,
   actor: CurrentActor,
-  input: RejectIntakeInput,
+  raw: RejectIntakeInput,
 ): Promise<IntakeItem> {
+  const input = rejectIntakeInput.parse(raw);
   return db.transaction(async (tx) => {
     const [existing] = await tx
       .select()
@@ -399,8 +414,9 @@ export async function rejectIntakeItem(
 export async function reRouteIntakeItem(
   db: Db,
   actor: CurrentActor,
-  input: RouteIntakeInput,
+  raw: RouteIntakeInput,
 ): Promise<IntakeItem> {
+  const input = routeIntakeInput.parse(raw);
   return db.transaction(async (tx) => {
     const [existing] = await tx
       .select()
