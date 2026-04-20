@@ -103,12 +103,14 @@ export async function reExtractIntakeAction(form: FormData): Promise<void> {
   const ids = collectIds(form);
   if (ids.length === 0) return;
 
-  await bulkMutate(ids, async (id) => {
+  const results = await bulkMutate(ids, async (id) => {
     await sendJob(QUEUES.intakeOcr, { intakeItemId: id });
   });
 
   revalidatePath("/intake");
   for (const id of ids) revalidatePath(`/intake/${id}`);
+
+  throwIfAnyFailed(results, "re-run OCR");
 }
 
 // ── Bulk mark personal ──────────────────────────────────────────────
@@ -122,7 +124,7 @@ export async function bulkMarkPersonalAction(form: FormData): Promise<void> {
   const db = getDb();
   const actor = await getCurrentActor(db);
 
-  await bulkMutate(ids, async (id) => {
+  const results = await bulkMutate(ids, async (id) => {
     await routeIntakeItem(db, actor, {
       id,
       isPersonal: true,
@@ -132,6 +134,8 @@ export async function bulkMarkPersonalAction(form: FormData): Promise<void> {
   });
 
   revalidatePath("/intake");
+
+  throwIfAnyFailed(results, "mark personal");
 }
 
 // ── Bulk route to a business entity + flow ──────────────────────────
@@ -148,7 +152,7 @@ export async function bulkRouteAction(form: FormData): Promise<void> {
   const db = getDb();
   const actor = await getCurrentActor(db);
 
-  await bulkMutate(ids, async (id) => {
+  const results = await bulkMutate(ids, async (id) => {
     await routeIntakeItem(db, actor, {
       id,
       isPersonal: false,
@@ -158,6 +162,8 @@ export async function bulkRouteAction(form: FormData): Promise<void> {
   });
 
   revalidatePath("/intake");
+
+  throwIfAnyFailed(results, "route");
 }
 
 // ── Bulk reject ─────────────────────────────────────────────────────
@@ -168,10 +174,12 @@ export async function bulkRejectAction(form: FormData): Promise<void> {
 
   const db = getDb();
   const actor = await getCurrentActor(db);
-  await bulkMutate(ids, async (id) => {
+  const results = await bulkMutate(ids, async (id) => {
     await rejectIntakeItem(db, actor, { id, reason });
   });
   revalidatePath("/intake");
+
+  throwIfAnyFailed(results, "reject");
 }
 
 // ── Bulk attach to trip / claim ────────────────────────────────────
@@ -188,7 +196,7 @@ export async function bulkAttachAction(form: FormData): Promise<void> {
 
   const db = getDb();
   const actor = await getCurrentActor(db);
-  await bulkMutate(ids, async (id) => {
+  const results = await bulkMutate(ids, async (id) => {
     await routeIntakeItem(db, actor, {
       id,
       isPersonal: false,
@@ -197,6 +205,8 @@ export async function bulkAttachAction(form: FormData): Promise<void> {
     });
   });
   revalidatePath("/intake");
+
+  throwIfAnyFailed(results, "attach");
 }
 
 // ── Bulk request missing evidence ──────────────────────────────────
@@ -210,13 +220,15 @@ export async function bulkRequestEvidenceAction(form: FormData): Promise<void> {
 
   const db = getDb();
   const actor = await getCurrentActor(db);
-  await bulkMutate(ids, async (id) => {
+  const results = await bulkMutate(ids, async (id) => {
     await rejectIntakeItem(db, actor, {
       id,
       reason: "Missing evidence — uploader notified (placeholder)",
     });
   });
   revalidatePath("/intake");
+
+  throwIfAnyFailed(results, "request evidence");
 }
 
 // Collect ids from either `ids` (array) or single `id` form field.
@@ -225,4 +237,26 @@ function collectIds(form: FormData): string[] {
   if (multi.length > 0) return multi;
   const single = strOrNull(form, "id");
   return single ? [single] : [];
+}
+
+// Surface per-item failures from a bulk mutation so the page renders
+// an error instead of returning a silent "success" when some rows
+// failed. Revalidation has already run at the call site, so partial
+// successes remain reflected in the inbox.
+function throwIfAnyFailed<T>(
+  results: Array<{ id: string; result: { ok: true; value: T } | { ok: false; error: string } }>,
+  verb: string,
+): void {
+  const failures = results.filter(
+    (r): r is { id: string; result: { ok: false; error: string } } => !r.result.ok,
+  );
+  if (failures.length === 0) return;
+  const detail = failures
+    .slice(0, 3)
+    .map((f) => `${f.id}: ${f.result.error}`)
+    .join("; ");
+  const more = failures.length > 3 ? ` (+${failures.length - 3} more)` : "";
+  throw new Error(
+    `Failed to ${verb} ${failures.length} of ${results.length} item(s): ${detail}${more}`,
+  );
 }
