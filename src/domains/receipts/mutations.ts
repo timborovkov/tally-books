@@ -14,7 +14,7 @@ import {
   VersionConflictError,
 } from "@/lib/versioning";
 
-import { NotFoundError } from "../errors";
+import { ConflictError, NotFoundError } from "../errors";
 
 import {
   createReceiptInput,
@@ -141,6 +141,20 @@ export async function updateReceipt(
     if (!existing) throw new NotFoundError("receipt", input.id);
     await assertCan(tx, actor.user, "receipts", "write", { entityId: existing.entityId });
 
+    // State-machine gate on domain-field edits. `filed` receipts are
+    // immutable by design — the only way to change them is through the
+    // amend flow (`filed → amending` via transitionReceipt). `void` is
+    // terminal. Without this guard, a stale form POST against a filed
+    // or void receipt would silently mutate the ledger while leaving
+    // the state column untouched — exactly what versioning is meant to
+    // prevent (see docs/architecture/versioning.md lifecycle section).
+    if (existing.state !== "draft" && existing.state !== "ready" && existing.state !== "amending") {
+      throw new ConflictError(
+        `Cannot edit a receipt in state '${existing.state}'. Transition to 'amending' first.`,
+        { receiptId: input.id, state: existing.state },
+      );
+    }
+
     const [latest] = await tx
       .select({ versionNum: receiptVersions.versionNum })
       .from(receiptVersions)
@@ -266,10 +280,22 @@ export async function transitionReceipt(
 
     assertTransition(existing.state, input.nextState, { thingType: "receipt" });
 
-    // State flips past `ready` must land outside any period lock — a
-    // receipt inside a locked period can't be filed or amended because
-    // filing is itself a meaningful mutation of the ledger.
-    if (input.nextState === "filed" || input.nextState === "amending") {
+    // Period-lock gate on any transition that touches what the locked
+    // period filed:
+    //   • → filed: the filing itself
+    //   • → amending: starting to modify a filed receipt
+    //   • amending → void: finalising the removal of previously-filed
+    //     content. Skipping this would let a user void-through-amending
+    //     to sidestep the lock entirely.
+    //
+    // Draft/ready → void is NOT checked: those receipts never
+    // contributed to the filed ledger, so voiding them doesn't change
+    // what the locked period contains.
+    const touchesFiledLedger =
+      input.nextState === "filed" ||
+      input.nextState === "amending" ||
+      (existing.state === "amending" && input.nextState === "void");
+    if (touchesFiledLedger) {
       await assertPeriodUnlocked(tx, {
         entityId: existing.entityId,
         occurredAt: existing.occurredAt,

@@ -11,6 +11,7 @@ import {
   updateReceipt,
 } from "@/domains/receipts";
 import { createPeriod, lockPeriod } from "@/domains/periods";
+import { ConflictError } from "@/domains/errors";
 import {
   InvalidStateTransitionError,
   PeriodLockedError,
@@ -173,6 +174,44 @@ describe("updateReceipt", () => {
         actual: 3,
       });
     }
+  });
+
+  it("rejects edits to a filed receipt — caller must transition to amending first", async () => {
+    const entityId = await seedEntity();
+    const r = await createReceipt(h.db, h.actor, {
+      entityId,
+      occurredAt: new Date("2026-04-20T00:00:00Z"),
+      vendor: "Lidl",
+      amount: "9.99",
+      currency: "EUR",
+    });
+    await transitionReceipt(h.db, h.actor, { id: r.id, nextState: "ready" });
+    await transitionReceipt(h.db, h.actor, { id: r.id, nextState: "filed" });
+
+    await expect(
+      updateReceipt(h.db, h.actor, { id: r.id, vendor: "Prisma" }),
+    ).rejects.toBeInstanceOf(ConflictError);
+
+    // Amending unlocks edits again.
+    await transitionReceipt(h.db, h.actor, { id: r.id, nextState: "amending" });
+    const edited = await updateReceipt(h.db, h.actor, { id: r.id, vendor: "Prisma" });
+    expect(edited.vendor).toBe("Prisma");
+  });
+
+  it("rejects edits to a void receipt", async () => {
+    const entityId = await seedEntity();
+    const r = await createReceipt(h.db, h.actor, {
+      entityId,
+      occurredAt: new Date("2026-04-20T00:00:00Z"),
+      vendor: "Lidl",
+      amount: "9.99",
+      currency: "EUR",
+    });
+    await transitionReceipt(h.db, h.actor, { id: r.id, nextState: "void" });
+
+    await expect(
+      updateReceipt(h.db, h.actor, { id: r.id, vendor: "Prisma" }),
+    ).rejects.toBeInstanceOf(ConflictError);
   });
 
   it("rolls back the version insert when the parent update throws", async () => {
@@ -400,6 +439,59 @@ describe("period lock enforcement", () => {
     await expect(
       transitionReceipt(h.db, h.actor, { id: r.id, nextState: "filed" }),
     ).rejects.toBeInstanceOf(PeriodLockedError);
+  });
+
+  it("rejects amending → void inside a locked period (voiding would mutate filed content)", async () => {
+    const entityId = await seedEntity();
+    const r = await createReceipt(h.db, h.actor, {
+      entityId,
+      occurredAt: new Date("2025-06-15T00:00:00Z"),
+      vendor: "Lidl",
+      amount: "9.99",
+      currency: "EUR",
+    });
+    // Walk the full filed → amending path before locking the period.
+    await transitionReceipt(h.db, h.actor, { id: r.id, nextState: "ready" });
+    await transitionReceipt(h.db, h.actor, { id: r.id, nextState: "filed" });
+    await transitionReceipt(h.db, h.actor, { id: r.id, nextState: "amending" });
+
+    const period = await createPeriod(h.db, h.actor, {
+      entityId,
+      kind: "year",
+      label: "FY2025",
+      startAt: new Date("2025-01-01T00:00:00Z"),
+      endAt: new Date("2025-12-31T23:59:59Z"),
+    });
+    await lockPeriod(h.db, h.actor, { periodId: period.id, reason: "filed" });
+
+    await expect(
+      transitionReceipt(h.db, h.actor, { id: r.id, nextState: "void" }),
+    ).rejects.toBeInstanceOf(PeriodLockedError);
+  });
+
+  it("allows draft → void inside a locked period (never contributed to the filed ledger)", async () => {
+    const entityId = await seedEntity();
+    const r = await createReceipt(h.db, h.actor, {
+      entityId,
+      occurredAt: new Date("2025-06-15T00:00:00Z"),
+      vendor: "Lidl",
+      amount: "9.99",
+      currency: "EUR",
+    });
+    const period = await createPeriod(h.db, h.actor, {
+      entityId,
+      kind: "year",
+      label: "FY2025",
+      startAt: new Date("2025-01-01T00:00:00Z"),
+      endAt: new Date("2025-12-31T23:59:59Z"),
+    });
+    await lockPeriod(h.db, h.actor, { periodId: period.id, reason: "filed" });
+
+    // A draft receipt that predates the lock can still be voided —
+    // it never made it to `ready` or `filed` so the locked period's
+    // contents don't reference it.
+    const voided = await transitionReceipt(h.db, h.actor, { id: r.id, nextState: "void" });
+    expect(voided.state).toBe("void");
   });
 
   it("allows draft → ready even inside a locked period (gate only kicks in at filed/amending)", async () => {
