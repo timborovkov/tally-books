@@ -69,6 +69,14 @@ export function ExpenseFilterBar({ entities, categories }: ExpenseFilterBarProps
   const get = (key: string) => sp?.getAll(key) ?? [];
   const single = (key: string) => sp?.get(key) ?? "";
 
+  // The vendor input is uncontrolled (so the user can type freely
+  // without firing a router push every keystroke). To make Reset and
+  // back/forward navigation visually clear it, we key the field on the
+  // URL value: when the URL changes externally, React remounts the
+  // input with the fresh defaultValue. While the user is typing, the
+  // URL value (and therefore the key) is stable.
+  const urlVendor = single("vendor");
+
   const onMultiChange = (key: string) => (e: React.ChangeEvent<HTMLSelectElement>) => {
     const values = Array.from(e.target.selectedOptions)
       .map((o) => o.value)
@@ -167,9 +175,10 @@ export function ExpenseFilterBar({ entities, categories }: ExpenseFilterBarProps
             Vendor (contains)
           </Label>
           <Input
+            key={`vendor-${urlVendor}`}
             id="filter-vendor"
             type="search"
-            defaultValue={single("vendor")}
+            defaultValue={urlVendor}
             onBlur={(e) => setSingle("vendor", e.target.value)}
             className="max-w-xs"
           />
@@ -181,7 +190,7 @@ export function ExpenseFilterBar({ entities, categories }: ExpenseFilterBarProps
           <Input
             id="filter-from"
             type="date"
-            defaultValue={single("dateFrom")}
+            value={single("dateFrom")}
             onChange={(e) => setSingle("dateFrom", e.target.value)}
           />
         </div>
@@ -192,7 +201,7 @@ export function ExpenseFilterBar({ entities, categories }: ExpenseFilterBarProps
           <Input
             id="filter-to"
             type="date"
-            defaultValue={single("dateTo")}
+            value={single("dateTo")}
             onChange={(e) => setSingle("dateTo", e.target.value)}
           />
         </div>
