@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams, type ReadonlyURLSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { Input } from "@/components/ui/input";
@@ -26,6 +26,18 @@ export function SearchInput(props: {
   const debounceMs = props.debounceMs ?? DEFAULT_DEBOUNCE_MS;
 
   const [value, setValue] = useState(sp?.get(param) ?? "");
+
+  // Mirror `sp` into a ref so the debounced timeout can read the
+  // *current* URL when it fires — not the stale snapshot captured when
+  // it was scheduled. Without this, a filter change made between
+  // keystroke and debounce-fire would be silently overwritten by the
+  // search push (cursor caught this). Updated in an effect because
+  // mutating refs during render is disallowed.
+  const spRef = useRef<ReadonlyURLSearchParams | null>(sp);
+  useEffect(() => {
+    spRef.current = sp;
+  }, [sp]);
+
   // Keep the input in sync if the URL changes from elsewhere (back/
   // forward, filter bar reset). We only re-sync when the URL value
   // actually differs from what's typed — otherwise typing would be
@@ -39,10 +51,11 @@ export function SearchInput(props: {
     lastUrlValue.current = current;
   }, [sp, param, value]);
 
-  // Debounced URL push.
+  // Debounced URL push. Reads the URL via spRef so concurrent filter
+  // changes aren't clobbered.
   useEffect(() => {
     const handle = setTimeout(() => {
-      const next = new URLSearchParams(sp?.toString() ?? "");
+      const next = new URLSearchParams(spRef.current?.toString() ?? "");
       if (value.trim() === "") next.delete(param);
       else next.set(param, value.trim());
       next.delete("page");
@@ -51,10 +64,6 @@ export function SearchInput(props: {
       router.replace(target, { scroll: false });
     }, debounceMs);
     return () => clearTimeout(handle);
-    // sp is intentionally omitted: we only want to fire the debounced
-    // push when `value` changes. Including sp would loop because every
-    // replace triggers a new sp identity.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value, debounceMs, param, router]);
 
   return (
