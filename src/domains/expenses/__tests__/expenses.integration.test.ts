@@ -160,6 +160,46 @@ describe("createExpense", () => {
       }),
     ).rejects.toBeInstanceOf(ValidationError);
   });
+
+  it("rejects out-of-range vatRate strings (must be 0..1)", async () => {
+    const entityId = await seedEntity();
+
+    // Form inputs arrive as strings. "24" (meaning 24% the wrong way)
+    // would store as 24.0000 = 2400% if the range check leaked.
+    await expect(
+      createExpense(h.db, h.actor, {
+        entityId,
+        vendor: "Lidl",
+        occurredAt: new Date("2026-04-20T00:00:00Z"),
+        amount: "10",
+        currency: "EUR",
+        vatRate: "24",
+      }),
+    ).rejects.toThrow();
+
+    // Number branch is rejected too.
+    await expect(
+      createExpense(h.db, h.actor, {
+        entityId,
+        vendor: "Lidl",
+        occurredAt: new Date("2026-04-20T00:00:00Z"),
+        amount: "10",
+        currency: "EUR",
+        vatRate: 1.5,
+      }),
+    ).rejects.toThrow();
+
+    // Valid decimal rate works.
+    const ok = await createExpense(h.db, h.actor, {
+      entityId,
+      vendor: "Lidl",
+      occurredAt: new Date("2026-04-20T00:00:00Z"),
+      amount: "10",
+      currency: "EUR",
+      vatRate: "0.24",
+    });
+    expect(ok.vatRate).toBe("0.2400");
+  });
 });
 
 describe("updateExpense", () => {

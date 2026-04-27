@@ -18,12 +18,18 @@ const currencyInput = z
   .regex(/^[A-Z]{3}$/, "must be a 3-letter ISO 4217 code");
 
 // numeric(6,4) — VAT rate stored as decimal (0.24 = 24%). Up to 4 dp.
+// Form inputs arrive as strings; the range check sits AFTER the
+// number coercion so both string ("24" → 24, rejected) and number
+// branches go through the same 0..1 gate. Without this, "24" would
+// have stored as "24.0000" → 2400% VAT (cursor caught this).
 const vatRateInput = z
   .union([
-    z.number().finite().min(0).max(1),
-    z.string().regex(/^\d+(\.\d{1,4})?$/, "must be a decimal between 0 and 1 (e.g. 0.24)"),
+    z.number().finite(),
+    z.string().regex(/^\d+(\.\d{1,4})?$/, "must be a decimal with up to 4 fractional digits"),
   ])
-  .transform((v) => (typeof v === "number" ? v : Number(v)).toFixed(4));
+  .transform((v) => (typeof v === "number" ? v : Number(v)))
+  .refine((n) => n >= 0 && n <= 1, "must be between 0 and 1 (e.g. 0.24 = 24%)")
+  .transform((n) => n.toFixed(4));
 
 const paidByInput = z.enum(["entity", "personal_reimbursable", "personal_no_reimburse"]);
 
