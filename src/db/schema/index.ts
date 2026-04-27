@@ -11,5 +11,7 @@ export * from "./jurisdictions";
 export * from "./persons";
 export * from "./entities";
 export * from "./blobs";
+export * from "./categories";
 export * from "./receipts";
+export * from "./expenses";
 export * from "./intake";

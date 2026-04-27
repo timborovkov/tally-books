@@ -29,9 +29,24 @@ describe("versioned-table FK invariants", () => {
     );
   });
 
+  it("0009_mushy_thunderbolt.sql declares DEFERRABLE FK for expenses.current_version_id", () => {
+    const sql = readFileSync(
+      path.join(repoRoot, "src/db/migrations/0009_mushy_thunderbolt.sql"),
+      "utf8",
+    );
+    expect(sql).toMatch(
+      /ALTER TABLE "expenses".+ADD CONSTRAINT "expenses_current_version_id_expense_versions_id_fk".+DEFERRABLE INITIALLY DEFERRED/s,
+    );
+  });
+
   it("src/db/schema/receipts.ts does not wire currentVersionId via .references()", () => {
     const src = readFileSync(path.join(repoRoot, "src/db/schema/receipts.ts"), "utf8");
     // currentVersionId must stay unwired: the FK is hand-edited in SQL.
+    expect(src).toMatch(/currentVersionId:\s*text\("current_version_id"\)(?!\s*\.references)/);
+  });
+
+  it("src/db/schema/expenses.ts does not wire currentVersionId via .references()", () => {
+    const src = readFileSync(path.join(repoRoot, "src/db/schema/expenses.ts"), "utf8");
     expect(src).toMatch(/currentVersionId:\s*text\("current_version_id"\)(?!\s*\.references)/);
   });
 });
