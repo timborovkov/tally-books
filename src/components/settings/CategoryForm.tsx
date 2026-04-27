@@ -1,3 +1,7 @@
+"use client";
+
+import { useState } from "react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,12 +18,17 @@ const KINDS = ["income", "expense", "asset", "liability", "equity"] as const;
 const SCOPES = ["entity", "global"] as const; // personal-scope is created elsewhere when the personal pseudo-entity flow lands.
 
 /**
- * Create/edit form for a single category. Server Component — native
- * HTML form posting straight to a server action, no client-side state.
+ * Create/edit form for a single category. Client Component because
+ * the entity field reveals/hides based on the scope dropdown selection
+ * — global-scope rows must NOT pick an entity, and rendering both
+ * unconditionally was misleading (cursor review caught this).
  *
  * On edit, scope/kind/entity are read-only (changing them would
  * invalidate every expense pointing at the row). Reparenting is
  * allowed; the domain layer rejects cycles and kind mismatches.
+ *
+ * Server actions cross the client/server boundary fine — the `action`
+ * prop is a stable function reference Next.js handles transparently.
  */
 export function CategoryForm(props: {
   entities: Pick<Entity, "id" | "name">[];
@@ -33,6 +42,11 @@ export function CategoryForm(props: {
   const defaultScope = props.category?.scope ?? "entity";
   const defaultKind = props.category?.kind ?? "expense";
 
+  // Scope drives whether the entity picker is shown. Tracked in state
+  // so changing the scope dropdown immediately hides/shows the entity
+  // field. On edit the scope is locked, so this never changes.
+  const [scope, setScope] = useState<(typeof SCOPES)[number] | "personal">(defaultScope);
+
   return (
     <form action={props.action} className="flex max-w-xl flex-col gap-4">
       {props.category ? <input type="hidden" name="id" value={props.category.id} /> : null}
@@ -45,7 +59,11 @@ export function CategoryForm(props: {
             <input type="hidden" name="scope" value={defaultScope} />
           </>
         ) : (
-          <Select name="scope" defaultValue={defaultScope}>
+          <Select
+            name="scope"
+            defaultValue={defaultScope}
+            onValueChange={(v) => setScope(v as (typeof SCOPES)[number])}
+          >
             <SelectTrigger id="scope">
               <SelectValue />
             </SelectTrigger>
@@ -64,35 +82,43 @@ export function CategoryForm(props: {
         </p>
       </div>
 
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="entityId">Entity (only when scope = entity)</Label>
-        {isEdit ? (
-          <>
-            <Input
-              id="entityId"
-              value={props.entities.find((e) => e.id === props.category?.entityId)?.name ?? "—"}
-              disabled
-              readOnly
-            />
-            {props.category?.entityId ? (
-              <input type="hidden" name="entityId" value={props.category.entityId} />
-            ) : null}
-          </>
-        ) : (
-          <Select name="entityId" defaultValue={props.entities[0]?.id}>
-            <SelectTrigger id="entityId">
-              <SelectValue placeholder="Select entity" />
-            </SelectTrigger>
-            <SelectContent>
-              {props.entities.map((e) => (
-                <SelectItem key={e.id} value={e.id}>
-                  {e.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
-      </div>
+      {/*
+        Only render the entity picker when scope = 'entity'. Global rows
+        must not have an entityId, and the server action / Zod schema
+        reject the combination. Hiding the field instead of disabling it
+        keeps the form unambiguous: there is nothing to fill in.
+      */}
+      {scope === "entity" ? (
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="entityId">Entity</Label>
+          {isEdit ? (
+            <>
+              <Input
+                id="entityId"
+                value={props.entities.find((e) => e.id === props.category?.entityId)?.name ?? "—"}
+                disabled
+                readOnly
+              />
+              {props.category?.entityId ? (
+                <input type="hidden" name="entityId" value={props.category.entityId} />
+              ) : null}
+            </>
+          ) : (
+            <Select name="entityId" defaultValue={props.entities[0]?.id}>
+              <SelectTrigger id="entityId">
+                <SelectValue placeholder="Select entity" />
+              </SelectTrigger>
+              <SelectContent>
+                {props.entities.map((e) => (
+                  <SelectItem key={e.id} value={e.id}>
+                    {e.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        </div>
+      ) : null}
 
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="kind">Kind</Label>

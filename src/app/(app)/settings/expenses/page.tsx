@@ -52,22 +52,16 @@ export default async function ExpensesPage({ searchParams }: ExpensesPageProps) 
   const sp = await searchParams;
   const db = getDb();
 
-  const entities = await listEntities(db, { includeArchived: false });
-
-  // For the category filter, present every entity-scoped expense
-  // category the user can see + globals. Same dedup pattern as the
-  // categories list page.
-  const categoryGroups = await Promise.all([
+  // listCategories with no entityId returns every non-archived
+  // expense-kind category. One query covers entity-scoped + global +
+  // personal — the per-entity fan-out before this was redundant N+1.
+  const [entities, allExpenseCategories] = await Promise.all([
+    listEntities(db, { includeArchived: false }),
     listCategories(db, { kind: "expense" }),
-    ...entities.map((e) => listCategories(db, { entityId: e.id, kind: "expense" })),
   ]);
-  const categoryMap = new Map<string, { id: string; name: string }>();
-  for (const group of categoryGroups) {
-    for (const c of group) categoryMap.set(c.id, { id: c.id, name: c.name });
-  }
-  const allCategoryOptions = Array.from(categoryMap.values()).sort((a, b) =>
-    a.name.localeCompare(b.name),
-  );
+  const allCategoryOptions = allExpenseCategories
+    .map((c) => ({ id: c.id, name: c.name }))
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   const entityIdsParam = asArray(sp.entityId);
   // No filter selected → search across every visible entity (default

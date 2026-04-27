@@ -11,22 +11,18 @@ export const dynamic = "force-dynamic";
 
 export default async function NewExpensePage() {
   const db = getDb();
-  const entities = await listEntities(db, { includeArchived: false });
-
-  // Show globals + every entity's expense categories. The form picks
-  // the entity at creation; on submit the server action validates that
-  // the chosen category belongs to the chosen entity (or is global).
-  // Showing all of them up front keeps the picker simple — narrowing
-  // by entity would require a client-side fetch round trip.
-  const categoryGroups = await Promise.all([
+  // listCategories with no entityId returns every non-archived
+  // expense-kind category — entity-scoped, personal, and global. The
+  // form picks the entity at creation; on submit the domain layer
+  // validates that the chosen category belongs to the chosen entity
+  // (or is global). Showing all of them up front keeps the picker
+  // simple — narrowing by entity would require a client-side fetch
+  // round trip.
+  const [entities, categoriesRaw] = await Promise.all([
+    listEntities(db, { includeArchived: false }),
     listCategories(db, { kind: "expense" }),
-    ...entities.map((e) => listCategories(db, { entityId: e.id, kind: "expense" })),
   ]);
-  const seen = new Map<string, (typeof categoryGroups)[number][number]>();
-  for (const group of categoryGroups) {
-    for (const c of group) seen.set(c.id, c);
-  }
-  const categories = Array.from(seen.values()).sort((a, b) => a.name.localeCompare(b.name));
+  const categories = [...categoriesRaw].sort((a, b) => a.name.localeCompare(b.name));
 
   return (
     <div className="flex flex-col gap-6">

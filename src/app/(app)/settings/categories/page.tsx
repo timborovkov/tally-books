@@ -19,26 +19,15 @@ export const dynamic = "force-dynamic";
 export default async function CategoriesPage() {
   const db = getDb();
 
-  // Pull all entities so the list view can show entity-scoped rows
-  // beside global ones. The cross-entity scan here mirrors the
-  // expense list page's "all entities by default" behaviour.
-  const entities = await listEntities(db, { includeArchived: false });
-  // Fetch global rows once + per-entity rows in parallel. Could be one
-  // query with a fat WHERE; this is clearer and the list is small.
-  const categoryGroups = await Promise.all([
+  // listCategories with no entityId returns every non-archived row
+  // (entity-scoped, personal, and global). One query is enough — the
+  // earlier per-entity fan-out was redundant N+1 (cursor review caught
+  // this).
+  const [entities, allCategoriesRaw] = await Promise.all([
+    listEntities(db, { includeArchived: false }),
     listCategories(db),
-    ...entities.map((e) => listCategories(db, { entityId: e.id })),
   ]);
-
-  // Deduplicate by id — the same global row appears in every per-entity
-  // result. Using a Map keeps the first occurrence's order.
-  const seen = new Map<string, (typeof categoryGroups)[number][number]>();
-  for (const group of categoryGroups) {
-    for (const c of group) {
-      seen.set(c.id, c);
-    }
-  }
-  const allCategories = Array.from(seen.values()).sort((a, b) => a.name.localeCompare(b.name));
+  const allCategories = [...allCategoriesRaw].sort((a, b) => a.name.localeCompare(b.name));
   const entityName = new Map(entities.map((e) => [e.id, e.name]));
 
   return (
