@@ -43,6 +43,7 @@ export const resourceTypeEnum = pgEnum("resource_type", [
   "invoices",
   "expenses",
   "receipts",
+  "categories",
   "payouts",
   "taxes",
   "filings",
@@ -69,6 +70,43 @@ export const entityKindEnum = pgEnum("entity_kind", ["legal", "personal"]);
 
 // docs/data-model.md §5.5.
 export const periodKindEnum = pgEnum("period_kind", ["month", "quarter", "year", "custom"]);
+
+// docs/data-model.md §7.3 — `categories.scope`. `entity` rows are only
+// visible inside one entity, `personal` belongs to the personal
+// pseudo-entity, `global` is the jurisdiction-default set every entity
+// inherits read-only.
+export const categoryScopeEnum = pgEnum("category_scope", ["entity", "personal", "global"]);
+
+// docs/data-model.md §7.3 — `categories.kind`. Mirrors the standard
+// chart-of-accounts top-level buckets so `code` lines up when an
+// entity wires a real CoA later.
+export const categoryKindEnum = pgEnum("category_kind", [
+  "income",
+  "expense",
+  "asset",
+  "liability",
+  "equity",
+]);
+
+// docs/data-model.md §8.3 — `expenses.paid_by`. Drives the reimbursement
+// surface: only `personal_reimbursable` rows ever flow through the
+// `reimbursement_status` lifecycle below.
+export const expensePaidByEnum = pgEnum("expense_paid_by", [
+  "entity",
+  "personal_reimbursable",
+  "personal_no_reimburse",
+]);
+
+// Reimbursement state for personal-reimbursable expenses. `not_applicable`
+// is the default for `paid_by IN ('entity', 'personal_no_reimburse')`
+// rows so the column is never NULL — keeps filter queries simple.
+// `pending → paid_back` is the only legal forward transition; reverting
+// is intentionally not modelled (use a new version + reason instead).
+export const reimbursementStatusEnum = pgEnum("reimbursement_status", [
+  "not_applicable",
+  "pending",
+  "paid_back",
+]);
 
 // ── Intake inbox (v0.2) ────────────────────────────────────────────────
 // Unified cross-entity intake queue. See docs/architecture/intake.md.

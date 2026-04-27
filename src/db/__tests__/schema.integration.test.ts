@@ -85,6 +85,7 @@ describe("enums", () => {
       "invoices",
       "expenses",
       "receipts",
+      "categories",
       "payouts",
       "taxes",
       "filings",
@@ -101,6 +102,10 @@ describe("enums", () => {
       "personal_details",
     ],
     access_level: ["read", "write"],
+    category_scope: ["entity", "personal", "global"],
+    category_kind: ["income", "expense", "asset", "liability", "equity"],
+    expense_paid_by: ["entity", "personal_reimbursable", "personal_no_reimburse"],
+    reimbursement_status: ["not_applicable", "pending", "paid_back"],
   };
 
   for (const [name, values] of Object.entries(expected)) {

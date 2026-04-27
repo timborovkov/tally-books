@@ -10,6 +10,7 @@ export type ResourceType =
   | "invoices"
   | "expenses"
   | "receipts"
+  | "categories"
   | "payouts"
   | "taxes"
   | "filings"
@@ -31,6 +32,7 @@ export const RESOURCE_TYPES: readonly ResourceType[] = [
   "invoices",
   "expenses",
   "receipts",
+  "categories",
   "payouts",
   "taxes",
   "filings",

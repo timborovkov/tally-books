@@ -64,6 +64,13 @@
       "when": 1776712553250,
       "tag": "0008_greedy_king_cobra",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1777281546515,
+      "tag": "0009_mushy_thunderbolt",
+      "breakpoints": true
     }
   ]
 }
