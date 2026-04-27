@@ -512,6 +512,34 @@ describe("listExpenses", () => {
     expect(q.totalCount).toBe(4);
   });
 
+  it("escapes LIKE wildcards in search input", async () => {
+    const entityId = await seedEntity();
+    await createExpense(h.db, h.actor, {
+      entityId,
+      vendor: "100% recycled",
+      occurredAt: new Date("2026-04-20T00:00:00Z"),
+      amount: "10",
+      currency: "EUR",
+    });
+    await createExpense(h.db, h.actor, {
+      entityId,
+      vendor: "Office supplies",
+      occurredAt: new Date("2026-04-21T00:00:00Z"),
+      amount: "20",
+      currency: "EUR",
+    });
+
+    // Without escaping, "%" matches everything → both rows. With escaping,
+    // it matches only the literal "%" character → one row.
+    const q = await listExpenses(h.db, { search: "%" });
+    expect(q.totalCount).toBe(1);
+    expect(q.rows[0]?.vendor).toBe("100% recycled");
+
+    // Same for `_` (single-char wildcard). Only matches a literal `_`.
+    const u = await listExpenses(h.db, { search: "_" });
+    expect(u.totalCount).toBe(0);
+  });
+
   it("excludes void rows by default", async () => {
     const { entityA } = await seedSet();
     const [first] = await listExpenses(h.db, { entityIds: [entityA] }).then((r) => r.rows);

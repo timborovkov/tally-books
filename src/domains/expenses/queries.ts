@@ -19,6 +19,18 @@ import { NotFoundError } from "../errors";
 export type ExpensePaidBy = "entity" | "personal_reimbursable" | "personal_no_reimburse";
 export type ReimbursementStatus = "not_applicable" | "pending" | "paid_back";
 
+/**
+ * Escape LIKE/ILIKE wildcards in user-supplied search input. Without
+ * this, `%` matches everything and `_` matches any single char, so a
+ * user typing "20%" or "foo_bar" gets unrelated rows back. We
+ * backslash-escape the three SQL LIKE specials (\, %, _). Postgres
+ * uses backslash as the LIKE escape char by default — no ESCAPE clause
+ * needed.
+ */
+function escapeLikePattern(input: string): string {
+  return input.replace(/[\\%_]/g, "\\$&");
+}
+
 export interface ListExpensesOptions {
   /**
    * If provided, restrict to these entities. Empty array means "no
@@ -89,13 +101,14 @@ export async function listExpenses(
     filters.push(inArray(expenses.reimbursementStatus, opts.reimbursementStatus));
   }
   if (opts.vendor && opts.vendor.trim() !== "") {
-    filters.push(ilike(expenses.vendor, `%${opts.vendor.trim()}%`));
+    filters.push(ilike(expenses.vendor, `%${escapeLikePattern(opts.vendor.trim())}%`));
   }
   if (opts.dateFrom) filters.push(gte(expenses.occurredAt, opts.dateFrom));
   if (opts.dateTo) filters.push(lte(expenses.occurredAt, opts.dateTo));
   if (opts.search && opts.search.trim() !== "") {
     const q = opts.search.trim();
-    const pattern = `%${q}%`;
+    const pattern = `%${escapeLikePattern(q)}%`;
+    // Exact-match on id uses the raw `q` (id contains no LIKE specials).
     const searchClause = or(
       ilike(expenses.vendor, pattern),
       ilike(expenses.description, pattern),
@@ -218,7 +231,7 @@ export async function searchReceiptsForExpense(
   const limit = Math.min(20, Math.max(1, opts.limit ?? 10));
   const filters: SQL[] = [eq(receipts.entityId, opts.entityId), ne(receipts.state, "void")];
   if (opts.query && opts.query.trim() !== "") {
-    filters.push(ilike(receipts.vendor, `%${opts.query.trim()}%`));
+    filters.push(ilike(receipts.vendor, `%${escapeLikePattern(opts.query.trim())}%`));
   }
   return db
     .select({

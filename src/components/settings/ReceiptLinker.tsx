@@ -44,17 +44,22 @@ export function ReceiptLinker(props: ReceiptLinkerProps) {
   const linkFormRef = useRef<HTMLFormElement>(null);
   const [picked, setPicked] = useState<string | null>(null);
 
+  // Destructure stable references — putting `props` in the dep array
+  // would re-fire on every render (new object identity each time),
+  // looping setResults → re-render → new props → re-fire forever.
+  const { searchAction, entityId } = props;
+
   // Debounced search
   useEffect(() => {
     if (!open) return;
     const handle = setTimeout(() => {
       startTransition(async () => {
-        const r = await props.searchAction({ entityId: props.entityId, query });
+        const r = await searchAction({ entityId, query });
         setResults(r);
       });
     }, 200);
     return () => clearTimeout(handle);
-  }, [open, query, props]);
+  }, [open, query, searchAction, entityId]);
 
   // When a candidate is picked, submit the form. Done in a useEffect so
   // we wait for React to commit the hidden-input value before requestSubmit.
