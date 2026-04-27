@@ -25,7 +25,7 @@ import { getExpense, getExpenseAuditEntries, getExpenseHistory } from "@/domains
 import { getCurrentActor } from "@/lib/auth-shim";
 import { assertCan } from "@/lib/iam/permissions";
 import { assertPeriodUnlocked, canTransition, PeriodLockedError } from "@/lib/versioning";
-import { RECEIPT_TRANSITION_TARGETS } from "@/lib/versioning/state-machine";
+import { BASE_TRANSITION_TARGETS } from "@/lib/versioning/state-machine";
 
 import {
   linkReceiptAction,
@@ -72,7 +72,7 @@ export default async function ExpenseDetailPage({ params }: ExpenseDetailPagePro
       }),
   ]);
 
-  const allowedStates = RECEIPT_TRANSITION_TARGETS.filter((s) =>
+  const allowedStates = BASE_TRANSITION_TARGETS.filter((s) =>
     canTransition(expense.state, s, { thingType: "expense" }),
   );
 

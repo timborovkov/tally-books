@@ -69,11 +69,13 @@ export const TERMINAL_STATES: readonly ThingState[] = ["void"];
 export { thingStateEnum } from "@/db/schema/enums";
 
 /**
- * Subset of states a receipt UI should offer as transition targets.
- * Excludes `sent` (invoice-only). `assertTransition` is still the
+ * Default subset of states a versioned-Thing UI should offer as
+ * transition targets. Excludes `sent` (invoice-only). Receipts and
+ * expenses both use this; invoices will define their own (with `sent`)
+ * when that vertical lands. `assertTransition` is still the
  * authoritative gate — this list is just for dropdown population.
  */
-export const RECEIPT_TRANSITION_TARGETS: readonly ThingState[] = [
+export const BASE_TRANSITION_TARGETS: readonly ThingState[] = [
   "draft",
   "ready",
   "filed",

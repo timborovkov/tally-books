@@ -19,7 +19,7 @@ import { getDb } from "@/db/client";
 import { listEntities } from "@/domains/entities";
 import { getReceipt, getReceiptAuditEntries, getReceiptHistory } from "@/domains/receipts";
 import { assertPeriodUnlocked, canTransition, PeriodLockedError } from "@/lib/versioning";
-import { RECEIPT_TRANSITION_TARGETS } from "@/lib/versioning/state-machine";
+import { BASE_TRANSITION_TARGETS } from "@/lib/versioning/state-machine";
 import { NotFoundError } from "@/domains/errors";
 import { getCurrentActor } from "@/lib/auth-shim";
 import { assertCan } from "@/lib/iam/permissions";
@@ -71,7 +71,7 @@ export default async function ReceiptDetailPage({ params }: ReceiptDetailPagePro
       }),
   ]);
 
-  const allowedStates = RECEIPT_TRANSITION_TARGETS.filter((s) =>
+  const allowedStates = BASE_TRANSITION_TARGETS.filter((s) =>
     canTransition(receipt.state, s, { thingType: "receipt" }),
   );
 

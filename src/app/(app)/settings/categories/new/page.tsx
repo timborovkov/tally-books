@@ -11,9 +11,16 @@ export const dynamic = "force-dynamic";
 
 export default async function NewCategoryPage() {
   const db = getDb();
+  // Fetch parent candidates across all kinds — the user hasn't picked a
+  // kind yet, and the form lets them choose any of the five. Filtering
+  // here to a single kind would lock out non-expense parents (cursor
+  // review caught this). The form labels each option with its kind so
+  // the user picks one that matches their selection; domain layer
+  // (createCategory → parent.kind === input.kind) is the authoritative
+  // gate either way.
   const [entities, parents] = await Promise.all([
     listEntities(db, { includeArchived: false }),
-    listCategories(db, { kind: "expense" }),
+    listCategories(db),
   ]);
 
   return (

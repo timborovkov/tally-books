@@ -141,7 +141,8 @@ export function CategoryForm(props: {
             .filter((c) => c.id !== props.category?.id)
             .map((c) => (
               <option key={c.id} value={c.id}>
-                {c.name}
+                {c.name} · {c.kind}
+                {c.scope === "global" ? " · global" : ""}
               </option>
             ))}
         </select>
