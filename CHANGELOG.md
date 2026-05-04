@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **v0.2 Files & Storage + Receipts intake vertical:**
-  - MinIO client singleton with `BUCKETS.{receipts,invoices,legalDocs,exports}` registry and idempotent `ensureBuckets()` called at boot. Streaming `putBlob()` fans the readable through a sha256 hasher + byte counter while piping to MinIO — no full-file buffering. Dedupe by `(bucket, sha256)` so duplicate uploads reuse the existing row.
+  - RustFS / S3 client singleton (AWS SDK v3 `S3Client` with `forcePathStyle`) and `BUCKETS.{receipts,invoices,legalDocs,exports}` registry, with an idempotent `ensureBuckets()` called at boot. Streaming `putBlob()` fans the readable through a sha256 hasher + byte counter while `@aws-sdk/lib-storage`'s `Upload` multipart-chunks the body to RustFS — no full-file buffering. Dedupe by `(bucket, sha256)` so duplicate uploads reuse the existing row.
   - `blobs` table: content-addressable pointer, immutable once written. Includes `sha256` + `size_bytes` + `content_type` + `uploaded_by_id`.
   - Receipt `blob_id` column (nullable FK with `onDelete: restrict`), part of `RECEIPT_DOMAIN_FIELDS` so replacing the scan produces a new version row.
   - `intake_items` table + three enums (`intake_status`, `intake_ocr_status`, `intake_target_flow`) — unified cross-entity queue. Not versioned; audit trail via `intake.*` loose-verb-noun actions.
@@ -23,7 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - pg-boss wired with a singleton `getBoss()`, `QUEUES` registry + Zod payload schemas, typed `sendJob()` helper, and a worker entry point (`pnpm worker`). First queue: `intake.ocr`. Sibling `worker` service in docker-compose.
   - Vision provider interface in `src/lib/ai/` — `VisionProvider` with `extractReceipt(bytes, contentType) → ReceiptExtraction`. `OpenAIVisionProvider` implementation uses `chat.completions.parse` + `zodResponseFormat`. Missing `OPENAI_API_KEY` surfaces as a per-intake-item `ocr_error`, not a boot failure.
   - `ReceiptExtraction` Zod schema with per-field `{ value, confidence }` wrapping — drives the UI's confidence highlighting.
-  - Upload surface: `POST /api/intake/upload` (multipart, 15MB cap, streams into MinIO); `GET /api/blobs/:id` (authed presigned-URL redirect).
+  - Upload surface: `POST /api/intake/upload` (multipart, 15MB cap, streams into RustFS); `GET /api/blobs/:id` (authed presigned-URL redirect).
   - Inbox UI: `/intake` list page with filter chips + client-side row selection; `/intake/[id]` review page with scan preview, confidence-shaded fields, routing panel, re-route + re-extract + reject actions, audit trail. Quick-add `+` dialog's "Upload receipt" stub replaced with the live dropzone. Sidebar gains an Inbox entry.
   - New architecture docs: `storage.md`, `jobs.md`, `ai-providers.md`, `intake.md`.
 
@@ -39,8 +39,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Husky pre-push hook running lint-staged on the diff being pushed.
 - MIT license, contributor guide, GitHub issue + PR templates.
 - Multi-stage Dockerfile (deps → build → runtime, distroless-friendly).
-- `docker-compose.yml` for local dev (`app`, `postgres`, `minio`, `qdrant`) — also serves as the infra-shape reference for self-hosters.
-- `.env.example` covering only env vars wired in this PR (app port + the compose-managed Postgres, MinIO, Qdrant containers). Future feature PRs add their own keys alongside the code that reads them.
+- `docker-compose.yml` for local dev (`app`, `postgres`, `rustfs`, `qdrant`) — also serves as the infra-shape reference for self-hosters.
+- `.env.example` covering only env vars wired in this PR (app port + the compose-managed Postgres, RustFS, Qdrant containers). Future feature PRs add their own keys alongside the code that reads them.
 - Typed environment loading via `src/lib/env.ts` (zod-validated, fail-fast at startup through `src/instrumentation.ts`).
 - `/api/health` and `/api/ready` endpoints.
 - `robots.txt` disallow-all + `X-Robots-Tag: noindex` headers (no search engine indexing).

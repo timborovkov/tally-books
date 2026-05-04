@@ -2,7 +2,7 @@
  * POST /api/intake/upload
  *
  * Multipart upload endpoint for receipt scans (1..N files per
- * request). For each file: write blob to MinIO → create intake_item
+ * request). For each file: write blob to RustFS → create intake_item
  * → enqueue OCR job.
  *
  * Why a route handler and not a server action: server actions wrap
@@ -81,7 +81,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       // Convert Web File to Node Readable. The `file.stream()` API
       // returns a Web ReadableStream; `Readable.fromWeb()` adapts
       // it to the Node stream the upload service expects. No
-      // intermediate buffer — bytes flow file → sha256 + MinIO.
+      // intermediate buffer — bytes flow file → sha256 + RustFS.
       const webStream = file.stream();
       const nodeStream = Readable.fromWeb(webStream as Parameters<typeof Readable.fromWeb>[0]);
 

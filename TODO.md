@@ -31,7 +31,7 @@ The minimum scaffolding needed to start building features safely.
 ### Containers & local dev
 
 - [x] `Dockerfile` (multi-stage: deps → build → runtime)
-- [x] `docker-compose.yml` for local dev (`app`, `postgres`, `minio`, `qdrant`) — doubles as infra shape reference for self-hosters; no separate prod compose shipped
+- [x] `docker-compose.yml` for local dev (`app`, `postgres`, `rustfs`, `qdrant`) — doubles as infra shape reference for self-hosters; no separate prod compose shipped
 - [x] `.env.example` with all required env keys documented
 - [x] Health + readiness endpoints
 
@@ -110,7 +110,7 @@ Get the inputs in: receipts, expenses, invoices, clients, categories.
 
 ### Files & storage
 
-- [x] MinIO client wired up
+- [x] RustFS client wired up (AWS SDK v3 against `S3_*` env)
 - [x] `blob` table + upload service (streaming, no base64 in DB)
 - [x] Buckets: `receipts/`, `invoices/`, `legal-docs/`, `exports/`
 

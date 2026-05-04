@@ -1,9 +1,9 @@
 /**
  * GET /api/blobs/:id
  *
- * Issues a redirect to a presigned MinIO URL for the blob with the
+ * Issues a redirect to a presigned RustFS URL for the blob with the
  * given id. Authenticated surface — checks session, finds the blob,
- * and defers to MinIO for the actual download.
+ * and defers to RustFS for the actual download.
  *
  * Authorisation: v0.2 simply requires an authenticated user with
  * 2FA. Once intake_items carry rich permission scopes (v0.3+) we

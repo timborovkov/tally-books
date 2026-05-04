@@ -21,7 +21,7 @@ interface VisionProvider {
 
 ## Current implementation
 
-[`OpenAIVisionProvider`](../../src/lib/ai/providers/openai-vision.ts) uses `chat.completions.parse` + `zodResponseFormat`. The image is sent as a base64 data URL content part (private MinIO bucket; presigned URLs would work too but keep the provider self-contained).
+[`OpenAIVisionProvider`](../../src/lib/ai/providers/openai-vision.ts) uses `chat.completions.parse` + `zodResponseFormat`. The image is sent as a base64 data URL content part (private RustFS bucket; presigned URLs would work too but keep the provider self-contained).
 
 The system prompt in that file is the bookkeeping-specific guidance: prefer the printed total, use ISO 8601, don't guess illegible text. Changes to the prompt ship there, not in the caller.
 

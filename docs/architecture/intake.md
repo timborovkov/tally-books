@@ -50,7 +50,7 @@ OCR runs on its own axis (`intake_ocr_status`: `queued` → `running` → `succe
 `pg-boss` queue `intake.ocr`, payload `{ intakeItemId }`. The handler [`processIntakeOcrJob()`](../../src/domains/intake/ocr-handler.ts):
 
 1. Fail-fast on missing `OPENAI_API_KEY` — mark `ocr_failed`.
-2. Read the blob from MinIO.
+2. Read the blob from RustFS.
 3. Call `getVisionProvider().extractReceipt(...)`.
 4. Write the result + flip to `needs_review` (or leave status as-is when an already-confirmed item is being re-extracted).
 5. On any thrown error, mark `ocr_failed` with the message.

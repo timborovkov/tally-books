@@ -67,7 +67,7 @@ Handlers:
 - Run one job at a time (current queue-level concurrency is set per-queue in `worker-entry.ts`).
 - Receive `{ job, signal }` where `signal` is an `AbortSignal` that fires on heartbeat expiry / graceful shutdown.
 - Re-validate the payload with the queue's Zod schema before doing any work.
-- Import heavy dependencies (Drizzle, MinIO, provider SDKs) lazily so the rest of the app's typecheck / test suite doesn't need them.
+- Import heavy dependencies (Drizzle, the S3 SDK, provider SDKs) lazily so the rest of the app's typecheck / test suite doesn't need them.
 
 Failure policy:
 

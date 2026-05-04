@@ -7,7 +7,7 @@
  *
  * The image is encoded as a base64 data URL content part. OpenAI's
  * vision endpoint also accepts public URLs, but our blobs are in a
- * private MinIO bucket. Minting a presigned URL and passing that
+ * private RustFS bucket. Minting a presigned URL and passing that
  * would work too, but base64 keeps the call self-contained — the
  * provider doesn't need ambient knowledge of the storage layer.
  *

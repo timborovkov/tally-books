@@ -3,13 +3,13 @@
  * storage + vision provider.
  *
  * The worker can't directly import domain code without also pulling
- * in Drizzle, MinIO, and the OpenAI SDK at module-load time — which
+ * in Drizzle, RustFS, and the OpenAI SDK at module-load time — which
  * would blow up typecheck or test suites that don't need any of
  * that. So the worker imports THIS module lazily (dynamic import
  * inside the handler callback), and this module wires everything
  * together.
  *
- * Failure is first-class: missing OPENAI_API_KEY, unreachable MinIO,
+ * Failure is first-class: missing OPENAI_API_KEY, unreachable RustFS,
  * provider schema rejection all land on `intake_items.ocr_error`
  * with a readable message. The inbox UI surfaces that state.
  */
@@ -46,7 +46,7 @@ export async function processIntakeOcrJob(intakeItemId: string): Promise<void> {
       return;
     }
 
-    // Lookup the blob so we can stream the scan from MinIO.
+    // Lookup the blob so we can stream the scan from RustFS.
     const [row] = await db
       .select({ item: intakeItems, blob: blobs })
       .from(intakeItems)
@@ -63,7 +63,7 @@ export async function processIntakeOcrJob(intakeItemId: string): Promise<void> {
     // intake. If someone wired another bucket by accident, prefer
     // an explicit failure over a silent misroute. Check *before*
     // streaming bytes so a misrouted blob doesn't cost us a full
-    // MinIO download just to reject.
+    // RustFS download just to reject.
     if (row.blob.bucket !== BUCKETS.receipts) {
       await markIntakeOcrFailed(db, {
         intakeItemId,

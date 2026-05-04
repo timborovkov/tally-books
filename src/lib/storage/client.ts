@@ -1,39 +1,42 @@
 /**
- * Lazily-constructed MinIO client singleton.
+ * Lazily-constructed S3 client singleton.
  *
- * The MinIO SDK takes host + port + useSSL as separate fields, but we
- * express the endpoint as a single URL env var (`MINIO_ENDPOINT`) so
- * operators don't have to split host from port in `.env` and so the
- * `MINIO_USE_SSL` default matches the URL scheme automatically when
- * they forget to set it. Parsing happens here, once, behind a cached
- * factory — the runtime client lives for the process lifetime the same
- * way `getDb()` does.
+ * The AWS SDK v3 `S3Client` speaks the S3 wire protocol; pointed at any
+ * S3-compatible endpoint (RustFS in dev / self-host, AWS S3 in managed
+ * deploys) it works the same way. Configuration arrives as a single
+ * endpoint URL (`S3_ENDPOINT`) so operators don't have to split host
+ * from port in `.env`; the SDK derives TLS from the URL scheme.
  *
- * CLI scripts and integration tests should build their own client if
- * they want explicit lifecycle control.
+ * `forcePathStyle` defaults to true because RustFS and most self-hosted
+ * S3 implementations expect path-style URLs (`/<bucket>/<key>`); set
+ * `S3_FORCE_PATH_STYLE=false` only when targeting AWS S3 itself or
+ * another vhost-style provider.
+ *
+ * The runtime client lives for the process lifetime, mirroring the
+ * `getDb()` cache. CLI scripts and integration tests can build their
+ * own client when they want explicit lifecycle control.
  */
-import { Client } from "minio";
+import { S3Client } from "@aws-sdk/client-s3";
+import { NodeHttpHandler } from "@smithy/node-http-handler";
 
 import { env } from "@/lib/env";
 
-let cached: Client | null = null;
+let cached: S3Client | null = null;
 
-export function getStorageClient(): Client {
+export function getStorageClient(): S3Client {
   if (!cached) {
-    const url = new URL(env.MINIO_ENDPOINT);
-    // If MINIO_USE_SSL is explicitly set we trust it; otherwise derive
-    // from the URL scheme so a local http:// endpoint doesn't get SSL
-    // forced on it just because someone forgot to flip the flag.
-    const useSSL = env.MINIO_USE_SSL || url.protocol === "https:";
-    const defaultPort = url.protocol === "https:" ? 443 : 80;
-    const port = url.port ? Number(url.port) : defaultPort;
-
-    cached = new Client({
-      endPoint: url.hostname,
-      port,
-      useSSL,
-      accessKey: env.MINIO_ACCESS_KEY,
-      secretKey: env.MINIO_SECRET_KEY,
+    cached = new S3Client({
+      endpoint: env.S3_ENDPOINT,
+      region: env.S3_REGION,
+      credentials: {
+        accessKeyId: env.S3_ACCESS_KEY_ID,
+        secretAccessKey: env.S3_SECRET_ACCESS_KEY,
+      },
+      forcePathStyle: env.S3_FORCE_PATH_STYLE,
+      requestHandler: new NodeHttpHandler({
+        connectionTimeout: 3000,
+        socketTimeout: 30000,
+      }),
     });
   }
   return cached;

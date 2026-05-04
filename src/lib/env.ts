@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { booleanFlag, optionalString, optionalUrl, sampleRate } from "@/lib/env.shared";
+import { optionalString, optionalUrl, sampleRate } from "@/lib/env.shared";
 
 /**
  * Server-only environment schema.
@@ -84,16 +84,26 @@ const serverSchema = z.object({
     ),
   RESEND_FROM_EMAIL: z.string().email().default("noreply@tally.local"),
 
-  // ── MinIO / S3-compatible blob storage ────────────────────────────────
-  // Connection vars for the MinIO SDK client. The endpoint is a full URL
-  // (http[s]://host:port) so one var captures host + port + TLS mode; the
-  // SDK itself takes those as separate fields, so we parse them out in
-  // `src/lib/storage/client.ts`. For production S3 / hosted MinIO, set
-  // MINIO_ENDPOINT to the public endpoint and flip MINIO_USE_SSL to true.
-  MINIO_ENDPOINT: z.string().url().default("http://localhost:9000"),
-  MINIO_USE_SSL: booleanFlag,
-  MINIO_ACCESS_KEY: z.string().min(1).default("tally"),
-  MINIO_SECRET_KEY: z.string().min(1).default("tally-dev-secret"),
+  // ── S3-compatible blob storage (RustFS in dev/self-host) ──────────────
+  // Connection vars for the AWS SDK v3 S3 client. `S3_ENDPOINT` is a full
+  // URL (http[s]://host:port) so one var captures host + port + TLS mode.
+  // `S3_REGION` is required by the SDK signature flow but its value is
+  // not validated by self-hosted backends — any string works; we default
+  // to `us-east-1` to match RustFS docs. `S3_FORCE_PATH_STYLE` defaults
+  // to true because RustFS (and most self-hosted S3 implementations)
+  // expect path-style URLs (`/<bucket>/<key>`); flip to false only when
+  // pointing at AWS S3 itself or another vhost-style provider.
+  S3_ENDPOINT: z.string().url().default("http://localhost:9000"),
+  S3_REGION: z.string().min(1).default("us-east-1"),
+  S3_ACCESS_KEY_ID: z.string().min(1).default("tally"),
+  S3_SECRET_ACCESS_KEY: z.string().min(1).default("tally-dev-secret"),
+  // Default true so a fresh `.env` against RustFS works without setting
+  // this. Set to "false" only when pointing at AWS S3 / a vhost-style host.
+  S3_FORCE_PATH_STYLE: z
+    .string()
+    .trim()
+    .optional()
+    .transform((v) => (v === undefined || v === "" ? true : v === "true")),
 
   // ── OpenAI (vision OCR for receipt intake) ───────────────────────────
   // Optional everywhere so the app boots without a key (dev + CI). OCR
