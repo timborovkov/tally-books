@@ -13,6 +13,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **v0.2 Invoices + Clients/Suppliers verticals:**
+  - Versioned `invoices` + `invoice_versions` tables with the same DEFERRABLE-FK pattern as receipts/expenses. Spec constraints from data-model §8.4 enforced as CHECKs (`number` required outside draft/void; `filed_ref` only when state is `filed`/`sent`; `(entity_id, number)` unique).
+  - `parties` table — counterparties (`client | supplier | contractor | employee`) under one row with a `kind` discriminator. Soft-delete via `archived_at`. Service layer gates writes behind `business_details`.
+  - `documents` table — generic document store with polymorphic `(owner_type, owner_id)` for attaching contracts/addenda/legal mail to parties, persons, or entities.
+  - `entity_invoice_counters` table for atomic per-`(entity, year)` sequential numbering, locked with `SELECT … FOR UPDATE` inside the issuing transaction. Format: `<prefix>-<year>-<seq>`, prefix from `entity.metadata.branding.invoicePrefix`.
+  - Invoice domain module (`src/domains/invoices/`): `createInvoice`, `updateInvoice` (recomputes totals from line items), `transitionInvoice` (extends the state machine with the invoice-only `sent` state, drops/reissues numbers on `ready ↔ draft`, stamps `sent_at` on transition to `sent`), `markInvoicePaid` / `markInvoiceUnpaid` (writes a version row, audits `invoice.paid` / `invoice.unpaid`, idempotent), and `createInternalInvoice` (one-transaction entity-to-entity mirror with `mirror_invoice_id` cross-link, ON DELETE SET NULL self-FK, find-or-create mirror parties on both sides).
+  - PDF generation via `@react-pdf/renderer` — `<InvoicePdf>` template with logo, line-item table, VAT breakdown, bank details, and entity branding pulled from `entities.metadata.branding`. `renderInvoicePdf(db, id)` returns a `Buffer`; `downloadInvoicePdfAction` returns base64 to the client component which spawns a Blob URL download.
+  - Settings UI: `/settings/parties` (list + filter + new + detail) and `/settings/invoices` (list + filter + composer + detail with version timeline, lifecycle transitions, mark-paid/unpaid forms, PDF download, mirror navigation). Internal-invoice composer at `/settings/invoices/new?internal=1`. Sidebar gains Parties + Invoices entries.
+  - Generic document upload route `POST /api/documents/upload` writes to the `legal-docs` bucket and creates a `documents` row linked to `(owner_type, owner_id)`. Wired on the party detail page so contracts attach in one upload.
+  - Integration tests: 6 for parties (CRUD, archive/unarchive, partial updates that don't clobber jsonb, find-by-legal-id), 12 for invoices (totals, version diff, sequential numbering across multiple invoices, drop-and-reissue on draft round-trip, `sent_at` stamping, mark-paid idempotency, internal mirror with audit + party resolution, same-entity rejection, missing-entity rejection).
+  - New architecture doc: `docs/architecture/invoices.md`.
+
+### Added
+
 - **v0.2 Files & Storage + Receipts intake vertical:**
   - RustFS / S3 client singleton (AWS SDK v3 `S3Client` with `forcePathStyle`) and `BUCKETS.{receipts,invoices,legalDocs,exports}` registry, with an idempotent `ensureBuckets()` called at boot. Streaming `putBlob()` fans the readable through a sha256 hasher + byte counter while `@aws-sdk/lib-storage`'s `Upload` multipart-chunks the body to RustFS — no full-file buffering. Dedupe by `(bucket, sha256)` so duplicate uploads reuse the existing row.
   - `blobs` table: content-addressable pointer, immutable once written. Includes `sha256` + `size_bytes` + `content_type` + `uploaded_by_id`.

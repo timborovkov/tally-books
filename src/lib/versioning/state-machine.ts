@@ -82,3 +82,17 @@ export const BASE_TRANSITION_TARGETS: readonly ThingState[] = [
   "amending",
   "void",
 ];
+
+/**
+ * Invoice transition targets — same as `BASE_TRANSITION_TARGETS` plus
+ * `sent`, the dispatched-to-client state. `assertTransition` remains
+ * authoritative; this list only seeds dropdowns.
+ */
+export const INVOICE_TRANSITION_TARGETS: readonly ThingState[] = [
+  "draft",
+  "ready",
+  "sent",
+  "filed",
+  "amending",
+  "void",
+];

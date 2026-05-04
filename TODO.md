@@ -140,19 +140,19 @@ Get the inputs in: receipts, expenses, invoices, clients, categories.
 
 ### Invoices (drafts + PDF)
 
-- [ ] `invoice` table with versioning
-- [ ] Line-item composer
-- [ ] PDF generation (basic, branded per entity)
-- [ ] Invoice list with filters, status, drill-down
-- [ ] Mark as paid → updates books
-- [ ] Internal invoice shortcut: entity → entity (mirror booking on both sides)
-- [ ] Drafts versioned, deletable
+- [x] `invoice` table with versioning
+- [x] Line-item composer
+- [x] PDF generation (basic, branded per entity)
+- [x] Invoice list with filters, status, drill-down
+- [x] Mark as paid → updates books
+- [x] Internal invoice shortcut: entity → entity (mirror booking on both sides)
+- [x] Drafts versioned, deletable
 
 ### Clients & suppliers
 
-- [ ] `client`, `supplier`, `contractor`, `employee` tables (one model with kind discriminator)
-- [ ] CRUD UI
-- [ ] Contracts attached as documents
+- [x] `client`, `supplier`, `contractor`, `employee` tables (one model with kind discriminator)
+- [x] CRUD UI
+- [x] Contracts attached as documents
 
 ### Categories
 
@@ -176,7 +176,7 @@ Get the inputs in: receipts, expenses, invoices, clients, categories.
 ### Tests
 
 - [x] Integration test: upload receipt → OCR → user confirms → expense created
-- [ ] Integration test: create internal invoice toiminimi → OÜ → both sides booked
+- [x] Integration test: create internal invoice toiminimi → OÜ → both sides booked
 - [x] Integration test: cross-entity intake queue routing (business/personal/entity/flow) creates the correct downstream draft artifacts + audit entries
 
 ---
