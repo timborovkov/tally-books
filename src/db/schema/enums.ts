@@ -144,12 +144,7 @@ export const intakeOcrStatusEnum = pgEnum("intake_ocr_status", [
 // from, contractors we engage, employees on payroll). Same row stays
 // stable across renames and role drift — a contractor turned employee is
 // a kind change on one row, not a migration between tables.
-export const partyKindEnum = pgEnum("party_kind", [
-  "client",
-  "supplier",
-  "contractor",
-  "employee",
-]);
+export const partyKindEnum = pgEnum("party_kind", ["client", "supplier", "contractor", "employee"]);
 
 // docs/data-model.md §7.2 — `documents.kind`. The set is intentionally
 // loose so user-facing taxonomy can move without migrations; tighter
@@ -180,11 +175,7 @@ export const invoiceDeliveryMethodEnum = pgEnum("invoice_delivery_method", [
 // Polymorphic owner type for `documents.owner_type`. Stored as enum
 // rather than free text so the service layer can match-exhaustive on
 // it; new owner types are added in lock-step with the resolver code.
-export const documentOwnerTypeEnum = pgEnum("document_owner_type", [
-  "party",
-  "person",
-  "entity",
-]);
+export const documentOwnerTypeEnum = pgEnum("document_owner_type", ["party", "person", "entity"]);
 
 // Target downstream flow the user is routing the intake item into.
 // Null = undecided (default on a fresh upload). The set matches the

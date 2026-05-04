@@ -25,7 +25,10 @@ export const invoiceLineItemSchema = z.object({
 
 export type InvoiceLineItem = z.infer<typeof invoiceLineItemSchema>;
 
-const currency = z.string().length(3).regex(/^[A-Z]{3}$/);
+const currency = z
+  .string()
+  .length(3)
+  .regex(/^[A-Z]{3}$/);
 
 const deliveryMethod = z.enum(["e_invoice", "pdf", "email", "manual"]);
 

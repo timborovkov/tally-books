@@ -12,10 +12,7 @@ export interface ListPartiesOptions {
   includeArchived?: boolean;
 }
 
-export async function listParties(
-  db: Db,
-  opts: ListPartiesOptions = {},
-): Promise<Party[]> {
+export async function listParties(db: Db, opts: ListPartiesOptions = {}): Promise<Party[]> {
   const conditions: SQL[] = [];
   if (opts.kinds && opts.kinds.length > 0) {
     const inList = opts.kinds
@@ -34,11 +31,7 @@ export async function listParties(
 
   const where = conditions.length === 0 ? undefined : and(...conditions);
 
-  return db
-    .select()
-    .from(parties)
-    .where(where)
-    .orderBy(asc(parties.name));
+  return db.select().from(parties).where(where).orderBy(asc(parties.name));
 }
 
 export async function getPartyById(db: Db, id: string): Promise<Party | null> {

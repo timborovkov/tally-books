@@ -183,10 +183,7 @@ export interface InvoiceTimelineEntry {
   actor: { id: string; name: string | null; email: string } | null;
 }
 
-export async function getInvoiceHistory(
-  db: Db,
-  id: string,
-): Promise<InvoiceTimelineEntry[]> {
+export async function getInvoiceHistory(db: Db, id: string): Promise<InvoiceTimelineEntry[]> {
   const rows = await db
     .select({
       version: invoiceVersions,
@@ -203,10 +200,7 @@ export async function getInvoiceHistory(
   }));
 }
 
-export async function getInvoiceAuditEntries(
-  db: Db,
-  id: string,
-): Promise<AuditLogEntry[]> {
+export async function getInvoiceAuditEntries(db: Db, id: string): Promise<AuditLogEntry[]> {
   return db
     .select()
     .from(auditLog)

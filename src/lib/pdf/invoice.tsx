@@ -239,9 +239,7 @@ export function InvoicePdf(data: InvoicePdfData) {
             {entity.businessId ? (
               <Text style={styles.metaLine}>Reg.: {entity.businessId}</Text>
             ) : null}
-            {entity.vatNumber ? (
-              <Text style={styles.metaLine}>VAT: {entity.vatNumber}</Text>
-            ) : null}
+            {entity.vatNumber ? <Text style={styles.metaLine}>VAT: {entity.vatNumber}</Text> : null}
           </View>
           <View style={styles.metaBlock}>
             <Text style={styles.invoiceTitle}>Invoice</Text>
@@ -311,7 +309,9 @@ export function InvoicePdf(data: InvoicePdfData) {
           ) : null}
           <View style={styles.totalsRow}>
             <Text style={styles.totalsLabel}>VAT</Text>
-            <Text style={styles.totalsValue}>{formatMoney(invoice.vatTotal, invoice.currency)}</Text>
+            <Text style={styles.totalsValue}>
+              {formatMoney(invoice.vatTotal, invoice.currency)}
+            </Text>
           </View>
           <View style={styles.totalsRow}>
             <Text style={[styles.totalsLabel, styles.totalsGrand]}>Total</Text>

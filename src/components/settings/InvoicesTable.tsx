@@ -123,11 +123,7 @@ export function InvoicesTable({ rows, bulkTransition, bulkMarkPaid }: InvoicesTa
                   <StateBadge state={row.state} />
                 </TableCell>
                 <TableCell>
-                  {row.paidAt ? (
-                    <Badge>paid</Badge>
-                  ) : (
-                    <Badge variant="outline">unpaid</Badge>
-                  )}
+                  {row.paidAt ? <Badge>paid</Badge> : <Badge variant="outline">unpaid</Badge>}
                 </TableCell>
               </TableRow>
             ))

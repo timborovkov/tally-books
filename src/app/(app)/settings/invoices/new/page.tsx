@@ -17,8 +17,7 @@ export const dynamic = "force-dynamic";
 
 export default async function NewInvoicePage({ searchParams }: NewInvoicePageProps) {
   const sp = await searchParams;
-  const internal =
-    (Array.isArray(sp.internal) ? sp.internal[0] : sp.internal) === "1";
+  const internal = (Array.isArray(sp.internal) ? sp.internal[0] : sp.internal) === "1";
 
   const db = getDb();
   const [entities, parties] = await Promise.all([

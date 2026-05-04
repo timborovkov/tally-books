@@ -84,11 +84,7 @@ function readInvoicePrefix(meta: unknown): string {
  * The counter row is upserted on first use of a year. Format:
  * `<prefix>-<year>-<padded seq>` (seq zero-padded to 4 digits).
  */
-async function assignInvoiceNumber(
-  db: Db,
-  entityId: string,
-  issueDate: Date,
-): Promise<string> {
+async function assignInvoiceNumber(db: Db, entityId: string, issueDate: Date): Promise<string> {
   const year = issueDate.getUTCFullYear();
   const [entity] = await db
     .select({ metadata: entities.metadata })
@@ -109,12 +105,7 @@ async function assignInvoiceNumber(
   const [locked] = await db
     .select({ nextSeq: entityInvoiceCounters.nextSeq })
     .from(entityInvoiceCounters)
-    .where(
-      and(
-        eq(entityInvoiceCounters.entityId, entityId),
-        eq(entityInvoiceCounters.year, year),
-      ),
-    )
+    .where(and(eq(entityInvoiceCounters.entityId, entityId), eq(entityInvoiceCounters.year, year)))
     .for("update")
     .limit(1);
   if (!locked) throw new Error("invoice counter row missing after upsert");
@@ -123,12 +114,7 @@ async function assignInvoiceNumber(
   await db
     .update(entityInvoiceCounters)
     .set({ nextSeq: seq + 1, updatedAt: new Date() })
-    .where(
-      and(
-        eq(entityInvoiceCounters.entityId, entityId),
-        eq(entityInvoiceCounters.year, year),
-      ),
-    );
+    .where(and(eq(entityInvoiceCounters.entityId, entityId), eq(entityInvoiceCounters.year, year)));
 
   return `${prefix}-${year}-${String(seq).padStart(4, "0")}`;
 }
@@ -255,11 +241,7 @@ export async function updateInvoice(
     if (!existing) throw new NotFoundError("invoice", input.id);
     await assertCan(tx, actor.user, "invoices", "write", { entityId: existing.entityId });
 
-    if (
-      existing.state !== "draft" &&
-      existing.state !== "ready" &&
-      existing.state !== "amending"
-    ) {
+    if (existing.state !== "draft" && existing.state !== "ready" && existing.state !== "amending") {
       throw new ConflictError(
         `Cannot edit an invoice in state '${existing.state}'. Transition to 'amending' first.`,
         { invoiceId: input.id, state: existing.state },
@@ -296,9 +278,7 @@ export async function updateInvoice(
       ...(input.issueDate !== undefined ? { issueDate: input.issueDate } : {}),
       ...(input.dueDate !== undefined ? { dueDate: input.dueDate } : {}),
       ...(nextLineItems !== null ? { lineItems: nextLineItems } : {}),
-      ...(nextTotals !== null
-        ? { total: nextTotals.total, vatTotal: nextTotals.vatTotal }
-        : {}),
+      ...(nextTotals !== null ? { total: nextTotals.total, vatTotal: nextTotals.vatTotal } : {}),
       ...(input.currency !== undefined ? { currency: input.currency } : {}),
       ...(input.deliveryMethod !== undefined ? { deliveryMethod: input.deliveryMethod } : {}),
       ...(input.description !== undefined ? { description: input.description } : {}),

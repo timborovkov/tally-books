@@ -84,9 +84,7 @@ describe("createInvoice", () => {
       clientId,
       currency: "EUR",
       issueDate: new Date("2026-04-20T00:00:00Z"),
-      lineItems: [
-        { description: "Consulting", quantity: "10", unitPrice: "100", vatRate: "0.24" },
-      ],
+      lineItems: [{ description: "Consulting", quantity: "10", unitPrice: "100", vatRate: "0.24" }],
     });
 
     expect(inv.state).toBe("draft");

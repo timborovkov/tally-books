@@ -138,10 +138,7 @@ export function InvoiceForm({
         </div>
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="deliveryMethod">Delivery method</Label>
-          <Select
-            name="deliveryMethod"
-            defaultValue={invoice?.deliveryMethod ?? "pdf"}
-          >
+          <Select name="deliveryMethod" defaultValue={invoice?.deliveryMethod ?? "pdf"}>
             <SelectTrigger id="deliveryMethod">
               <SelectValue />
             </SelectTrigger>

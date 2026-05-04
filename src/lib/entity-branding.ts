@@ -39,4 +39,3 @@ export function readEntityBranding(metadata: unknown): EntityBranding {
   const parsed = entityBrandingSchema.safeParse(raw);
   return parsed.success ? parsed.data : {};
 }
-

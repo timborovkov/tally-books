@@ -44,7 +44,10 @@ export async function renderInvoicePdf(db: Db, invoiceId: string): Promise<Buffe
         .where(eq(blobs.id, branding.logoBlobId))
         .limit(1);
       if (blob) {
-        const bytes = await getBlobBytes(blob.bucket as Parameters<typeof getBlobBytes>[0], blob.objectKey);
+        const bytes = await getBlobBytes(
+          blob.bucket as Parameters<typeof getBlobBytes>[0],
+          blob.objectKey,
+        );
         logoDataUrl = `data:${blob.contentType};base64,${bytes.toString("base64")}`;
       }
     } catch {
@@ -78,9 +81,9 @@ export async function renderInvoicePdf(db: Db, invoiceId: string): Promise<Buffe
           name: row.client.name,
           address:
             row.client.contact && typeof row.client.contact === "object"
-              ? ((row.client.contact as { address?: unknown }).address as
+              ? (((row.client.contact as { address?: unknown }).address as
                   | Record<string, string>
-                  | undefined) ?? null
+                  | undefined) ?? null)
               : null,
           vatNumber:
             row.client.taxIds && typeof row.client.taxIds === "object"

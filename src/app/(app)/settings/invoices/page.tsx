@@ -117,12 +117,7 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
           <div className="flex flex-wrap gap-3">
             {VALID_STATES.map((s) => (
               <label key={s} className="flex items-center gap-1 text-sm">
-                <input
-                  type="checkbox"
-                  name="state"
-                  value={s}
-                  defaultChecked={states.includes(s)}
-                />
+                <input type="checkbox" name="state" value={s} defaultChecked={states.includes(s)} />
                 {s}
               </label>
             ))}

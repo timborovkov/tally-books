@@ -85,7 +85,7 @@ export function DocumentAttachUploader({
             </SelectContent>
           </Select>
         </div>
-        <div className="flex flex-col gap-1.5 col-span-2">
+        <div className="col-span-2 flex flex-col gap-1.5">
           <Label htmlFor="doc-file">File</Label>
           <Input
             id="doc-file"

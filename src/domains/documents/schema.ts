@@ -27,4 +27,3 @@ export const createDocumentInput = z.object({
 });
 
 export type CreateDocumentInput = z.input<typeof createDocumentInput>;
-

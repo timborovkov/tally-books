@@ -60,10 +60,7 @@ function fmt(n: number): string {
  * `parseLineItems` so the same Zod schema validates both the composer
  * UI and any future programmatic callers.
  */
-export function InvoiceLineItemsComposer({
-  initial,
-  currency,
-}: InvoiceLineItemsComposerProps) {
+export function InvoiceLineItemsComposer({ initial, currency }: InvoiceLineItemsComposerProps) {
   const [rows, setRows] = useState<RowState[]>(
     initial.length > 0 ? initial.map(toRow) : [emptyRow()],
   );
@@ -99,16 +96,15 @@ export function InvoiceLineItemsComposer({
 
       <div className="flex flex-col gap-3">
         {rows.map((row, idx) => (
-          <div
-            key={idx}
-            className="grid grid-cols-[1fr_5rem_7rem_5rem_5rem_2rem] items-end gap-2"
-          >
+          <div key={idx} className="grid grid-cols-[1fr_5rem_7rem_5rem_5rem_2rem] items-end gap-2">
             <div className="flex flex-col gap-1">
               {idx === 0 ? <Label className="text-xs">Description</Label> : null}
               <Input
                 value={row.description}
                 onChange={(e) =>
-                  setRows((rs) => rs.map((r, i) => (i === idx ? { ...r, description: e.target.value } : r)))
+                  setRows((rs) =>
+                    rs.map((r, i) => (i === idx ? { ...r, description: e.target.value } : r)),
+                  )
                 }
                 placeholder="What was billed"
               />
@@ -120,7 +116,9 @@ export function InvoiceLineItemsComposer({
                 inputMode="decimal"
                 pattern="\d+(\.\d+)?"
                 onChange={(e) =>
-                  setRows((rs) => rs.map((r, i) => (i === idx ? { ...r, quantity: e.target.value } : r)))
+                  setRows((rs) =>
+                    rs.map((r, i) => (i === idx ? { ...r, quantity: e.target.value } : r)),
+                  )
                 }
               />
             </div>
@@ -131,7 +129,9 @@ export function InvoiceLineItemsComposer({
                 inputMode="decimal"
                 pattern="-?\d+(\.\d+)?"
                 onChange={(e) =>
-                  setRows((rs) => rs.map((r, i) => (i === idx ? { ...r, unitPrice: e.target.value } : r)))
+                  setRows((rs) =>
+                    rs.map((r, i) => (i === idx ? { ...r, unitPrice: e.target.value } : r)),
+                  )
                 }
               />
             </div>
@@ -140,7 +140,9 @@ export function InvoiceLineItemsComposer({
               <Input
                 value={row.unit}
                 onChange={(e) =>
-                  setRows((rs) => rs.map((r, i) => (i === idx ? { ...r, unit: e.target.value } : r)))
+                  setRows((rs) =>
+                    rs.map((r, i) => (i === idx ? { ...r, unit: e.target.value } : r)),
+                  )
                 }
                 placeholder="hour"
               />
@@ -152,7 +154,9 @@ export function InvoiceLineItemsComposer({
                 inputMode="decimal"
                 pattern="\d+(\.\d+)?"
                 onChange={(e) =>
-                  setRows((rs) => rs.map((r, i) => (i === idx ? { ...r, vatRate: e.target.value } : r)))
+                  setRows((rs) =>
+                    rs.map((r, i) => (i === idx ? { ...r, vatRate: e.target.value } : r)),
+                  )
                 }
                 placeholder="0.24"
               />
@@ -163,7 +167,9 @@ export function InvoiceLineItemsComposer({
                 variant="ghost"
                 size="sm"
                 aria-label="Remove line"
-                onClick={() => setRows((rs) => (rs.length === 1 ? [emptyRow()] : rs.filter((_, i) => i !== idx)))}
+                onClick={() =>
+                  setRows((rs) => (rs.length === 1 ? [emptyRow()] : rs.filter((_, i) => i !== idx)))
+                }
               >
                 ×
               </Button>

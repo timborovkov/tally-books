@@ -15,10 +15,7 @@ export interface ListDocumentsOptions {
   includeArchived?: boolean;
 }
 
-export async function listDocuments(
-  db: Db,
-  opts: ListDocumentsOptions = {},
-): Promise<Document[]> {
+export async function listDocuments(db: Db, opts: ListDocumentsOptions = {}): Promise<Document[]> {
   const conditions: SQL[] = [];
   if (opts.entityId !== undefined) conditions.push(eq(documents.entityId, opts.entityId));
   if (opts.ownerType !== undefined) conditions.push(eq(documents.ownerType, opts.ownerType));
@@ -29,4 +26,3 @@ export async function listDocuments(
   const where = conditions.length === 0 ? undefined : and(...conditions);
   return db.select().from(documents).where(where).orderBy(desc(documents.createdAt));
 }
-

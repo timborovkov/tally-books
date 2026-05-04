@@ -17,10 +17,7 @@ interface InvoicePdfDownloadButtonProps {
  * from a client component — they're serialised as RSC payloads. We pass
  * bytes as a base64 string and reconstitute on the client.
  */
-export function InvoicePdfDownloadButton({
-  invoiceId,
-  download,
-}: InvoicePdfDownloadButtonProps) {
+export function InvoicePdfDownloadButton({ invoiceId, download }: InvoicePdfDownloadButtonProps) {
   const [pending, startTransition] = useTransition();
 
   const handleClick = () => {

@@ -1,9 +1,4 @@
-export {
-  archiveParty,
-  createParty,
-  unarchiveParty,
-  updateParty,
-} from "./mutations";
+export { archiveParty, createParty, unarchiveParty, updateParty } from "./mutations";
 export {
   findPartyByLegalEntityId,
   getPartyById,

@@ -120,11 +120,7 @@ export async function archiveParty(
   return row;
 }
 
-export async function unarchiveParty(
-  db: Db,
-  actor: CurrentActor,
-  id: string,
-): Promise<Party> {
+export async function unarchiveParty(db: Db, actor: CurrentActor, id: string): Promise<Party> {
   await assertCan(db, actor.user, "business_details", "write");
 
   const [existing] = await db.select().from(parties).where(eq(parties.id, id)).limit(1);
@@ -149,4 +145,3 @@ export async function unarchiveParty(
 
   return row;
 }
-

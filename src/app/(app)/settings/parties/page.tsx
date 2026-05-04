@@ -47,8 +47,8 @@ export default async function PartiesPage({ searchParams }: PartiesPageProps) {
         <div>
           <h1 className="text-2xl font-semibold">Clients & suppliers</h1>
           <p className="text-muted-foreground text-sm">
-            Counterparties: clients we bill, suppliers we buy from, contractors we engage,
-            employees on payroll.
+            Counterparties: clients we bill, suppliers we buy from, contractors we engage, employees
+            on payroll.
           </p>
         </div>
         <Button asChild>
@@ -128,11 +128,7 @@ export default async function PartiesPage({ searchParams }: PartiesPageProps) {
                 </TableCell>
                 <TableCell>{p.legalEntityId ?? "—"}</TableCell>
                 <TableCell>
-                  {p.archivedAt ? (
-                    <Badge variant="outline">archived</Badge>
-                  ) : (
-                    <Badge>active</Badge>
-                  )}
+                  {p.archivedAt ? <Badge variant="outline">archived</Badge> : <Badge>active</Badge>}
                 </TableCell>
               </TableRow>
             ))
