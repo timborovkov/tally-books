@@ -130,13 +130,13 @@ Get the inputs in: receipts, expenses, invoices, clients, categories.
 
 ### Expenses
 
-- [ ] `expense` table with versioning
-- [ ] CRUD UI with entity column visible across all entities
-- [ ] Filters: entity, category, date range, paid-by, vendor
-- [ ] Pagination + global search field
-- [ ] Mark as "paid by personal card, reimbursable by entity" flow
-- [ ] Link receipt ↔ expense
-- [ ] Mass actions on the list page
+- [x] `expense` table with versioning
+- [x] CRUD UI with entity column visible across all entities
+- [x] Filters: entity, category, date range, paid-by, vendor
+- [x] Pagination + global search field
+- [x] Mark as "paid by personal card, reimbursable by entity" flow
+- [x] Link receipt ↔ expense
+- [x] Mass actions on the list page
 
 ### Invoices (drafts + PDF)
 
@@ -156,8 +156,8 @@ Get the inputs in: receipts, expenses, invoices, clients, categories.
 
 ### Categories
 
-- [ ] `category` table (hierarchical, scoped per jurisdiction or global)
-- [ ] Category management UI
+- [x] `category` table (hierarchical, scoped per jurisdiction or global)
+- [x] Category management UI
 - [ ] Default category sets shipped with each jurisdiction
 
 ### Bookkeeping core (basic)
