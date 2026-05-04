@@ -43,10 +43,14 @@ export function DocumentAttachUploader({
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    // Capture the form element synchronously. After the first await,
+    // `e.currentTarget` is null per the DOM spec (the browser clears it
+    // once event dispatch completes), so reading it post-await throws.
+    const form = e.currentTarget;
     setError(null);
     setPending(true);
     try {
-      const fd = new FormData(e.currentTarget);
+      const fd = new FormData(form);
       fd.set("ownerType", ownerType);
       fd.set("ownerId", ownerId);
       const res = await fetch("/api/documents/upload", { method: "POST", body: fd });
@@ -54,7 +58,7 @@ export function DocumentAttachUploader({
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error ?? `Upload failed (${res.status})`);
       }
-      e.currentTarget.reset();
+      form.reset();
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed");
