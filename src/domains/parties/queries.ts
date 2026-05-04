@@ -12,6 +12,17 @@ export interface ListPartiesOptions {
   includeArchived?: boolean;
 }
 
+/**
+ * Escape LIKE/ILIKE wildcards so user-supplied search input doesn't
+ * change the meaning of the pattern. Without this, a search for "20%"
+ * matches everything starting with "20", and "foo_bar" matches any
+ * single char between foo and bar. Mirrors the helper in expenses /
+ * invoices queries.
+ */
+function escapeLikePattern(input: string): string {
+  return input.replace(/[\\%_]/g, "\\$&");
+}
+
 export async function listParties(db: Db, opts: ListPartiesOptions = {}): Promise<Party[]> {
   const conditions: SQL[] = [];
   if (opts.kinds && opts.kinds.length > 0) {
@@ -24,7 +35,7 @@ export async function listParties(db: Db, opts: ListPartiesOptions = {}): Promis
     conditions.push(isNull(parties.archivedAt));
   }
   if (opts.search && opts.search.trim().length > 0) {
-    const term = `%${opts.search.trim()}%`;
+    const term = `%${escapeLikePattern(opts.search.trim())}%`;
     const term$ = or(ilike(parties.name, term), ilike(parties.legalEntityId, term));
     if (term$) conditions.push(term$);
   }
