@@ -46,7 +46,28 @@ export function InvoiceForm({
   const defaultEntityId = invoice?.entityId ?? entities[0]?.id ?? "";
   const [entityId, setEntityId] = useState<string>(defaultEntityId);
   const entityCurrency = entities.find((e) => e.id === entityId)?.baseCurrency ?? "EUR";
-  const [currency, setCurrency] = useState<string>(invoice?.currency ?? entityCurrency);
+
+  // Currency follows the selected entity's `baseCurrency` until the user
+  // manually edits the field. Once they do, their override sticks across
+  // entity switches (so a deliberate USD invoice from a EUR-based entity
+  // doesn't get clobbered when they re-pick the entity). On edit, the
+  // invoice's persisted currency counts as a pre-existing override —
+  // whoever wrote that row already made the call.
+  const [currencyOverridden, setCurrencyOverridden] = useState<boolean>(invoice !== null);
+  const [currencyValue, setCurrencyValue] = useState<string>(invoice?.currency ?? entityCurrency);
+  const currency = currencyOverridden ? currencyValue : entityCurrency;
+  const setCurrency = (value: string) => {
+    setCurrencyOverridden(true);
+    setCurrencyValue(value.toUpperCase());
+  };
+  const handleEntityChange = (id: string) => {
+    setEntityId(id);
+    if (!currencyOverridden) {
+      const next = entities.find((e) => e.id === id)?.baseCurrency ?? "EUR";
+      setCurrencyValue(next);
+    }
+  };
+
   const visibleParties = useMemo(
     () => partyRows.filter((p) => !p.archivedAt || p.id === invoice?.clientId),
     [partyRows, invoice?.clientId],
@@ -72,7 +93,7 @@ export function InvoiceForm({
             </>
           ) : (
             <>
-              <Select value={entityId} onValueChange={setEntityId}>
+              <Select value={entityId} onValueChange={handleEntityChange}>
                 <SelectTrigger id="entityId">
                   <SelectValue />
                 </SelectTrigger>
@@ -130,7 +151,7 @@ export function InvoiceForm({
             id="currency"
             name="currency"
             value={currency}
-            onChange={(e) => setCurrency(e.target.value.toUpperCase())}
+            onChange={(e) => setCurrency(e.target.value)}
             pattern="[A-Z]{3}"
             maxLength={3}
             required

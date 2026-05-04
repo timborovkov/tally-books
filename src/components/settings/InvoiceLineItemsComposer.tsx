@@ -65,28 +65,33 @@ export function InvoiceLineItemsComposer({ initial, currency }: InvoiceLineItems
     initial.length > 0 ? initial.map(toRow) : [emptyRow()],
   );
 
+  // Submission filters out rows with no description — the same filter
+  // must drive the displayed totals, otherwise the user sees a preview
+  // total that includes amounts which never reach the server. The
+  // server recomputes from the submitted payload anyway, so what's
+  // shown here MUST match what gets posted.
+  const submitted = useMemo(() => rows.filter((r) => r.description.trim() !== ""), [rows]);
+
   const totals = useMemo(() => {
     let subtotal = 0;
     let vat = 0;
-    for (const r of rows) {
+    for (const r of submitted) {
       subtotal += rowSubtotal(r);
       vat += rowVat(r);
     }
     return { subtotal, vat, total: subtotal + vat };
-  }, [rows]);
+  }, [submitted]);
 
   const serialised = useMemo<InvoiceLineItem[]>(
     () =>
-      rows
-        .filter((r) => r.description.trim() !== "")
-        .map((r) => ({
-          description: r.description.trim(),
-          quantity: r.quantity || "0",
-          unitPrice: r.unitPrice || "0",
-          ...(r.unit ? { unit: r.unit } : {}),
-          ...(r.vatRate && r.vatRate !== "0" ? { vatRate: r.vatRate } : {}),
-        })),
-    [rows],
+      submitted.map((r) => ({
+        description: r.description.trim(),
+        quantity: r.quantity || "0",
+        unitPrice: r.unitPrice || "0",
+        ...(r.unit ? { unit: r.unit } : {}),
+        ...(r.vatRate && r.vatRate !== "0" ? { vatRate: r.vatRate } : {}),
+      })),
+    [submitted],
   );
 
   return (
