@@ -13,11 +13,7 @@
  * already-provisioned deployment it's four `HEAD` requests per process
  * start and nothing else.
  */
-import {
-  CreateBucketCommand,
-  HeadBucketCommand,
-  S3ServiceException,
-} from "@aws-sdk/client-s3";
+import { CreateBucketCommand, HeadBucketCommand, S3ServiceException } from "@aws-sdk/client-s3";
 
 import { getStorageClient } from "./client";
 
