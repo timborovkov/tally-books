@@ -17,9 +17,9 @@ export async function register(): Promise<void> {
   if (process.env.NEXT_RUNTIME === "nodejs") {
     await import("@/sentry.server.config");
 
-    // Provision MinIO buckets on first boot. Idempotent — on an
+    // Provision RustFS buckets on first boot. Idempotent — on an
     // already-provisioned deployment this is four HEAD requests per
-    // cold start and nothing else. Ignored on edge because MinIO
+    // cold start and nothing else. Ignored on edge because RustFS
     // isn't reachable from the edge runtime.
     //
     // Skipped during tests: the integration suite manages its own
@@ -30,7 +30,7 @@ export async function register(): Promise<void> {
         await ensureBuckets();
       } catch (err) {
         // Don't kill the process — a running app that can't reach
-        // MinIO is still useful for read-only pages, and the upload
+        // RustFS is still useful for read-only pages, and the upload
         // route will surface a clearer error when the user actually
         // tries to upload. Just log so ops sees it in Sentry.
         console.error("[storage] ensureBuckets failed at boot:", err);

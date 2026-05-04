@@ -2,18 +2,28 @@ import { Readable } from "node:stream";
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-// The upload service talks to MinIO via `getStorageClient()` and to
+// The upload service talks to RustFS via the AWS SDK v3 S3 client and to
 // Postgres via a Drizzle `Db`. Unit tests stub both so we can assert
 // on the sha256 hashing, the dedupe fast-path, and the insert shape
-// without a running MinIO or database.
+// without a running storage backend or database.
+//
+// Two SDK call sites to mock:
+//   - `new Upload({ client, params }).done()` from `@aws-sdk/lib-storage`
+//     for the streamed multipart write.
+//   - `client.send(new DeleteObjectCommand(...))` for the dedupe cleanup.
 
-const putObjectMock = vi.fn<(...args: unknown[]) => Promise<{ etag: string }>>();
-const removeObjectMock = vi.fn<(...args: unknown[]) => Promise<void>>();
+const sendMock = vi.fn<(...args: unknown[]) => Promise<unknown>>();
+const uploadDoneMock = vi.fn<(...args: unknown[]) => Promise<unknown>>();
+const uploadCtorMock = vi.fn();
 
 vi.mock("../client", () => ({
-  getStorageClient: () => ({
-    putObject: putObjectMock,
-    removeObject: removeObjectMock,
+  getStorageClient: () => ({ send: sendMock }),
+}));
+
+vi.mock("@aws-sdk/lib-storage", () => ({
+  Upload: vi.fn().mockImplementation((args: unknown) => {
+    uploadCtorMock(args);
+    return { done: uploadDoneMock };
   }),
 }));
 
@@ -52,10 +62,11 @@ function makeFakeDb(existingBlob: unknown | null) {
 
 describe("storage/upload", () => {
   beforeEach(() => {
-    putObjectMock.mockReset();
-    removeObjectMock.mockReset();
-    putObjectMock.mockResolvedValue({ etag: "deadbeef" });
-    removeObjectMock.mockResolvedValue(undefined);
+    sendMock.mockReset();
+    uploadDoneMock.mockReset();
+    uploadCtorMock.mockReset();
+    sendMock.mockResolvedValue({});
+    uploadDoneMock.mockResolvedValue({ ETag: "deadbeef" });
   });
 
   it("hashes the stream, counts bytes, and inserts a new blob row", async () => {
@@ -74,8 +85,20 @@ describe("storage/upload", () => {
     });
 
     expect(result.deduplicated).toBe(false);
-    expect(putObjectMock).toHaveBeenCalledTimes(1);
-    expect(removeObjectMock).not.toHaveBeenCalled();
+    expect(uploadCtorMock).toHaveBeenCalledTimes(1);
+    expect(uploadDoneMock).toHaveBeenCalledTimes(1);
+    expect(sendMock).not.toHaveBeenCalled();
+    // Verify the params plumbed through to `Upload` — a refactor that
+    // drops Bucket/ContentType or swaps the body would otherwise pass.
+    expect(uploadCtorMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        params: expect.objectContaining({
+          Bucket: "receipts",
+          ContentType: "text/plain",
+          Key: expect.stringMatching(/\.txt$/),
+        }),
+      }),
+    );
 
     const inserted = calls.find((c) => c.op === "insert")?.args as {
       bucket: string;
@@ -121,7 +144,8 @@ describe("storage/upload", () => {
 
     expect(result.deduplicated).toBe(true);
     expect(result.blob.id).toBe("blob_existing");
-    expect(removeObjectMock).toHaveBeenCalledTimes(1);
+    // One DeleteObjectCommand `send` to clean up the duplicate upload.
+    expect(sendMock).toHaveBeenCalledTimes(1);
     // No insert when deduplicated — only the SELECT happened.
     expect(calls.some((c) => c.op === "insert")).toBe(false);
   });

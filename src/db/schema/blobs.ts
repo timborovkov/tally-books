@@ -5,18 +5,18 @@ import { newId } from "@/db/id";
 import { users } from "./users";
 
 /**
- * Content-addressable pointer to an object in MinIO. One row per
+ * Content-addressable pointer to an object in RustFS. One row per
  * stored file. Immutable once written — blobs are never edited in
  * place; callers upload a new blob and link to it instead.
  *
  * Why a table instead of storing the key inline on consumers:
  *   - Lets us dedupe by sha256 (index below). Uploading the same
- *     receipt scan twice produces one MinIO object, not two.
- *   - Decouples MinIO object lifecycle from domain rows. A receipt
+ *     receipt scan twice produces one RustFS object, not two.
+ *   - Decouples RustFS object lifecycle from domain rows. A receipt
  *     can be voided without dropping the underlying scan; a future
  *     orphan-cleanup job walks blobs with no referring rows.
  *   - Centralises content-type and size so the download endpoint
- *     doesn't have to call MinIO just to set response headers.
+ *     doesn't have to call RustFS just to set response headers.
  *
  * Not versioned. Blobs are immutable by contract.
  */
@@ -41,7 +41,7 @@ export const blobs = pgTable(
     uploadedAt: timestamp("uploaded_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
-    // One row per actual MinIO object — two different domain uploads
+    // One row per actual RustFS object — two different domain uploads
     // of the same file-in-memory MAY dedupe to the same row (via
     // sha256) but two rows cannot point at the same object key.
     unique("blobs_bucket_key_uniq").on(t.bucket, t.objectKey),

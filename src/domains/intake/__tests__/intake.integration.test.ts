@@ -7,10 +7,10 @@
  *     the upload-service layer tested in unit tests), intake_item
  *     lifecycle, OCR `applyExtraction`, routeIntakeItem, confirm,
  *     reject, reRouteIntakeItem (wrong-route recovery), bulk mutations.
- *   - Not covered here: MinIO object bytes and the OpenAI vision
+ *   - Not covered here: RustFS object bytes and the OpenAI vision
  *     provider. Both are external services; we stub the vision
  *     provider and insert `blobs` rows directly instead of
- *     round-tripping through MinIO. The upload route + MinIO + vision
+ *     round-tripping through RustFS. The upload route + RustFS + vision
  *     end-to-end is covered by the dev-env verification steps in
  *     the plan file — they require live credentials.
  */

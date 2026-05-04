@@ -1,6 +1,6 @@
 # Local development stack.
 # - `app` runs `pnpm dev` against your working tree (bind-mounted).
-# - `postgres`, `minio`, `qdrant` are persistent local services.
+# - `postgres`, `rustfs`, `qdrant` are persistent local services.
 #
 # Usage:
 #   cp .env.example .env       # then edit .env
@@ -29,20 +29,21 @@ services:
       timeout: 5s
       retries: 10
 
-  minio:
-    image: minio/minio:latest
+  rustfs:
+    image: rustfs/rustfs:latest
     restart: unless-stopped
-    command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-tally}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-tally-dev-secret}
+      RUSTFS_ACCESS_KEY: ${RUSTFS_ACCESS_KEY:-tally}
+      RUSTFS_SECRET_KEY: ${RUSTFS_SECRET_KEY:-tally-dev-secret}
     ports:
-      - "${MINIO_PORT:-9000}:9000"
-      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+      - "${RUSTFS_PORT:-9000}:9000"
+      - "${RUSTFS_CONSOLE_PORT:-9001}:9001"
     volumes:
-      - minio-data:/data
+      - rustfs-data:/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      # `nc -z` probes the listening socket without needing bash; the
+      # rustfs image is busybox-based and ships nc by default.
+      test: ["CMD", "nc", "-z", "127.0.0.1", "9000"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -75,10 +76,11 @@ services:
       # To target remote services from the in-compose app, override
       # these at `docker compose up` time or edit this block.
       DATABASE_URL: postgres://${POSTGRES_USER:-tally}:${POSTGRES_PASSWORD:-tally}@postgres:5432/${POSTGRES_DB:-tally}
-      MINIO_ENDPOINT: http://minio:9000
-      MINIO_USE_SSL: "false"
-      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-tally}
-      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-tally-dev-secret}
+      S3_ENDPOINT: http://rustfs:9000
+      S3_REGION: us-east-1
+      S3_ACCESS_KEY_ID: ${RUSTFS_ACCESS_KEY:-tally}
+      S3_SECRET_ACCESS_KEY: ${RUSTFS_SECRET_KEY:-tally-dev-secret}
+      S3_FORCE_PATH_STYLE: "true"
       QDRANT_URL: http://qdrant:6333
       QDRANT_API_KEY: ${QDRANT_API_KEY:-}
     ports:
@@ -86,7 +88,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      minio:
+      rustfs:
         condition: service_healthy
       qdrant:
         condition: service_healthy
@@ -104,17 +106,18 @@ services:
     env_file: .env
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER:-tally}:${POSTGRES_PASSWORD:-tally}@postgres:5432/${POSTGRES_DB:-tally}
-      MINIO_ENDPOINT: http://minio:9000
-      MINIO_USE_SSL: "false"
-      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-tally}
-      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-tally-dev-secret}
+      S3_ENDPOINT: http://rustfs:9000
+      S3_REGION: us-east-1
+      S3_ACCESS_KEY_ID: ${RUSTFS_ACCESS_KEY:-tally}
+      S3_SECRET_ACCESS_KEY: ${RUSTFS_SECRET_KEY:-tally-dev-secret}
+      S3_FORCE_PATH_STYLE: "true"
     depends_on:
       postgres:
         condition: service_healthy
-      minio:
+      rustfs:
         condition: service_healthy
 
 volumes:
   postgres-data:
-  minio-data:
+  rustfs-data:
   qdrant-data:

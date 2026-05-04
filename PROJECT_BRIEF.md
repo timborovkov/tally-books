@@ -70,7 +70,7 @@ The app is built primarily to serve the author's own needs — an Estonian OÜ a
 | Embeddings | OpenAI | `text-embedding-3-*` |
 | Vector store | **Qdrant** | Separate service in compose |
 | Agent framework | **Vercel AI SDK + AI SDK UI** | Chat UI out of the box |
-| File storage | MinIO | S3-compatible |
+| File storage | RustFS | S3-compatible (AWS SDK v3 client) |
 | Containerization | Docker / docker-compose | Dockerfile + dev compose required |
 | Error monitoring | Sentry | |
 
@@ -469,7 +469,7 @@ The agent is not optional. It's the second primary interaction surface after the
 └─────────────────────────────────────────────────────────────┘
          │                │                │
     ┌────▼─────┐    ┌─────▼────┐     ┌─────▼─────┐
-    │PostgreSQL│    │  MinIO   │     │  Sentry   │
+    │PostgreSQL│    │  RustFS  │     │  Sentry   │
     └──────────┘    └──────────┘     └───────────┘
 ```
 
@@ -658,7 +658,7 @@ User message / trigger
 
 ### 6.10 Embeddings, RAG & semantic search
 
-OpenAI embeddings, **Qdrant** as the vector store. Qdrant runs as a `docker-compose` service alongside Postgres and MinIO.
+OpenAI embeddings, **Qdrant** as the vector store. Qdrant runs as a `docker-compose` service alongside Postgres and RustFS.
 
 **Two distinct uses of vectors:**
 
@@ -697,7 +697,7 @@ Each point in Qdrant carries a payload with: `entity_id`, `kind`, `period`, `cre
 
 ### 6.11 File storage
 
-- MinIO bucket per concern: `receipts/`, `invoices/`, `legal-docs/`, `exports/`.
+- RustFS bucket per concern: `receipts/`, `invoices/`, `legal-docs/`, `exports/`. Backend is any S3-compatible host (RustFS in dev/self-host, AWS S3 / etc. in managed deploys).
 - All uploads are streamed (no base64 in DB).
 - Files referenced by `blob` rows with checksum + size + mime + bucket + key.
 
@@ -719,7 +719,7 @@ Each point in Qdrant carries a payload with: `entity_id`, `kind`, `period`, `cre
 ### 6.13 Deployment & local dev
 
 - **`Dockerfile`** for the app — multi-stage build (deps → build → runtime). Production image is the only artifact published.
-- **`docker-compose.yml`** for local development, with services: `app` (dev mode, hot reload, source mounted), `postgres`, `minio`, `qdrant`. This file also doubles as the canonical statement of what infra Tally needs; self-hosters adapt it to their hosting shape rather than copying a boxed "prod compose" that won't match their proxy, secrets, or volume setup anyway.
+- **`docker-compose.yml`** for local development, with services: `app` (dev mode, hot reload, source mounted), `postgres`, `rustfs`, `qdrant`. This file also doubles as the canonical statement of what infra Tally needs; self-hosters adapt it to their hosting shape rather than copying a boxed "prod compose" that won't match their proxy, secrets, or volume setup anyway.
 - First-boot flow: if no admin exists, redirect to `/setup`.
 - Reverse proxy (Caddy or user's choice) for TLS — out of scope for the compose file, documented in `docs/guides/deployment.md`.
 - `robots.txt` disallow all; `X-Robots-Tag: noindex` header on all routes.

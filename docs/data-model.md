@@ -335,7 +335,7 @@ Resolves **C7**. Brief §12.2 requires daily FX pulls and per-amount base-curren
 | Column | Type | Notes |
 |---|---|---|
 | `id` | `text`, PK | |
-| `bucket` | `text`, NOT NULL | MinIO bucket. |
+| `bucket` | `text`, NOT NULL | RustFS bucket. |
 | `key` | `text`, NOT NULL | Object key. |
 | `mime` | `text`, NOT NULL | |
 | `size_bytes` | `integer`, NOT NULL | Postgres `integer` is 2 GB; use `bigint` if we ever store larger. |

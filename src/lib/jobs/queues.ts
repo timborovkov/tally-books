@@ -17,7 +17,7 @@ export type QueueName = (typeof QUEUES)[keyof typeof QUEUES];
 
 // ── intake.ocr ──────────────────────────────────────────────────────
 // Kick off OCR + structured extraction on a freshly-uploaded intake
-// item. The worker reads the blob from MinIO, calls the configured
+// item. The worker reads the blob from RustFS, calls the configured
 // VisionProvider, and writes the result back onto `intake_items`.
 export const intakeOcrPayload = z.object({
   intakeItemId: z.string().min(1),

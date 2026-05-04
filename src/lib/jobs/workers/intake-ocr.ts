@@ -1,7 +1,7 @@
 /**
  * Worker: intake.ocr.
  *
- * Consumes an `intakeItemId`, reads its blob from MinIO, asks the
+ * Consumes an `intakeItemId`, reads its blob from RustFS, asks the
  * configured VisionProvider for structured receipt data, and writes
  * the result back onto `intake_items`. Runs one job at a time per
  * local worker slot — vision calls are slow and expensive so

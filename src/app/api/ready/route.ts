@@ -8,7 +8,7 @@ export const revalidate = 0;
 /**
  * Readiness probe.
  *
- * Once Postgres / MinIO / Qdrant clients are wired up (v0.1 §Database, §Files),
+ * Once Postgres / RustFS / Qdrant clients are wired up (v0.1 §Database, §Files),
  * extend the `checks` array to ping each dependency and return 503 if any
  * required one is down. For now, returns 200 with an empty checks list so
  * orchestration tooling can be wired in advance.

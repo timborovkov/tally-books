@@ -7,12 +7,18 @@
  * comes straight from the v0.2 TODO.
  *
  * `ensureBuckets()` is called once at boot from `instrumentation.ts`
- * so a fresh MinIO instance gets its buckets created on first app
- * start. The SDK's `makeBucket` errors if the bucket already exists,
- * so we gate it on `bucketExists`. Safe to call every boot — on an
+ * so a fresh RustFS instance gets its buckets created on first app
+ * start. `HeadBucketCommand` is the cheap existence probe; on miss we
+ * follow with `CreateBucketCommand`. Safe to call every boot — on an
  * already-provisioned deployment it's four `HEAD` requests per process
  * start and nothing else.
  */
+import {
+  CreateBucketCommand,
+  HeadBucketCommand,
+  S3ServiceException,
+} from "@aws-sdk/client-s3";
+
 import { getStorageClient } from "./client";
 
 export const BUCKETS = {
@@ -35,12 +41,28 @@ const ALL_BUCKETS: readonly BucketName[] = Object.values(BUCKETS);
 export async function ensureBuckets(): Promise<void> {
   const client = getStorageClient();
   for (const bucket of ALL_BUCKETS) {
-    const exists = await client.bucketExists(bucket);
-    if (!exists) {
-      // Region defaults to `us-east-1` in MinIO when unspecified. Works
-      // for both local MinIO and AWS S3; hosted MinIO deployments that
-      // need a specific region should override here.
-      await client.makeBucket(bucket);
+    if (await bucketExists(client, bucket)) continue;
+    await client.send(new CreateBucketCommand({ Bucket: bucket }));
+  }
+}
+
+async function bucketExists(
+  client: ReturnType<typeof getStorageClient>,
+  bucket: BucketName,
+): Promise<boolean> {
+  try {
+    await client.send(new HeadBucketCommand({ Bucket: bucket }));
+    return true;
+  } catch (err) {
+    // S3 returns 404 (NotFound) for missing buckets and 301 (PermanentRedirect)
+    // when the bucket exists but lives in another region — treat the redirect
+    // as "exists" so we don't try to recreate someone else's bucket. Anything
+    // else (auth failure, network) bubbles up as the boot-time error we want.
+    if (err instanceof S3ServiceException) {
+      const status = err.$metadata.httpStatusCode;
+      if (status === 404) return false;
+      if (status === 301) return true;
     }
+    throw err;
   }
 }
