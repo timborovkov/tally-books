@@ -3,7 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { eq } from "drizzle-orm";
+
 import { getDb } from "@/db/client";
+import { invoices } from "@/db/schema";
 import { thingStateEnum } from "@/db/schema/enums";
 import {
   createInternalInvoice,
@@ -16,8 +19,10 @@ import {
   type InvoiceDeliveryMethod,
   type InvoiceLineItem,
 } from "@/domains/invoices";
+import { NotFoundError } from "@/domains/errors";
 import { getCurrentActor } from "@/lib/auth-shim";
 import { parseDateInput, str, strOrNull } from "@/lib/form-helpers";
+import { assertCan } from "@/lib/iam/permissions";
 import { renderInvoicePdf } from "@/lib/pdf/render";
 import type { ThingState } from "@/lib/versioning";
 
@@ -190,21 +195,35 @@ export async function createInternalInvoiceAction(form: FormData): Promise<void>
 }
 
 /**
- * PDF download. Returns a Response with the rendered bytes — Next.js
- * serialises the body, and the browser downloads it. Server-action
- * Response support landed in Next 14.x and we're on 16, so this is
- * the cleanest "click button → file download" path without a dedicated
- * route handler.
+ * PDF download. Returns base64-encoded bytes which the client converts
+ * into a Blob URL — server actions can't return raw `Response` objects
+ * to client components.
+ *
+ * Auth: gated behind `invoices:read` scoped to the invoice's entity.
+ * Without this gate, `renderInvoicePdf` would happily serialise any
+ * invoice for any authenticated user — full line items, totals, and
+ * banking details — bypassing per-entity IAM scope.
  */
 export async function downloadInvoicePdfAction(invoiceId: string): Promise<{
   fileName: string;
   base64: string;
 }> {
   const db = getDb();
-  await getCurrentActor(db);
+  const actor = await getCurrentActor(db);
+
+  // Look up entityId before rendering so the scope check is precise.
+  // Cheap (PK lookup, no joins) — the renderer re-reads the row in full.
+  const [row] = await db
+    .select({ entityId: invoices.entityId, number: invoices.number })
+    .from(invoices)
+    .where(eq(invoices.id, invoiceId))
+    .limit(1);
+  if (!row) throw new NotFoundError("invoice", invoiceId);
+  await assertCan(db, actor.user, "invoices", "read", { entityId: row.entityId });
+
   const buffer = await renderInvoicePdf(db, invoiceId);
   return {
-    fileName: `invoice-${invoiceId}.pdf`,
+    fileName: `invoice-${row.number ?? invoiceId}.pdf`,
     base64: buffer.toString("base64"),
   };
 }

@@ -25,6 +25,14 @@ export const invoiceLineItemSchema = z.object({
 
 export type InvoiceLineItem = z.infer<typeof invoiceLineItemSchema>;
 
+// Hard cap on lines per invoice. The PDF renderer buffers the whole
+// document in memory and base64-encodes it for the client, so an
+// unbounded array is a DoS path under crafted input. 500 is well above
+// any plausible real invoice (the largest catering / services invoices
+// hit ~100 lines).
+const MAX_LINE_ITEMS = 500;
+const lineItemsArray = z.array(invoiceLineItemSchema).max(MAX_LINE_ITEMS);
+
 const currency = z
   .string()
   .length(3)
@@ -38,7 +46,7 @@ export const createInvoiceInput = z.object({
   number: z.string().min(1).max(60).nullable().optional(),
   issueDate: z.coerce.date().optional(),
   dueDate: z.coerce.date().optional(),
-  lineItems: z.array(invoiceLineItemSchema).default([]),
+  lineItems: lineItemsArray.default([]),
   currency,
   deliveryMethod: deliveryMethod.default("pdf"),
   description: z.string().nullable().optional(),
@@ -53,7 +61,7 @@ export const updateInvoiceInput = z.object({
   number: z.string().min(1).max(60).nullable().optional(),
   issueDate: z.coerce.date().nullable().optional(),
   dueDate: z.coerce.date().nullable().optional(),
-  lineItems: z.array(invoiceLineItemSchema).optional(),
+  lineItems: lineItemsArray.optional(),
   currency: currency.optional(),
   deliveryMethod: deliveryMethod.optional(),
   description: z.string().nullable().optional(),
@@ -95,7 +103,7 @@ export const createInternalInvoiceInput = z.object({
   issueDate: z.coerce.date().optional(),
   dueDate: z.coerce.date().optional(),
   currency,
-  lineItems: z.array(invoiceLineItemSchema).min(1),
+  lineItems: lineItemsArray.min(1),
   deliveryMethod: deliveryMethod.default("manual"),
   description: z.string().nullable().optional(),
 });
@@ -149,5 +157,5 @@ export function computeInvoiceTotals(items: InvoiceLineItem[]): {
  * shape inside totals math.
  */
 export function parseLineItems(raw: unknown): InvoiceLineItem[] {
-  return z.array(invoiceLineItemSchema).parse(raw);
+  return lineItemsArray.parse(raw);
 }

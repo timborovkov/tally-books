@@ -11,11 +11,14 @@
  * what the file is when they upload it, and we don't run vision over
  * a board resolution.
  */
+import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { Readable } from "node:stream";
 
 import { getDb } from "@/db/client";
+import { entities, parties, persons } from "@/db/schema";
 import { createDocument } from "@/domains/documents";
+import { assertCan } from "@/lib/iam/permissions";
 import { getCurrentUser } from "@/lib/iam/session";
 import { BUCKETS, putBlob } from "@/lib/storage";
 
@@ -87,6 +90,32 @@ export async function POST(request: Request): Promise<NextResponse> {
     typeof entityIdRaw === "string" && entityIdRaw.trim() !== "" ? entityIdRaw : null;
 
   const db = getDb();
+  const actor = {
+    userId: user.id,
+    kind: "user" as const,
+    user: { id: user.id, role: user.role, removedAt: user.removedAt },
+  };
+
+  // Validate owner + IAM BEFORE streaming the blob to storage. Doing
+  // the validation after upload (the prior order) leaves orphan blobs
+  // in `legal-docs` whenever a request fails owner checks — an attacker
+  // can cycle bogus `ownerId`s to fill storage even though `createDocument`
+  // later rejects each request.
+  if (ownerType === "party") {
+    const [row] = await db.select({ id: parties.id }).from(parties).where(eq(parties.id, ownerId));
+    if (!row) return NextResponse.json({ error: "Owner not found" }, { status: 404 });
+  } else if (ownerType === "person") {
+    const [row] = await db.select({ id: persons.id }).from(persons).where(eq(persons.id, ownerId));
+    if (!row) return NextResponse.json({ error: "Owner not found" }, { status: 404 });
+  } else if (ownerType === "entity") {
+    const [row] = await db
+      .select({ id: entities.id })
+      .from(entities)
+      .where(eq(entities.id, ownerId));
+    if (!row) return NextResponse.json({ error: "Owner not found" }, { status: 404 });
+  }
+  await assertCan(db, actor.user, "legal_documents", "write");
+
   const webStream = file.stream();
   const nodeStream = Readable.fromWeb(webStream as Parameters<typeof Readable.fromWeb>[0]);
 
@@ -97,12 +126,6 @@ export async function POST(request: Request): Promise<NextResponse> {
     filename: file.name,
     uploadedById: user.id,
   });
-
-  const actor = {
-    userId: user.id,
-    kind: "user" as const,
-    user: { id: user.id, role: user.role, removedAt: user.removedAt },
-  };
 
   const doc = await createDocument(db, actor, {
     entityId,
