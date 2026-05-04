@@ -25,7 +25,25 @@ export function InternalInvoiceForm({ entities, action }: InternalInvoiceFormPro
   const [sellerId, setSellerId] = useState<string>(entities[0]?.id ?? "");
   const [buyerId, setBuyerId] = useState<string>(entities[1]?.id ?? entities[0]?.id ?? "");
   const sellerCurrency = entities.find((e) => e.id === sellerId)?.baseCurrency ?? "EUR";
-  const [currency, setCurrency] = useState<string>(sellerCurrency);
+  // Track whether the user manually overrode the currency input. Until
+  // they do, the field follows the seller's base currency — switching
+  // the seller dropdown should not leave a stale currency from the
+  // previous entity.
+  const [currencyOverridden, setCurrencyOverridden] = useState(false);
+  const [currencyValue, setCurrencyValue] = useState<string>(sellerCurrency);
+  const currency = currencyOverridden ? currencyValue : sellerCurrency;
+  const setCurrency = (value: string) => {
+    setCurrencyOverridden(true);
+    setCurrencyValue(value.toUpperCase());
+  };
+
+  const handleSellerChange = (id: string) => {
+    setSellerId(id);
+    if (!currencyOverridden) {
+      const next = entities.find((e) => e.id === id)?.baseCurrency ?? "EUR";
+      setCurrencyValue(next);
+    }
+  };
 
   const sameEntity = sellerId === buyerId;
 
@@ -36,7 +54,7 @@ export function InternalInvoiceForm({ entities, action }: InternalInvoiceFormPro
           <Label htmlFor="sellerEntityId">
             Seller entity<span className="text-destructive ml-0.5">*</span>
           </Label>
-          <Select value={sellerId} onValueChange={setSellerId}>
+          <Select value={sellerId} onValueChange={handleSellerChange}>
             <SelectTrigger id="sellerEntityId">
               <SelectValue />
             </SelectTrigger>
@@ -85,7 +103,7 @@ export function InternalInvoiceForm({ entities, action }: InternalInvoiceFormPro
             id="currency"
             name="currency"
             value={currency}
-            onChange={(e) => setCurrency(e.target.value.toUpperCase())}
+            onChange={(e) => setCurrency(e.target.value)}
             pattern="[A-Z]{3}"
             maxLength={3}
             required
