@@ -3,6 +3,7 @@ import { and, asc, eq, ilike, isNull, or, type SQL } from "drizzle-orm";
 import type { Db } from "@/db/client";
 import { parties, type Party } from "@/db/schema";
 import type { partyKindEnum } from "@/db/schema/enums";
+import { escapeLikePattern } from "@/lib/utils";
 
 export type PartyKind = (typeof partyKindEnum.enumValues)[number];
 
@@ -10,17 +11,6 @@ export interface ListPartiesOptions {
   kinds?: readonly PartyKind[];
   search?: string;
   includeArchived?: boolean;
-}
-
-/**
- * Escape LIKE/ILIKE wildcards so user-supplied search input doesn't
- * change the meaning of the pattern. Without this, a search for "20%"
- * matches everything starting with "20", and "foo_bar" matches any
- * single char between foo and bar. Mirrors the helper in expenses /
- * invoices queries.
- */
-function escapeLikePattern(input: string): string {
-  return input.replace(/[\\%_]/g, "\\$&");
 }
 
 export async function listParties(db: Db, opts: ListPartiesOptions = {}): Promise<Party[]> {

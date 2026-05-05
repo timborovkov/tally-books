@@ -28,15 +28,12 @@ import {
   type InvoiceVersion,
 } from "@/db/schema";
 import type { invoiceDeliveryMethodEnum, thingStateEnum } from "@/db/schema/enums";
+import { escapeLikePattern } from "@/lib/utils";
 
 import { NotFoundError } from "../errors";
 
 export type InvoiceState = (typeof thingStateEnum.enumValues)[number];
 export type InvoiceDeliveryMethod = (typeof invoiceDeliveryMethodEnum.enumValues)[number];
-
-function escapeLikePattern(input: string): string {
-  return input.replace(/[\\%_]/g, "\\$&");
-}
 
 export interface ListInvoicesOptions {
   entityIds?: string[];

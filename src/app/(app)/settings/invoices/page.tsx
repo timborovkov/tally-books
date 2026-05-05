@@ -54,10 +54,16 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
   const paidParam = asString(sp.paid);
   const paid = paidParam === "1" ? true : paidParam === "0" ? false : undefined;
 
+  // `listInvoices` excludes void rows by default. When the user explicitly
+  // selects `void` in the state filter, the default exclusion contradicts
+  // the explicit `IN ('void')` filter and returns zero rows. Honour the
+  // user's pick by flipping `includeVoid` whenever void is in the chosen
+  // states.
   const result = await listInvoices(db, {
     entityIds,
     clientIds: asArray(sp.clientId),
     states: states.length > 0 ? states : undefined,
+    includeVoid: states.includes("void"),
     paid,
     dateFrom: asDate(sp.dateFrom),
     dateTo: asDate(sp.dateTo),
