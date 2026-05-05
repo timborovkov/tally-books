@@ -6,14 +6,14 @@ Thanks for your interest. Tally is a self-hosted, single-tenant accounting tool 
 
 - Node.js `>=20.11` (use `.nvmrc` → `nvm use`)
 - pnpm `>=10` (`corepack enable && corepack prepare pnpm@latest --activate`)
-- Docker + Docker Compose v2 (for the local Postgres / RustFS / Qdrant stack)
+- Docker + Docker Compose v2 (for the local Postgres + RustFS stack)
 
 ## First-time setup
 
 ```bash
 pnpm install
 cp .env.example .env       # fill in real secrets
-docker compose up -d       # starts postgres, rustfs, qdrant
+docker compose up -d       # starts postgres (with pgvector) and rustfs
 pnpm dev                   # http://localhost:3000
 ```
 

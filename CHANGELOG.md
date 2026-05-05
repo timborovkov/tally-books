@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Replaced standalone Qdrant service with the **pgvector** Postgres extension. Vector storage now lives in the application database — fewer services, simpler hybrid search (one SQL query joining `tsvector` BM25 with vector distance instead of a fan-out + reconcile), single backup target. Compose image swapped from `postgres:16-alpine` to `pgvector/pgvector:pg16` (drop-in, same data dir). `QDRANT_URL` / `QDRANT_API_KEY` env vars and the `qdrant` service / volume / health-check / depends_on entries are gone. The `embedding_index` data-model section was rewritten as the `embeddings` table (vector column + HNSW cosine index). Self-hosters on managed Postgres need `CREATE EXTENSION vector;` once; on Railway, deploy the pgvector template from the marketplace (the default Postgres template doesn't include the extension) — see [`docs/guides/deployment.md`](docs/guides/deployment.md#postgres-image).
 - Sentry fully env-driven: added `NEXT_PUBLIC_SENTRY_ENABLED` master toggle, per-runtime sampling rates (`*_TRACES_SAMPLE_RATE`, `*_REPLAYS_*_SAMPLE_RATE`, `SENTRY_PROFILES_SAMPLE_RATE`), `NEXT_PUBLIC_SENTRY_ENVIRONMENT`, and `SENTRY_URL` for self-hosted / EU instances. Collapsed duplicate `SENTRY_DSN` into the single `NEXT_PUBLIC_SENTRY_DSN` (used across client + server + edge). Client vars now validated via new `src/lib/env.client.ts`. Node profiling wired via `@sentry/profiling-node`.
 
 ### Added
@@ -53,8 +54,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Husky pre-push hook running lint-staged on the diff being pushed.
 - MIT license, contributor guide, GitHub issue + PR templates.
 - Multi-stage Dockerfile (deps → build → runtime, distroless-friendly).
-- `docker-compose.yml` for local dev (`app`, `postgres`, `rustfs`, `qdrant`) — also serves as the infra-shape reference for self-hosters.
-- `.env.example` covering only env vars wired in this PR (app port + the compose-managed Postgres, RustFS, Qdrant containers). Future feature PRs add their own keys alongside the code that reads them.
+- `docker-compose.yml` for local dev (`app`, `postgres` with pgvector, `rustfs`) — also serves as the infra-shape reference for self-hosters.
+- `.env.example` covering only env vars wired in this PR (app port + the compose-managed Postgres and RustFS containers). Future feature PRs add their own keys alongside the code that reads them.
 - Typed environment loading via `src/lib/env.ts` (zod-validated, fail-fast at startup through `src/instrumentation.ts`).
 - `/api/health` and `/api/ready` endpoints.
 - `robots.txt` disallow-all + `X-Robots-Tag: noindex` headers (no search engine indexing).

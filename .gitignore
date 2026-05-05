@@ -100,7 +100,6 @@ logs/
 docker-data/
 postgres-data/
 minio-data/
-qdrant-data/
 
 # Misc
 tmp/

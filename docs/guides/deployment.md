@@ -6,9 +6,8 @@ How to run Tally. Initial version — covers local development and the shape of 
 
 - **Node.js 20.11+** (matches `package.json` `engines`).
 - **pnpm 10.33.0** (pinned via `packageManager` field).
-- **Postgres 16**.
+- **Postgres 16 with the `pgvector` extension** — same database holds application data and embedding vectors. The dev stack uses the `pgvector/pgvector:pg16` image (drop-in replacement for stock Postgres 16). See [Postgres image](#postgres-image) below for managed-platform notes.
 - **RustFS** (or any S3-compatible blob store — AWS S3, Backblaze B2, etc.) — for receipt / invoice attachments.
-- **Qdrant** — for embeddings / RAG. Unused until v0.5; the container just has to exist in the dev stack.
 
 The repo's [`docker-compose.yml`](../../docker-compose.yml) stands up the data plane locally and also doubles as a reference for the infra shape a self-hoster needs.
 
@@ -27,7 +26,7 @@ cp .env.example .env
 
 # 3. Start the data plane
 docker compose up -d
-# Starts postgres + rustfs + qdrant. Health-checked — services wait until
+# Starts postgres (with pgvector) and rustfs. Health-checked — services wait until
 # ready before `docker compose up -d` returns.
 
 # 4. Migrate and seed
@@ -48,7 +47,7 @@ For a fully containerised dev run (app + data plane, no local Node):
 docker compose --profile app up -d
 ```
 
-The `app` service is gated behind the `app` profile so `docker compose up -d` without the flag gives you just the data plane (the common case for `pnpm dev` on the host). Inside the compose network the app talks to `postgres`, `rustfs`, and `qdrant` by service name, not localhost — the overrides are baked into the `app` service's `environment` block in [`docker-compose.yml`](../../docker-compose.yml).
+The `app` service is gated behind the `app` profile so `docker compose up -d` without the flag gives you just the data plane (the common case for `pnpm dev` on the host). Inside the compose network the app talks to `postgres` and `rustfs` by service name, not localhost — the overrides are baked into the `app` service's `environment` block in [`docker-compose.yml`](../../docker-compose.yml).
 
 ## Env vars
 
@@ -62,7 +61,6 @@ The canonical reference is [`.env.example`](../../.env.example) — every var ha
 | `RESEND_API_KEY` / `RESEND_FROM_EMAIL`                                                    | Transactional email for invites.                                    | Required. Placeholder rejected in prod. |
 | `DATABASE_URL`                                                                            | Postgres connection string.                                         | Required.                               |
 | `S3_ENDPOINT` / `_REGION` / `_ACCESS_KEY_ID` / `_SECRET_ACCESS_KEY` / `_FORCE_PATH_STYLE` | S3-compatible (RustFS / AWS S3 / etc.) connection.                  | Required once blob writes land (v0.2).  |
-| `QDRANT_URL` / `QDRANT_API_KEY`                                                           | Vector store connection.                                            | Required once embeddings land (v0.5).   |
 | `NEXT_PUBLIC_SENTRY_ENABLED` / `_DSN`                                                     | Error reporting. See [`sentry.md`](../architecture/sentry.md).      | Optional; `false` disables everything.  |
 | `SENTRY_*` (build-time)                                                                   | Source-map upload. `SENTRY_AUTH_TOKEN` blank = skip upload.         | Optional.                               |
 
@@ -73,12 +71,27 @@ The env schema lives in [`src/lib/env.ts`](../../src/lib/env.ts) — anything mi
 Tally is a standard Next.js app. A production deploy wants:
 
 - **App container** — this repo's [`Dockerfile`](../../Dockerfile) produces a multi-stage build: deps → build → runtime. Runtime is Next standalone, runs as non-root `nextjs:nodejs`, port 3000, health-checked at `/api/health`.
-- **Postgres** — managed or self-hosted Postgres 16. The schema lives in `src/db/migrations/`. Run `pnpm db:migrate` on deploy.
+- **Postgres with pgvector** — managed or self-hosted Postgres 16 *with the `vector` extension available*. See [Postgres image](#postgres-image) below. The schema lives in `src/db/migrations/`. Run `pnpm db:migrate` on deploy.
 - **Blob store** — RustFS, AWS S3, or any S3-compatible host. Use an `https://` `S3_ENDPOINT` for hosted; set `S3_FORCE_PATH_STYLE=false` only when the provider uses vhost-style URLs (AWS S3 itself). v0.1 doesn't write blobs yet; v0.2 does.
-- **Qdrant** — managed Qdrant Cloud or self-hosted. Unused in v0.1–v0.4.
 - **Outbound email** — a Resend account with a verified sending domain.
 
 No Redis. No BullMQ. Background jobs run via [pg-boss](https://github.com/timgit/pg-boss) on the same Postgres (ships in v0.2).
+
+### Postgres image
+
+Tally needs the `pgvector` extension for embeddings (v0.5+). Stock Postgres images **don't** include it; pick a path:
+
+- **Self-hosted (compose, k8s):** use the `pgvector/pgvector:pg16` image. It's the upstream pgvector author's official image — same `data/` layout as `postgres:16`, drop-in volume-compatible, ships the `vector` extension preinstalled. Just enable it once per database: `CREATE EXTENSION IF NOT EXISTS vector;`.
+- **Railway:** the default Postgres template **does not** include pgvector. Either (a) deploy the **pgvector template** from Railway's marketplace, or (b) on an existing Postgres service swap the image to `pgvector/pgvector:pg16` (matches your major version — same data dir). After redeploy, run `CREATE EXTENSION IF NOT EXISTS vector;` against the database. Railway's Database View → Extensions tab won't surface pgvector on the standard image; the marketplace template is the supported route.
+- **Managed Postgres elsewhere (RDS, Supabase, Neon, Cloud SQL, DigitalOcean, etc.):** all the major hosts support pgvector now. The extension is a one-time `CREATE EXTENSION` call after the database is provisioned — no image swap needed.
+
+Verification, regardless of host:
+
+```sql
+CREATE EXTENSION IF NOT EXISTS vector;
+SELECT '[1,2,3]'::vector(3);            -- round-trips a vector literal
+SELECT extname, extversion FROM pg_extension WHERE extname = 'vector';
+```
 
 ### Health endpoints
 
