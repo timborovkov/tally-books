@@ -3,6 +3,7 @@ import { and, eq, gte, inArray, lte, ne, sql } from "drizzle-orm";
 import type { Db } from "@/db/client";
 import { categories, expenses, invoices, parties, receipts } from "@/db/schema";
 import type { CurrentActor } from "@/lib/auth-shim";
+import type { MonthBucket } from "@/lib/fiscal-year";
 import { assertCan } from "@/lib/iam/permissions";
 
 /**
@@ -32,13 +33,6 @@ export interface ReportRange {
 
 export interface ReportOpts extends ReportRange {
   entityIds: readonly string[];
-}
-
-export interface MonthBucket {
-  /** "YYYY-MM". */
-  label: string;
-  startUtc: Date;
-  endUtc: Date;
 }
 
 async function assertCanReportOnAll(

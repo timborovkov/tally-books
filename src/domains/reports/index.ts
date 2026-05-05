@@ -1,3 +1,5 @@
+// MonthBucket lives in @/lib/fiscal-year (where `monthsInFiscalYear`
+// produces it); not re-exported from here to avoid a parallel type.
 export {
   getCashFlow,
   getExpenseStatement,
@@ -12,7 +14,6 @@ export {
   type JournalOpts,
   type JournalRow,
   type JournalSource,
-  type MonthBucket,
   type ReportOpts,
   type ReportRange,
 } from "./queries";
