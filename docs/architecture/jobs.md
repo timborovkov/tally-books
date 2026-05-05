@@ -23,11 +23,9 @@ Source of truth: [`src/lib/jobs/`](../../src/lib/jobs).
                                        work result / audit
 ```
 
-Web processes (Next.js) call `sendJob()` to enqueue. Workers (run via `pnpm worker` → [`worker-entry.ts`](../../src/lib/jobs/worker-entry.ts)) poll and execute handlers. Scale them independently:
+The web process both enqueues and consumes jobs. [`startWorkers()`](../../src/lib/jobs/start-workers.ts) is invoked from [`src/instrumentation.ts`](../../src/instrumentation.ts) on server boot, so every Next.js Node instance attaches the pg-boss handlers alongside its HTTP server. Horizontally scaling the web tier is safe — pg-boss's `FOR UPDATE SKIP LOCKED` polling means each instance grabs its own jobs without duplicating work.
 
-```
-docker compose --profile app up --scale worker=3
-```
+If OCR throughput ever needs to scale independently of HTTP traffic, re-extract a worker entrypoint and run it as a separate process / Railway service.
 
 ## The registry
 
@@ -49,7 +47,7 @@ Adding a queue:
 2. Add a Zod payload schema.
 3. Register it in `PAYLOAD_SCHEMAS`.
 4. Write a worker handler under `src/lib/jobs/workers/`.
-5. Register it from `worker-entry.ts`.
+5. Register it from [`start-workers.ts`](../../src/lib/jobs/start-workers.ts).
 
 ## Sending
 
@@ -64,7 +62,7 @@ await sendJob(QUEUES.intakeOcr, { intakeItemId: "int_…" });
 
 Handlers:
 
-- Run one job at a time (current queue-level concurrency is set per-queue in `worker-entry.ts`).
+- Run one job at a time (current queue-level concurrency is set per-queue in [`start-workers.ts`](../../src/lib/jobs/start-workers.ts)).
 - Receive `{ job, signal }` where `signal` is an `AbortSignal` that fires on heartbeat expiry / graceful shutdown.
 - Re-validate the payload with the queue's Zod schema before doing any work.
 - Import heavy dependencies (Drizzle, the S3 SDK, provider SDKs) lazily so the rest of the app's typecheck / test suite doesn't need them.
@@ -76,16 +74,12 @@ Failure policy:
 
 ## Shutdown
 
-The worker entrypoint installs SIGINT/SIGTERM handlers that call `pg-boss.stop({ graceful: true })`. In-flight jobs finish; new ones don't get picked up; the process exits cleanly.
+Next.js doesn't expose a clean lifecycle hook for instrumentation, so pg-boss currently relies on its own runtime semantics: jobs killed mid-flight return to the queue once their `expireInSeconds` passes (configured per queue) and re-run on the next worker boot. Handlers should therefore be idempotent — see the [handler contract](#handler-contract) above.
 
 ## Running locally
 
 ```
-# In one terminal, on a docker-compose Postgres:
 pnpm dev
-
-# In another terminal:
-pnpm worker
 ```
 
-The worker process is independent. The web process can enqueue jobs without a worker running — they just sit in the queue until one comes up.
+That's it. The web process attaches pg-boss handlers as part of its boot, so jobs you enqueue from a route immediately get picked up by the same process.

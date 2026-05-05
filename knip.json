@@ -6,8 +6,7 @@
     "src/components/theme-provider.tsx",
     "src/components/mode-toggle.tsx",
     "src/db/migrate.ts",
-    "src/db/seed.ts",
-    "src/lib/jobs/worker-entry.ts"
+    "src/db/seed.ts"
   ],
   "project": ["src/**/*.{ts,tsx}", "*.{ts,mts,mjs}"],
   "ignoreDependencies": ["tailwindcss", "busboy", "@types/busboy"],

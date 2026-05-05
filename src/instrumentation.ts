@@ -35,6 +35,25 @@ export async function register(): Promise<void> {
         // tries to upload. Just log so ops sees it in Sentry.
         console.error("[storage] ensureBuckets failed at boot:", err);
       }
+
+      // Start pg-boss workers in the same process as the HTTP server.
+      // Workers used to be a separate Railway service; they're now
+      // co-resident with the web tier — single process, single set
+      // of env vars, half the deploy cost. pg-boss's row-locking
+      // semantics (FOR UPDATE SKIP LOCKED) mean horizontally-scaled
+      // web instances each run their own poller without duplicating
+      // work. If OCR throughput ever needs to scale independently,
+      // re-extract a worker entry point and add a separate service.
+      //
+      // Failures are logged but non-fatal: a process that can't
+      // start workers can still serve requests, and the enqueue
+      // path will surface an error when a route tries to send a job.
+      try {
+        const { startWorkers } = await import("@/lib/jobs");
+        await startWorkers();
+      } catch (err) {
+        console.error("[jobs] startWorkers failed at boot:", err);
+      }
     }
   }
 

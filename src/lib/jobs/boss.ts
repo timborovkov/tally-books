@@ -4,19 +4,14 @@
  * Why a singleton: pg-boss maintains its own Postgres connection pool
  * and polling loops. Spinning up multiple instances in the same
  * process would fragment those resources and multiply the polling
- * rate. Both the web process (which sends jobs) and the worker
- * process (which consumes them) get one each.
+ * rate. The Next.js process both enqueues and consumes jobs (workers
+ * are co-resident with the HTTP server — see `start-workers.ts`), so
+ * one instance covers both sides.
  *
  * Why lazy: importing this module shouldn't connect to Postgres —
  * integration tests may never touch it, and the build-time type-check
  * imports every module. The first `getBoss()` call starts the
  * instance; subsequent calls reuse it.
- *
- * Graceful shutdown: `stopBoss()` is exposed for the worker entry
- * point so SIGTERM cleanly drains in-flight jobs before the process
- * exits. Web processes ignore it — Next.js tears the Node runtime
- * down without giving us a hook anyway, and queue work isn't
- * initiated there.
  */
 import { PgBoss } from "pg-boss";
 
@@ -33,21 +28,22 @@ export async function getBoss(): Promise<PgBoss> {
   if (startPromise) return startPromise;
 
   startPromise = (async () => {
-    const boss = new PgBoss(env.DATABASE_URL);
-    boss.on("error", (err: unknown) => {
-      console.error("[pg-boss] error:", err);
-    });
-    await boss.start();
-    instance = boss;
-    return boss;
+    try {
+      const boss = new PgBoss(env.DATABASE_URL);
+      boss.on("error", (err: unknown) => {
+        console.error("[pg-boss] error:", err);
+      });
+      await boss.start();
+      instance = boss;
+      return boss;
+    } catch (err) {
+      // Clear the slot so a transient failure (Postgres briefly
+      // unreachable, etc.) doesn't permanently cache a rejected
+      // promise that every future caller would re-await.
+      startPromise = null;
+      throw err;
+    }
   })();
 
   return startPromise;
-}
-
-export async function stopBoss(): Promise<void> {
-  if (!instance) return;
-  await instance.stop({ graceful: true });
-  instance = null;
-  startPromise = null;
 }

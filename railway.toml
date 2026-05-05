@@ -1,0 +1,21 @@
+# Railway config for the Tally web service.
+# Docs: https://docs.railway.com/reference/config-as-code
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+# Run idempotent migrations before each deploy goes live. The Dockerfile's
+# runtime stage ships tsx + src/db/ for this hook (and for the worker service).
+preDeployCommand = "tsx src/db/migrate.ts"
+
+# Next standalone server. Railway injects $PORT; the standalone server.js
+# honours it, so no override is needed here.
+startCommand = "node server.js"
+
+healthcheckPath = "/api/health"
+healthcheckTimeout = 100
+
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
