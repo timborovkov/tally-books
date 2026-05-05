@@ -470,7 +470,14 @@ export async function transitionInvoice(
     if (input.nextState === "filed") {
       parentPatch.filedAt = new Date();
       parentPatch.filedRef = input.filedRef ?? null;
-    } else if (input.nextState === "amending") {
+    } else if (input.nextState === "amending" || input.nextState === "void") {
+      // Clear filedRef on every exit from filed state. The CHECK constraint
+      // `invoices_filed_ref_state_match` requires `filedRef IS NULL` unless
+      // state is `filed` or `sent`, so leaving a stale ref on a void row
+      // would violate the invariant. Today's reachable void paths happen
+      // to have filedRef=null, but expressing this here makes the
+      // invariant local rather than path-dependent — future changes to
+      // the state machine can't accidentally break it.
       parentPatch.filedAt = null;
       parentPatch.filedRef = null;
     }
