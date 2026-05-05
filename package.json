@@ -24,7 +24,6 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx src/db/seed.ts",
-    "worker": "tsx src/lib/jobs/worker-entry.ts",
     "prepare": "husky"
   },
   "dependencies": {

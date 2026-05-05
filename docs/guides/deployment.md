@@ -93,6 +93,19 @@ SELECT '[1,2,3]'::vector(3);            -- round-trips a vector literal
 SELECT extname, extversion FROM pg_extension WHERE extname = 'vector';
 ```
 
+### Railway
+
+[`railway.toml`](../../railway.toml) is auto-detected. It builds the Dockerfile, runs `tsx src/db/migrate.ts` as `preDeployCommand` so migrations land before traffic shifts, then starts the Next standalone server. Healthchecked at `/api/health`. Background jobs run in the same process as the HTTP server (pg-boss workers are started from [`src/instrumentation.ts`](../../src/instrumentation.ts)) — one Railway service covers everything.
+
+To deploy:
+
+1. Connect the repo to a Railway project. `railway.toml` is picked up automatically.
+2. Provision the **pgvector** Postgres template (not the stock Postgres template — see [Postgres image](#postgres-image) above for why). Reference its private connection string as `DATABASE_URL=${{<postgres-service>.DATABASE_URL}}` on the app service.
+3. Set the remaining env vars: `APP_URL`, `BETTER_AUTH_SECRET`, `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, the `S3_*` group, and `OPENAI_API_KEY` if you want receipt OCR to actually run. Sentry vars are optional — see [`sentry.md`](../architecture/sentry.md).
+4. Deploy. Migrations run automatically before each rollout; pg-boss handlers attach as the server boots. Horizontally scaling the service is safe — pg-boss's `FOR UPDATE SKIP LOCKED` polling means each instance grabs its own jobs without duplicating work.
+
+If OCR throughput ever needs to scale independently of HTTP traffic, re-extract a worker entrypoint and add a second Railway service. Today the merged setup keeps the deploy footprint small.
+
 ### Health endpoints
 
 - `GET /api/health` — always returns 200 if the process is alive. Used by container orchestrators.

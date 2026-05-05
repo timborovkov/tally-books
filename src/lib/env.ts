@@ -21,7 +21,28 @@ import { optionalString, optionalUrl, sampleRate } from "@/lib/env.shared";
  * Zod helpers shared between the two live in `@/lib/env.shared`.
  */
 
-const isProd = process.env.NODE_ENV === "production";
+// During `next build`, Next sets NODE_ENV=production and evaluates server
+// modules to collect page data — which trips this schema before any real
+// secret is available. Detect the build phase so we can treat it like dev
+// (placeholders allowed) and let the standalone runtime re-validate strictly
+// against the real values when the container actually starts.
+//
+// Bracket-notation lookup is deliberate: Turbopack (Next 16's default
+// bundler) inlines `process.env.NEXT_PHASE` as a string literal at build
+// time, which would bake `isBuildPhase = true` into the standalone bundle
+// and permanently disable the production secret-rejection guards below.
+// Bracket notation defeats that constant-folding pass and preserves a
+// real runtime lookup. Same trick used by Next's own internals.
+const isBuildPhase = process.env["NEXT_PHASE"] === "phase-production-build";
+
+if (isBuildPhase) {
+  // Zod's `.url()` rejects undefined; give DATABASE_URL a syntactically valid
+  // placeholder for the build only. Runtime gets the real value injected by
+  // the host (Railway, Fly, etc.) before `node server.js` boots.
+  process.env.DATABASE_URL ??= "postgres://build-placeholder@localhost:5432/build";
+}
+
+const isProd = process.env.NODE_ENV === "production" && !isBuildPhase;
 
 // Placeholders are usable in dev/test so CI and local runs don't need a
 // real secret; production rejects them so a missed env var fails fast at

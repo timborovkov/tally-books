@@ -78,30 +78,6 @@ services:
       rustfs:
         condition: service_healthy
 
-  # Background-job worker. Same image as `app`, different entrypoint.
-  # pg-boss polls Postgres for work — no extra broker needed. Scale
-  # independently of the web tier: `docker compose --profile app up --scale worker=3`.
-  worker:
-    profiles: ["app"]
-    build:
-      context: .
-      dockerfile: Dockerfile
-    restart: unless-stopped
-    command: ["pnpm", "worker"]
-    env_file: .env
-    environment:
-      DATABASE_URL: postgres://${POSTGRES_USER:-tally}:${POSTGRES_PASSWORD:-tally}@postgres:5432/${POSTGRES_DB:-tally}
-      S3_ENDPOINT: http://rustfs:9000
-      S3_REGION: us-east-1
-      S3_ACCESS_KEY_ID: ${RUSTFS_ACCESS_KEY:-tally}
-      S3_SECRET_ACCESS_KEY: ${RUSTFS_SECRET_KEY:-tally-dev-secret}
-      S3_FORCE_PATH_STYLE: "true"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      rustfs:
-        condition: service_healthy
-
 volumes:
   postgres-data:
   rustfs-data:
