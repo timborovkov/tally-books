@@ -28,13 +28,21 @@ export async function getBoss(): Promise<PgBoss> {
   if (startPromise) return startPromise;
 
   startPromise = (async () => {
-    const boss = new PgBoss(env.DATABASE_URL);
-    boss.on("error", (err: unknown) => {
-      console.error("[pg-boss] error:", err);
-    });
-    await boss.start();
-    instance = boss;
-    return boss;
+    try {
+      const boss = new PgBoss(env.DATABASE_URL);
+      boss.on("error", (err: unknown) => {
+        console.error("[pg-boss] error:", err);
+      });
+      await boss.start();
+      instance = boss;
+      return boss;
+    } catch (err) {
+      // Clear the slot so a transient failure (Postgres briefly
+      // unreachable, etc.) doesn't permanently cache a rejected
+      // promise that every future caller would re-await.
+      startPromise = null;
+      throw err;
+    }
   })();
 
   return startPromise;
