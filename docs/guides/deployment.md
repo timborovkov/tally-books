@@ -124,8 +124,15 @@ If OCR throughput ever needs to scale independently of HTTP traffic, re-extract 
 
 ### Health endpoints
 
-- `GET /api/health` — always returns 200 if the process is alive. Used by container orchestrators.
-- `GET /api/ready` — returns 200 only if the app can round-trip a Postgres query. Use this as the readiness probe; the liveness probe stays on `/api/health`.
+- `GET /api/health` — liveness. Always returns 200 if the process is alive. Used by container orchestrators to detect a hung Node.
+- `GET /api/ready` — readiness. Returns 200 only if the app can actually do work: round-trips a `SELECT 1` against Postgres AND a `HeadBucket` against the receipts bucket. Returns 503 with a per-dependency breakdown if either fails. Checks run in parallel:
+
+  ```json
+  { "status": "ready",     "checks": { "database": "ok",   "storage": "ok"  } }   // 200
+  { "status": "not_ready", "checks": { "database": "fail", "storage": "ok"  } }   // 503
+  ```
+
+  Use `/api/ready` as your orchestrator's readiness probe (Railway exposes the response body in deploy logs, which is how you'd diagnose `database: fail` vs `storage: fail` after a misconfigured deploy). Keep `/api/health` as the liveness probe — readiness flapping shouldn't kill an otherwise-healthy process.
 
 ### Build-time secrets
 
