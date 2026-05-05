@@ -53,16 +53,17 @@ The `app` service is gated behind the `app` profile so `docker compose up -d` wi
 
 The canonical reference is [`.env.example`](../../.env.example) — every var has an inline comment explaining what it does and whether it's required. Summary:
 
-| Var                                                                                       | Purpose                                                             | Required?                               |
-| ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------- | --------------------------------------- |
-| `APP_PORT`                                                                                | Port the app listens on.                                            | Default 3000.                           |
-| `APP_URL`                                                                                 | Public URL. Used as BetterAuth trusted origin and invite-link base. | Required.                               |
-| `BETTER_AUTH_SECRET`                                                                      | 32+ char random. Signs session cookies and 2FA challenges.          | Required. **Must override in prod.**    |
-| `RESEND_API_KEY` / `RESEND_FROM_EMAIL`                                                    | Transactional email for invites.                                    | Required. Placeholder rejected in prod. |
-| `DATABASE_URL`                                                                            | Postgres connection string.                                         | Required.                               |
-| `S3_ENDPOINT` / `_REGION` / `_ACCESS_KEY_ID` / `_SECRET_ACCESS_KEY` / `_FORCE_PATH_STYLE` | S3-compatible (RustFS / AWS S3 / etc.) connection.                  | Required once blob writes land (v0.2).  |
-| `NEXT_PUBLIC_SENTRY_ENABLED` / `_DSN`                                                     | Error reporting. See [`sentry.md`](../architecture/sentry.md).      | Optional; `false` disables everything.  |
-| `SENTRY_*` (build-time)                                                                   | Source-map upload. `SENTRY_AUTH_TOKEN` blank = skip upload.         | Optional.                               |
+| Var                                                                                       | Purpose                                                                                              | Required?                                         |
+| ----------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| `APP_PORT`                                                                                | Port the app listens on. Ignored on managed hosts that inject `PORT` (Railway, Fly).                 | Default 3000.                                     |
+| `APP_URL`                                                                                 | Public URL. Used as BetterAuth trusted origin and invite-link base.                                  | Required.                                         |
+| `BETTER_AUTH_SECRET`                                                                      | 32+ char random. Signs session cookies and 2FA challenges.                                           | Required. **Must override in prod.**              |
+| `RESEND_API_KEY` / `RESEND_FROM_EMAIL`                                                    | Transactional email for invites.                                                                     | Required. Placeholder rejected in prod.           |
+| `DATABASE_URL`                                                                            | Postgres connection string.                                                                          | Required.                                         |
+| `S3_ENDPOINT` / `_REGION` / `_ACCESS_KEY_ID` / `_SECRET_ACCESS_KEY` / `_FORCE_PATH_STYLE` | S3-compatible (RustFS / AWS S3 / R2 / etc.) connection.                                              | Required.                                         |
+| `OPENAI_API_KEY` / `OPENAI_VISION_MODEL`                                                  | Vision OCR for receipt intake. App boots without a key; jobs surface a clear error in the intake UI. | Optional — set to enable receipt-scan extraction. |
+| `NEXT_PUBLIC_SENTRY_ENABLED` / `_DSN`                                                     | Error reporting. See [`sentry.md`](../architecture/sentry.md).                                       | Optional; `false` disables everything.            |
+| `SENTRY_*` (build-time)                                                                   | Source-map upload. `SENTRY_AUTH_TOKEN` blank = skip upload.                                          | Optional.                                         |
 
 The env schema lives in [`src/lib/env.ts`](../../src/lib/env.ts) — anything missing or malformed rejects at boot with a readable error instead of crashing mid-request. Adding a new var is a Zod entry in that file plus an `.env.example` line.
 
@@ -99,10 +100,25 @@ SELECT extname, extversion FROM pg_extension WHERE extname = 'vector';
 
 To deploy:
 
-1. Connect the repo to a Railway project. `railway.toml` is picked up automatically.
-2. Provision the **pgvector** Postgres template (not the stock Postgres template — see [Postgres image](#postgres-image) above for why). Reference its private connection string as `DATABASE_URL=${{<postgres-service>.DATABASE_URL}}` on the app service.
-3. Set the remaining env vars: `APP_URL`, `BETTER_AUTH_SECRET`, `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, the `S3_*` group, and `OPENAI_API_KEY` if you want receipt OCR to actually run. Sentry vars are optional — see [`sentry.md`](../architecture/sentry.md).
-4. Deploy. Migrations run automatically before each rollout; pg-boss handlers attach as the server boots. Horizontally scaling the service is safe — pg-boss's `FOR UPDATE SKIP LOCKED` polling means each instance grabs its own jobs without duplicating work.
+1. **Connect the repo** to a Railway project. `railway.toml` is picked up automatically. The app service builds via the Dockerfile; no further config needed on the service itself.
+
+2. **Provision Postgres** — use the **pgvector** template, not the stock Postgres template (see [Postgres image](#postgres-image) above for why). Inside the project, expose the connection string to the app via Railway's cross-service variable syntax: `DATABASE_URL=${{<postgres-service-name>.DATABASE_URL}}`. The `.DATABASE_URL` form is private-network — no public-internet egress, lower latency than `.DATABASE_PUBLIC_URL`.
+
+3. **Provision storage** — Railway has no managed RustFS, so pick one:
+   - **Cloudflare R2 / AWS S3 / Backblaze B2** — set `S3_ENDPOINT`, `S3_REGION`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` on the app service from the provider's credentials. Set `S3_FORCE_PATH_STYLE=true` for path-style backends (R2 / B2 / RustFS); `false` for AWS S3 itself.
+   - **Self-hosted RustFS as a second Railway service** — deploy `rustfs/rustfs:latest` with a volume mounted at `/data` and env vars `RUSTFS_ACCESS_KEY` / `RUSTFS_SECRET_KEY` / `RUSTFS_CONSOLE_ENABLE=true`. Then on the app service:
+     ```
+     S3_ENDPOINT=http://${{<rustfs-service>.RAILWAY_PRIVATE_DOMAIN}}:9000
+     S3_REGION=us-east-1
+     S3_ACCESS_KEY_ID=${{<rustfs-service>.RUSTFS_ACCESS_KEY}}
+     S3_SECRET_ACCESS_KEY=${{<rustfs-service>.RUSTFS_SECRET_KEY}}
+     S3_FORCE_PATH_STYLE=true
+     ```
+     The `RAILWAY_PRIVATE_DOMAIN` reference keeps storage traffic on Railway's internal IPv6 network — free egress, no public exposure. If RustFS doesn't bind to `[::]:9000` by default, fall back to its public domain (works, but pays public-internet egress).
+
+4. **Set the remaining env vars** on the app service: `APP_URL=https://${{RAILWAY_PUBLIC_DOMAIN}}` (the `${{RAILWAY_PUBLIC_DOMAIN}}` token resolves to the service's auto-assigned `*.up.railway.app`), `BETTER_AUTH_SECRET` (`openssl rand -base64 48 | tr -d '\n'`), `RESEND_API_KEY` (from [resend.com](https://resend.com)), `RESEND_FROM_EMAIL` (verified domain). Add `OPENAI_API_KEY` if you want receipt OCR to actually run. Sentry vars are optional — see [`sentry.md`](../architecture/sentry.md).
+
+5. **Deploy.** Migrations run automatically before each rollout; pg-boss handlers attach as the server boots. Horizontally scaling the service is safe — pg-boss's `FOR UPDATE SKIP LOCKED` polling means each instance grabs its own jobs without duplicating work.
 
 If OCR throughput ever needs to scale independently of HTTP traffic, re-extract a worker entrypoint and add a second Railway service. Today the merged setup keeps the deploy footprint small.
 
@@ -113,15 +129,15 @@ If OCR throughput ever needs to scale independently of HTTP traffic, re-extract 
 
 ### Build-time secrets
 
-The Sentry plugin uploads source maps at build time if `SENTRY_AUTH_TOKEN` is set. The Dockerfile consumes it via a BuildKit secret mount, so the token never lands in an image layer:
+The Sentry plugin uploads source maps at build time if `SENTRY_AUTH_TOKEN` is set. The Dockerfile reads it as a regular `ARG` (Railway's Metal builder doesn't accept BuildKit secret mounts):
 
 ```bash
-docker buildx build \
-  --secret id=sentry_auth,env=SENTRY_AUTH_TOKEN \
+docker build \
+  --build-arg SENTRY_AUTH_TOKEN=$SENTRY_AUTH_TOKEN \
   -t tally:local .
 ```
 
-Leave the token blank to skip the upload step (self-hosters, local builds, forks). See [`sentry.md`](../architecture/sentry.md) for the full story.
+The token is consumed inline for the `pnpm build` `RUN` and never `ENV`-exported, so it doesn't reach the runtime image. It does land in the build-stage layer's metadata — fine for the published runtime, but treat shared build caches and CI logs as if they could expose it. Leave the var blank to skip the upload step entirely (self-hosters, local builds, forks). On Railway, just set `SENTRY_AUTH_TOKEN` as a service variable and Railway propagates it to the build's `--build-arg` automatically. See [`sentry.md`](../architecture/sentry.md) for the full story.
 
 ## Database conventions
 
