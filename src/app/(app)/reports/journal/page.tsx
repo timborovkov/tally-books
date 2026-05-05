@@ -16,7 +16,7 @@ import { getJournal, type JournalSource } from "@/domains/reports";
 import { getCurrentActor } from "@/lib/auth-shim";
 import { formatUtcDate } from "@/lib/dates";
 
-import { formatAmount, resolveReportContext } from "../_lib";
+import { formatAmount, readParam, resolveReportContext } from "../_lib";
 
 export const dynamic = "force-dynamic";
 
@@ -154,9 +154,4 @@ export default async function JournalPage({
       </div>
     </div>
   );
-}
-
-function readParam(v: string | string[] | undefined): string | undefined {
-  if (Array.isArray(v)) return v[0];
-  return v;
 }

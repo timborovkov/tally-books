@@ -94,7 +94,12 @@ function parseFyParam(raw: string | undefined, fyStartMonth: number): FiscalYear
   return fiscalYearFromStartYear(n, fyStartMonth);
 }
 
-function readParam(v: string | string[] | undefined): string | undefined {
+/**
+ * Pull a single string out of Next.js's `searchParams` shape, which
+ * delivers values as `string | string[] | undefined` because URLs can
+ * repeat keys. Reports treat repeats as "first wins".
+ */
+export function readParam(v: string | string[] | undefined): string | undefined {
   if (Array.isArray(v)) return v[0];
   return v;
 }
