@@ -6,3 +6,4 @@ export {
   type CreateCategoryInput,
   type UpdateCategoryInput,
 } from "./schema";
+export { seedDefaultCategoriesForEntity } from "./seed-defaults";

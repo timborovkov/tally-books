@@ -71,6 +71,31 @@ const contributionSchema = z.object({
 // existing jurisdiction rows without the field parse fine once the
 // new optional keys land.
 
+// Default chart-of-accounts categories shipped with the jurisdiction.
+// Auto-applied as entity-scoped rows when a new entity is created in
+// the jurisdiction, so day-one users have somewhere to put their first
+// expense without hand-building a CoA. Only `kind='expense'` defaults
+// ship in v0.1 — invoice line items don't carry `categoryId` (revenue
+// is computed from `invoices.total`) and there's no GL/balance-sheet
+// code yet, so non-expense kinds would be dead rows. The enum stays
+// open here in case a later jurisdiction (or v0.3 GL work) wants to
+// pre-seed asset/liability/equity defaults.
+const defaultCategorySchema = z.object({
+  // Stable slug used as a metadata marker on the inserted row. Lets the
+  // seeder skip rows already present (idempotency) and gives a future
+  // "reset to defaults" UX a stable key to match on. Lowercase
+  // snake_case.
+  key: z.string().min(1),
+  kind: z.enum(["income", "expense", "asset", "liability", "equity"]),
+  name: z.string().min(1),
+  // Optional account code (e.g. "5100"). Lined up with conventional
+  // CoA numbering when the jurisdiction has one.
+  code: z.string().optional(),
+  // Points at another default's `key` for hierarchical nesting. The
+  // seeder topo-sorts so parents always insert before children.
+  parentKey: z.string().optional(),
+});
+
 export const jurisdictionConfigSchema = z.object({
   // Currency the entities of this jurisdiction default to. Entities
   // can override (an Estonian OÜ that books in USD is unusual but
@@ -112,7 +137,10 @@ export const jurisdictionConfigSchema = z.object({
   // a Finnish toiminimi show "Yksittäisotto" while an Estonian OÜ
   // shows "Dividend" for the same conceptual payout slot.
   payoutKindDisplay: z.record(z.string(), z.string()).default({}),
+  defaultCategories: z.array(defaultCategorySchema).default([]),
 });
+
+export type DefaultCategory = z.infer<typeof defaultCategorySchema>;
 
 export type JurisdictionConfig = z.infer<typeof jurisdictionConfigSchema>;
 

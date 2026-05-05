@@ -158,14 +158,14 @@ Get the inputs in: receipts, expenses, invoices, clients, categories.
 
 - [x] `category` table (hierarchical, scoped per jurisdiction or global)
 - [x] Category management UI
-- [ ] Default category sets shipped with each jurisdiction
+- [x] Default category sets shipped with each jurisdiction
 
 ### Bookkeeping core (basic)
 
-- [ ] Income statement view (overall + per entity, by month and FY)
-- [ ] Expense statement with category breakdowns
-- [ ] Cash flow view
-- [ ] Basic ledger / transaction journal
+- [x] Income statement view (overall + per entity, by month and FY)
+- [x] Expense statement with category breakdowns
+- [x] Cash flow view
+- [x] Basic ledger / transaction journal
 
 ### pg-boss
 
