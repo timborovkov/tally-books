@@ -68,7 +68,7 @@ The app is built primarily to serve the author's own needs — an Estonian OÜ a
 | LLM (chat) | OpenAI (default), swappable | See §3.3 |
 | Vision | OpenAI | Receipt structured extraction |
 | Embeddings | OpenAI | `text-embedding-3-*` |
-| Vector store | **Qdrant** | Separate service in compose |
+| Vector store | **pgvector** | Postgres extension; same DB as application data |
 | Agent framework | **Vercel AI SDK + AI SDK UI** | Chat UI out of the box |
 | File storage | RustFS | S3-compatible (AWS SDK v3 client) |
 | Containerization | Docker / docker-compose | Dockerfile + dev compose required |
@@ -102,7 +102,7 @@ Concrete implementations: `OpenAIChatProvider`, `OpenAIVisionProvider`, `OpenAIE
 
 **Vision (receipts):** OpenAI vision with a structured output schema (Zod → JSON schema). The vision provider returns parsed `{ merchant, date, total, currency, vat_amount, vat_rate, line_items?, raw_ocr_text }`. Confidence is recorded; low-confidence fields are highlighted for user review.
 
-**Embeddings + vector store:** OpenAI embeddings stored in **Qdrant**. Qdrant runs as a separate service in `docker-compose.yml`. We pick Qdrant over `pgvector` because we expect to embed *a lot* of artifacts (see §6.10) and want a dedicated, fast vector engine with rich filtering.
+**Embeddings + vector store:** OpenAI embeddings stored in **pgvector** — a Postgres extension, same database as the rest of the application data. At per-tenant bookkeeping scale (thousands to low millions of vectors), HNSW indexes deliver sub-100ms ANN queries; collapsing vector storage into Postgres means hybrid search is a single SQL join with `tsvector` BM25, ACL filtering reuses the same row-level rules, and there's one fewer service to operate or back up. The Postgres image is `pgvector/pgvector:pg16` (drop-in for stock Postgres 16, ships the `vector` extension preinstalled). See §6.10 for the embedding ingestion design.
 
 ### 3.4 Secrets
 
@@ -658,14 +658,14 @@ User message / trigger
 
 ### 6.10 Embeddings, RAG & semantic search
 
-OpenAI embeddings, **Qdrant** as the vector store. Qdrant runs as a `docker-compose` service alongside Postgres and RustFS.
+OpenAI embeddings stored in **pgvector** — a Postgres extension, no separate service. Vectors live in the same database as application data; "collections" are a logical concept implemented as a `collection` text column on a single `embeddings` table. Vector dimension matches the chosen embedding model (1536 for `text-embedding-3-small`, 3072 for `-large`); HNSW index with `vector_cosine_ops`.
 
 **Two distinct uses of vectors:**
 
 1. **Agent RAG** — retrieving relevant context for a specific agent's prompt.
 2. **Dashboard semantic search** — finding "anything" the user is looking for, across heterogeneous artifact types.
 
-**Collections in Qdrant:**
+**Collections** (logical, all in one `embeddings` table partitioned by a `collection` column):
 
 | Collection | Source | Used by |
 |---|---|---|
@@ -678,22 +678,22 @@ OpenAI embeddings, **Qdrant** as the vector store. Qdrant runs as a `docker-comp
 | `agreements_clients` | client + arrangement explainers + attached docs | search, invoice-composer, tax-advisor |
 | `reports_declarations` | rendered text of past declarations and reports | search, proofreader |
 
-Each point in Qdrant carries a payload with: `entity_id`, `kind`, `period`, `created_at`, `acl_scope`, plus type-specific fields used for filtering (e.g. `vat_period: '2026-03'`).
+Each row carries metadata columns (`entity_id`, `kind`, `period`, `created_at`, `acl_scope`) plus a `payload` JSONB column for type-specific filters (e.g. `vat_period: '2026-03'`). Filtering is plain SQL `WHERE`.
 
 **Ingestion pipeline:**
 - Domain events (`expense.created`, `invoice.sent`, `document.uploaded`, etc.) emit an `embedding.upsert` job to pg-boss.
-- Worker fetches the artifact, builds a normalized text representation, embeds, upserts to the right collection with payload.
-- Updates trigger re-upsert; deletes trigger removal.
+- Worker fetches the artifact, builds a normalized text representation, embeds, upserts into the `embeddings` table with `collection` set.
+- Updates trigger re-upsert (UPDATE in place by `(collection, source_kind, source_id)`); deletes set `deleted_at`.
 
 **Search UX:**
-- Top-bar global search runs a Qdrant query across collections (filtered by user scope), returns mixed results grouped by type.
-- Hybrid: if the query parses as something structured (e.g. an invoice number, a date range, a client name), also run a SQL-side exact match and merge results.
+- Top-bar global search runs a pgvector ANN query (`ORDER BY embedding <=> $query`) across collections via a SQL `WHERE collection IN (...)` filter, returns mixed results grouped by type.
+- Hybrid: when the query parses as something structured (an invoice number, a date range, a client name), the same SQL statement runs an exact-match join against the relevant table and unions the results — no app-side fan-out and reconcile.
 
 **Per-agent RAG:**
 - `agent.ragCollections` declares which collections an agent's orchestrator may pull from.
-- At request time, the orchestrator embeds the user query (or a synthesized retrieval query), pulls top-k from each declared collection, and injects into the prompt with citations.
+- At request time, the orchestrator embeds the user query (or a synthesized retrieval query) and issues `SELECT ... FROM embeddings WHERE collection = ANY($1) AND <acl filter> ORDER BY embedding <=> $query LIMIT k`, then injects results into the prompt with citations.
 
-**ACL:** every Qdrant point's payload includes `acl_scope`. The query layer enforces filter on this from the calling user's permissions before retrieval.
+**ACL:** every embedding row includes `acl_scope`; the query layer adds a `WHERE` clause derived from the calling user's permissions before retrieval. Same row-level enforcement model the rest of the app uses.
 
 ### 6.11 File storage
 
@@ -714,12 +714,12 @@ Each point in Qdrant carries a payload with: `entity_id`, `kind`, `period`, `cre
   7. Non-employment obligation evaluator: simulated due period with missing payment/reporting evidence → task opens; satisfy via configured `satisfaction_mode` path (`bank_match` or manual evidence) → task closes with rationale trail.
   8. Reminder fan-out: due `compliance_task` (employment and tax/payment domain) produces dashboard/in-app reminder and ICS event once, then suppresses on close/snooze.
 - Test DB via ephemeral Postgres container (Testcontainers).
-- AI provider mocked in tests — no live calls. Qdrant runs in CI as a service container.
+- AI provider mocked in tests — no live calls. Vector queries run against the same ephemeral Postgres container (pgvector extension enabled in test setup).
 
 ### 6.13 Deployment & local dev
 
 - **`Dockerfile`** for the app — multi-stage build (deps → build → runtime). Production image is the only artifact published.
-- **`docker-compose.yml`** for local development, with services: `app` (dev mode, hot reload, source mounted), `postgres`, `rustfs`, `qdrant`. This file also doubles as the canonical statement of what infra Tally needs; self-hosters adapt it to their hosting shape rather than copying a boxed "prod compose" that won't match their proxy, secrets, or volume setup anyway.
+- **`docker-compose.yml`** for local development, with services: `app` (dev mode, hot reload, source mounted), `postgres` (with pgvector), `rustfs`. This file also doubles as the canonical statement of what infra Tally needs; self-hosters adapt it to their hosting shape rather than copying a boxed "prod compose" that won't match their proxy, secrets, or volume setup anyway.
 - First-boot flow: if no admin exists, redirect to `/setup`.
 - Reverse proxy (Caddy or user's choice) for TLS — out of scope for the compose file, documented in `docs/guides/deployment.md`.
 - `robots.txt` disallow all; `X-Robots-Tag: noindex` header on all routes.
@@ -741,7 +741,7 @@ Each point in Qdrant carries a payload with: `entity_id`, `kind`, `period`, `cre
 │   │   │   ├── auth/
 │   │   │   ├── db/
 │   │   │   ├── events/
-│   │   │   ├── search/               # Qdrant client + collection definitions
+│   │   │   ├── search/               # pgvector queries + embedding helpers
 │   │   │   └── storage/
 │   │   ├── integrations/
 │   │   └── jobs/
@@ -1020,12 +1020,12 @@ document
   entity_id (nullable), blob_id, title, parties (jsonb), dates (jsonb),
   tags (jsonb), created_at
 
-embedding_index                         -- bookkeeping for what's in Qdrant
-  id, collection, source_kind, source_id, qdrant_point_id,
-  text_hash, embedded_at, model
+embeddings                              -- vectors live here, in Postgres (pgvector)
+  id, collection, source_kind, source_id, embedding (vector),
+  text_hash, embedded_at, model, acl_scope, payload (jsonb), deleted_at
 ```
 
-Vectors themselves live in **Qdrant**, not in Postgres. The `embedding_index` table is the source of truth for "what we've embedded and where," used to detect drift and re-embed on update.
+Vectors live in Postgres alongside everything else, via the **pgvector** extension. HNSW index on `embedding` with `vector_cosine_ops`; unique on `(collection, source_kind, source_id)`; `text_hash` index for content-change detection (re-embed on update).
 
 ### 8.8 Blobs
 
@@ -1145,7 +1145,7 @@ Kept in `docs/` and updated as we build.
 - `docs/architecture/versioning.md`
 - `docs/architecture/auto-refresh.md` (the editor-safety rules)
 - `docs/architecture/ai-agents.md` (index of agents, conventions, how to add one)
-- `docs/architecture/embeddings-and-search.md` (Qdrant collections, ingestion, ACL, hybrid search)
+- `docs/architecture/embeddings-and-search.md` (pgvector schema, collections, ingestion, ACL, hybrid search)
 - `docs/architecture/billing-arrangements.md` (the model union, examples, the estimate flag)
 - `docs/data-model.md`
 - `docs/integrations/overview.md`
@@ -1218,7 +1218,7 @@ Kept in `docs/` and updated as we build.
 - **ORM:** Drizzle.
 - **Job queue:** pg-boss (Postgres-backed, no Redis).
 - **Agent framework:** Vercel AI SDK + AI SDK UI kit (chat surface out of the box).
-- **Vector store:** Qdrant, separate service in docker-compose.
+- **Vector store:** pgvector (Postgres extension); image is `pgvector/pgvector:pg16`, no separate service.
 - **Embeddings provider:** OpenAI (`text-embedding-3-*`).
 - **Vision provider:** OpenAI (structured-output schema for receipts).
 - **Chat provider default:** OpenAI; abstraction allows Ollama later.

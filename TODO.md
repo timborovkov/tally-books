@@ -31,7 +31,7 @@ The minimum scaffolding needed to start building features safely.
 ### Containers & local dev
 
 - [x] `Dockerfile` (multi-stage: deps → build → runtime)
-- [x] `docker-compose.yml` for local dev (`app`, `postgres`, `rustfs`, `qdrant`) — doubles as infra shape reference for self-hosters; no separate prod compose shipped
+- [x] `docker-compose.yml` for local dev (`app`, `postgres` with pgvector, `rustfs`) — doubles as infra shape reference for self-hosters; no separate prod compose shipped
 - [x] `.env.example` with all required env keys documented
 - [x] Health + readiness endpoints
 
@@ -308,11 +308,12 @@ The first fully usable agent: chat surface with a useful tool set.
 - [ ] Per-agent thread lists
 - [ ] Search across threads
 
-### Embeddings & Qdrant (basic)
+### Embeddings & pgvector (basic)
 
-- [ ] Qdrant in docker-compose
-- [ ] Qdrant client + collection definitions in `src/lib/search/`
-- [ ] `embedding_index` table
+- [x] pgvector image in docker-compose (`pgvector/pgvector:pg16`)
+- [ ] `embeddings` table (vector column + HNSW index) — Drizzle schema + migration
+- [ ] `CREATE EXTENSION vector` runs in the migration before the table
+- [ ] pgvector queries + collection helpers in `src/lib/search/`
 - [ ] First collections wired up: `documents`, `expenses`, `invoices`
 - [ ] Ingestion job on relevant domain events
 - [ ] ACL filter on every query
@@ -513,7 +514,7 @@ The first fully usable agent: chat surface with a useful tool set.
 ### RAG expansion
 
 - [ ] All collections from §6.10 ingested
-- [ ] Hybrid search (Qdrant + SQL exact match) on dashboard top-bar
+- [ ] Hybrid search (pgvector ANN + SQL exact match) on dashboard top-bar
 - [ ] Tax guides ingested (Vero, EMTA, PWC summaries)
 
 ### Agent UX polish
@@ -531,7 +532,7 @@ The first fully usable agent: chat surface with a useful tool set.
 - [ ] CSV / XLSX export for any list
 - [ ] Receipt ZIP export by period
 - [ ] PDF export for reports, declarations, invoices
-- [ ] Full-backup export (DB dump + blobs + Qdrant snapshot)
+- [ ] Full-backup export (DB dump + blobs) — vectors are part of the DB dump now, no separate snapshot
 
 ### Reminders & calendar
 

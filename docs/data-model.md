@@ -920,24 +920,28 @@ Jurisdiction-local display names live in `jurisdiction.config.payout_kind_displa
 
 ## 13. Embeddings
 
-### 13.1 `embedding_index`
-Bookkeeping for Qdrant. Vectors themselves live in Qdrant.
+### 13.1 `embeddings`
+Holds the embedding for every embedded artifact. Vectors live in the same row via the **pgvector** extension — no separate vector store. "Collection" is a logical partition, expressed as a column.
 
 | Column | Type | Notes |
 |---|---|---|
 | `id` | `text`, PK | |
-| `collection` | `text`, NOT NULL | Qdrant collection name. |
-| `source_kind` | `text`, NOT NULL | e.g. `expense`, `invoice`, `document`. Not the `thing_type` enum — we embed some non-Thing surfaces too (tax guides, trip narratives). Free text, documented in `docs/architecture/embeddings-and-search.md`. |
+| `collection` | `text`, NOT NULL | Logical collection name (e.g. `documents`, `expenses`). See `docs/architecture/embeddings-and-search.md` for the full list. |
+| `source_kind` | `text`, NOT NULL | e.g. `expense`, `invoice`, `document`. Not the `thing_type` enum — we embed some non-Thing surfaces too (tax guides, trip narratives). Free text. |
 | `source_id` | `text`, NOT NULL | |
-| `qdrant_point_id` | `text`, NOT NULL | |
-| `text_hash` | `text`, NOT NULL | SHA-256 of normalized text — dedup check. |
+| `embedding` | `vector(N)`, NOT NULL | The vector itself. Dimension matches the embedding model (1536 for `text-embedding-3-small`, 3072 for `-large`). |
+| `acl_scope` | `text`, NOT NULL | Scope tag enforced by every retrieval query (`WHERE acl_scope = ANY(...)` from caller permissions). |
+| `payload` | `jsonb`, NOT NULL DEFAULT `'{}'` | Type-specific filter fields (e.g. `{ "vat_period": "2026-03" }`). |
+| `text_hash` | `text`, NOT NULL | SHA-256 of normalized text — dedup / drift check. |
 | `model` | `text`, NOT NULL | |
 | `embedded_at` | `timestamptz`, NOT NULL | |
-| `deleted_at` | `timestamptz`, nullable | Soft delete — keep the row after Qdrant point removal for debugging. |
+| `deleted_at` | `timestamptz`, nullable | Soft delete — keep the row for debugging; null out `embedding` to free index space if needed. |
 
-**Constraints:**
-- `UNIQUE(collection, source_kind, source_id)` — one point per artifact per collection. Resolves the I-list concern about dedup.
+**Constraints & indexes:**
+- `UNIQUE(collection, source_kind, source_id)` — one row per artifact per collection. Re-embed on update is an `INSERT ... ON CONFLICT DO UPDATE`.
 - Index on `(text_hash)` — fast "did content change?" check.
+- HNSW index on `embedding` with `vector_cosine_ops`, partial `WHERE deleted_at IS NULL`.
+- `(collection, acl_scope)` btree — supports the common ANN filter shape.
 
 ---
 
@@ -1050,8 +1054,10 @@ One place for every index this spec prescribes. When a migration lands, diff thi
 | `agent_actions` | `(status) WHERE status = 'pending'` | Confirm queue. |
 | `agent_suggestions` | `(target_thing_type, target_thing_id, status)` | |
 | `agent_suggestions` | `(status, created_at DESC) WHERE status = 'pending'` | Dashboard. |
-| `embedding_index` | `UNIQUE(collection, source_kind, source_id)` | |
-| `embedding_index` | `(text_hash)` | |
+| `embeddings` | `UNIQUE(collection, source_kind, source_id)` | |
+| `embeddings` | `(text_hash)` | |
+| `embeddings` | HNSW on `embedding` (`vector_cosine_ops`) WHERE `deleted_at IS NULL` | ANN retrieval. |
+| `embeddings` | `(collection, acl_scope)` | Filter shape for scoped retrieval. |
 
 Resolves **C3**.
 
@@ -1067,7 +1073,7 @@ Each table declares one policy. No mixing. Resolves **I14**.
 | **Remove** (user account off-boarded) | `removed_at timestamptz` | `users` |
 | **Revoke** (credential / grant withdrawn) | `revoked_at timestamptz` | `invites`, `permissions` |
 | **Void** (versioned Thing killed, history retained) | `state = 'void'` | every versioned Thing |
-| **Delete + tombstone** (Qdrant bookkeeping) | `deleted_at timestamptz` | `embedding_index` |
+| **Delete + tombstone** (embedding row) | `deleted_at timestamptz` | `embeddings` |
 | **Hard delete** | — | `sessions`, `edit_sessions` (ephemeral), `meeting_expenses` (cascade) |
 | **No soft delete** (lifecycle column carries meaning) | `terminated_at timestamptz` (not a soft delete) | `employment_relations` |
 

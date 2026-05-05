@@ -19,7 +19,7 @@ export function TopNav(): React.ReactElement {
           placeholder="Search everything…"
           aria-label="Global search"
           className="pl-8"
-          // v0.2: wires to hybrid Qdrant + SQL search. For now the input is
+          // v0.2: wires to hybrid pgvector + SQL search. For now the input is
           // keyboard-reachable but has no submit handler — deliberately inert.
         />
       </div>

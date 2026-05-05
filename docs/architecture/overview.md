@@ -25,7 +25,7 @@ For the product vision, read [`PROJECT_BRIEF.md`](../../PROJECT_BRIEF.md) at the
                               │
                               ▼  Drizzle
 ┌─────────────────────────────────────────────────────────────┐
-│  Postgres (16) + RustFS + Qdrant                            │
+│  Postgres (16, pgvector) + RustFS                           │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -100,7 +100,7 @@ Catalogs are scaffolded but v0.1 ships no live integrations. v0.4 brings the fir
 
 A short inventory. Full roadmap is [`TODO.md`](../../TODO.md).
 
-- **Shipped (v0.1):** auth (BetterAuth + mandatory 2FA), invite flow, IAM, first-boot wizard, entities / persons / jurisdictions / periods / receipts domains, versioning engine, audit log, dev compose (postgres / rustfs / qdrant), Sentry.
+- **Shipped (v0.1):** auth (BetterAuth + mandatory 2FA), invite flow, IAM, first-boot wizard, entities / persons / jurisdictions / periods / receipts domains, versioning engine, audit log, dev compose (postgres with pgvector / rustfs), Sentry.
 - **Coming v0.2:** source-data inbox — receipts (OCR/vision), expenses, invoices, clients, suppliers, categories, basic bookkeeping views, pg-boss.
 - **Coming v0.3:** derived artifacts (VAT declarations, balance sheets), event bus, recalc worker, editor safety (edit sessions + `auto_refresh_locked`).
 - **Coming v0.4+:** integrations, AI agents, payroll, trips, budgets, annual reports.

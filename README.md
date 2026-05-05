@@ -56,13 +56,13 @@ So: **one private instance** for multi-entity + cross-border + **business and pe
 
 ## Stack
 
-TypeScript, Next.js (App Router), Tailwind, shadcn/ui, TanStack Query, Drizzle, PostgreSQL, BetterAuth, Resend, OpenAI (chat + vision + embeddings), Vercel AI SDK, Qdrant, RustFS (S3-compatible blob storage), pg-boss, Sentry, Docker.
+TypeScript, Next.js (App Router), Tailwind, shadcn/ui, TanStack Query, Drizzle, PostgreSQL (with pgvector for embeddings), BetterAuth, Resend, OpenAI (chat + vision + embeddings), Vercel AI SDK, RustFS (S3-compatible blob storage), pg-boss, Sentry, Docker.
 
 See [`PROJECT_BRIEF.md` §3](./PROJECT_BRIEF.md#3-technical-stack) for details on each choice.
 
 ## Getting started
 
-> Status: foundation scaffolding (v0.1) is in place — Next.js, strict TypeScript, Tailwind v4, shadcn/ui, ESLint, Prettier, Knip, Vitest, Husky, GitHub Actions CI, Sentry wiring (off by default locally), app shell with top-nav + sidebar + quick-add modal, and the Docker stack for `postgres`, `rustfs`, and `qdrant`. Most product features are still on the roadmap; see [`TODO.md`](./TODO.md).
+> Status: foundation scaffolding (v0.1) is in place — Next.js, strict TypeScript, Tailwind v4, shadcn/ui, ESLint, Prettier, Knip, Vitest, Husky, GitHub Actions CI, Sentry wiring (off by default locally), app shell with top-nav + sidebar + quick-add modal, and the Docker stack for `postgres` (with pgvector) and `rustfs`. Most product features are still on the roadmap; see [`TODO.md`](./TODO.md).
 
 ### Prerequisites
 
@@ -77,7 +77,7 @@ git clone https://github.com/timborovkov/tally-books.git
 cd tally-books
 pnpm install
 cp .env.example .env       # fill in OPENAI_API_KEY, RESEND_API_KEY, secrets
-docker compose up -d       # starts postgres, rustfs, qdrant
+docker compose up -d       # starts postgres (with pgvector) and rustfs
 pnpm db:migrate            # apply Drizzle migrations
 pnpm db:seed               # create the bootstrap admin user
 pnpm dev                   # http://localhost:3000
@@ -104,11 +104,11 @@ Useful scripts (full list in [`CONTRIBUTING.md`](./CONTRIBUTING.md)):
 Health endpoints once the dev server is up:
 
 - `GET /api/health` — liveness probe (process is up)
-- `GET /api/ready` — readiness probe (will check Postgres/RustFS/Qdrant once wired)
+- `GET /api/ready` — readiness probe (will check Postgres/RustFS once wired)
 
 ### Self-hosting (production)
 
-The local [`docker-compose.yml`](./docker-compose.yml) shows the infra Tally needs: `app`, `postgres`, `rustfs`, `qdrant`. Adapt it to your hosting setup — your reverse proxy (Caddy, Traefik, nginx) terminates TLS and forwards to the `app` service; your volumes persist `postgres` and `rustfs` data; `postgres`, `rustfs`, and `qdrant` ports stay off the public internet. No opinionated production compose file is provided — deployment shapes vary too much to pretend one works everywhere.
+The local [`docker-compose.yml`](./docker-compose.yml) shows the infra Tally needs: `app`, `postgres` (with pgvector), `rustfs`. Adapt it to your hosting setup — your reverse proxy (Caddy, Traefik, nginx) terminates TLS and forwards to the `app` service; your volumes persist `postgres` and `rustfs` data; the `postgres` and `rustfs` ports stay off the public internet. No opinionated production compose file is provided — deployment shapes vary too much to pretend one works everywhere.
 
 ## Observability
 
