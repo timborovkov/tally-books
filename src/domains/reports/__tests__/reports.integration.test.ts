@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import { createCategory } from "@/domains/categories";
@@ -219,6 +220,40 @@ describe("getIncomeStatement", () => {
     expect(statement.buckets).toHaveLength(12);
     for (const b of statement.buckets) {
       expect(b.currencies).toEqual([]);
+    }
+  });
+
+  it("buckets timestamps in UTC even when the session timezone is not UTC", async () => {
+    // Regression: `to_char(timestamptz, ...)` defaults to the session
+    // timezone. A row at 2026-03-01T00:30:00Z used to land in 2026-02
+    // when the session ran in UTC-5. Set a non-UTC TZ on this
+    // connection and verify the bucket still tracks UTC.
+    const entityId = await seedEntity();
+    await createExpense(h.db, h.actor, {
+      entityId,
+      occurredAt: new Date("2026-03-01T00:30:00Z"),
+      amount: "10",
+      currency: "EUR",
+    });
+
+    await h.db.execute(sql`SET TIME ZONE 'America/New_York'`);
+    try {
+      const statement = await getIncomeStatement(h.db, h.actor, {
+        entityIds: [entityId],
+        from: FY2026.startUtc,
+        to: FY2026.endUtc,
+        months: MONTHS,
+      });
+
+      const mar = statement.buckets.find((b) => b.period === "2026-03")!;
+      expect(mar.currencies).toEqual([
+        { currency: "EUR", revenue: "0", expense: "10.0000", net: "-10.0000" },
+      ]);
+      const feb = statement.buckets.find((b) => b.period === "2026-02")!;
+      expect(feb.currencies).toEqual([]);
+    } finally {
+      // Reset so subsequent tests don't see a non-UTC session.
+      await h.db.execute(sql`RESET TIME ZONE`);
     }
   });
 });

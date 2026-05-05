@@ -112,10 +112,13 @@ export async function getIncomeStatement(
   const fromIso = opts.from.toISOString();
   const toIso = opts.to.toISOString();
 
+  // `to_char(timestamptz, ...)` formats in the session timezone, not UTC.
+  // Force UTC explicitly so month buckets agree with the FY boundaries
+  // (which are UTC) regardless of `SET timezone` on the connection.
   const result = (await db.execute(sql`
     WITH rev AS (
       SELECT
-        to_char(${invoices.issueDate}, 'YYYY-MM') AS period,
+        to_char(${invoices.issueDate} AT TIME ZONE 'UTC', 'YYYY-MM') AS period,
         ${invoices.currency} AS currency,
         SUM(${invoices.total}) AS amt
       FROM ${invoices}
@@ -130,7 +133,7 @@ export async function getIncomeStatement(
     ),
     exp AS (
       SELECT
-        to_char(${expenses.occurredAt}, 'YYYY-MM') AS period,
+        to_char(${expenses.occurredAt} AT TIME ZONE 'UTC', 'YYYY-MM') AS period,
         ${expenses.currency} AS currency,
         SUM(${expenses.amount}) AS amt
       FROM ${expenses}
@@ -263,10 +266,12 @@ export async function getCashFlow(
   const fromIso = opts.from.toISOString();
   const toIso = opts.to.toISOString();
 
+  // `to_char(timestamptz, ...)` formats in the session timezone, not UTC.
+  // Force UTC explicitly so month buckets agree with the FY boundaries.
   const result = (await db.execute(sql`
     WITH inflow AS (
       SELECT
-        to_char(${invoices.paidAt}, 'YYYY-MM') AS period,
+        to_char(${invoices.paidAt} AT TIME ZONE 'UTC', 'YYYY-MM') AS period,
         ${invoices.currency} AS currency,
         SUM(${invoices.total}) AS amt
       FROM ${invoices}
@@ -281,7 +286,7 @@ export async function getCashFlow(
     ),
     outflow AS (
       SELECT
-        to_char(${expenses.occurredAt}, 'YYYY-MM') AS period,
+        to_char(${expenses.occurredAt} AT TIME ZONE 'UTC', 'YYYY-MM') AS period,
         ${expenses.currency} AS currency,
         SUM(${expenses.amount}) AS amt
       FROM ${expenses}
