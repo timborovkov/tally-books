@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
-import { invoices } from "@/db/schema";
+import { invoices, parties } from "@/db/schema";
 import { createEntity } from "@/domains/entities";
 import { ConflictError, NotFoundError, ValidationError } from "@/domains/errors";
 import {
@@ -16,7 +16,7 @@ import {
   transitionInvoice,
   updateInvoice,
 } from "@/domains/invoices";
-import { createParty } from "@/domains/parties";
+import { archiveParty, createParty } from "@/domains/parties";
 
 import { makeTestHarness, truncateAll, type TestHarness } from "../../__tests__/test-utils";
 
@@ -271,6 +271,34 @@ describe("createInternalInvoice", () => {
       ? (await h.db.select().from(invoices).where(eq(invoices.id, seller.id)))[0]
       : null;
     expect(sellerParty?.clientId).toBeTruthy();
+  });
+
+  it("does not reuse archived mirror parties", async () => {
+    const sellerId = await seedEntity("Toiminimi", "FI12345678");
+    const buyerId = await seedEntity("Holding OÜ", "EE99887766");
+
+    // Pre-create + archive a party that would otherwise match the
+    // mirror lookup (both legal_entity_id and the metadata fallback).
+    const stale = await createParty(h.db, h.actor, {
+      kind: "client",
+      name: "Stale Holding OÜ",
+      legalEntityId: "EE99887766",
+      metadata: { mirroredEntityId: buyerId },
+    });
+    await archiveParty(h.db, h.actor, { id: stale.id });
+
+    const { seller } = await createInternalInvoice(h.db, h.actor, {
+      sellerEntityId: sellerId,
+      buyerEntityId: buyerId,
+      currency: "EUR",
+      issueDate: new Date("2026-04-20T00:00:00Z"),
+      lineItems: [{ description: "Service fee", quantity: "1", unitPrice: "100" }],
+    });
+
+    expect(seller.clientId).toBeTruthy();
+    expect(seller.clientId).not.toBe(stale.id);
+    const [linked] = await h.db.select().from(parties).where(eq(parties.id, seller.clientId!));
+    expect(linked?.archivedAt).toBeNull();
   });
 
   it("rejects same-entity internal invoice", async () => {

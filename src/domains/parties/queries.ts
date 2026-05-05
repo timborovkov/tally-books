@@ -41,9 +41,13 @@ export async function getPartyById(db: Db, id: string): Promise<Party | null> {
 }
 
 /**
- * Resolves a counterparty by `legal_entity_id`. Used by the
+ * Resolves an *active* counterparty by `legal_entity_id`. Used by the
  * internal-invoice mirror flow to find an existing party that
- * represents another tally entity before creating a new one.
+ * represents another tally entity before creating a new one. Archived
+ * rows are deliberately excluded — `assertClientUsable` would reject
+ * them on the regular create path, and the mirror flow needs the same
+ * semantics to avoid silently linking new invoices to a soft-deleted
+ * counterparty.
  */
 export async function findPartyByLegalEntityId(
   db: Db,
@@ -53,7 +57,13 @@ export async function findPartyByLegalEntityId(
   const [row] = await db
     .select()
     .from(parties)
-    .where(and(eq(parties.legalEntityId, legalEntityId), eq(parties.kind, kind)))
+    .where(
+      and(
+        eq(parties.legalEntityId, legalEntityId),
+        eq(parties.kind, kind),
+        isNull(parties.archivedAt),
+      ),
+    )
     .limit(1);
   return row ?? null;
 }

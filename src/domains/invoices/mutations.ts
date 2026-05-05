@@ -1,4 +1,4 @@
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, isNull, sql } from "drizzle-orm";
 
 import type { Db } from "@/db/client";
 import {
@@ -704,6 +704,12 @@ export async function markInvoiceUnpaid(
  * to a metadata flag `mirroredEntityId` so personal pseudo-entities and
  * entities without a registered business id still resolve to a stable
  * row.
+ *
+ * Both lookups exclude archived rows so the mirror flow can't silently
+ * link a fresh invoice to a soft-deleted counterparty — same semantics
+ * as `assertClientUsable` on the regular create path. If only archived
+ * matches exist, a new party is created; the archived row stays put as
+ * historical record.
  */
 async function findOrCreateMirrorParty(
   db: Db,
@@ -723,6 +729,7 @@ async function findOrCreateMirrorParty(
     .where(
       and(
         eq(parties.kind, kind),
+        isNull(parties.archivedAt),
         sql`${parties.metadata} ->> 'mirroredEntityId' = ${entityRow.id}`,
       ),
     )
