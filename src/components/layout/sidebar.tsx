@@ -8,6 +8,7 @@ import {
   MessageSquare,
   Receipt,
   Settings,
+  Users,
   Wallet,
 } from "lucide-react";
 
@@ -31,9 +32,10 @@ const NAV: readonly NavItem[] = [
   { label: "Dashboard", href: "/", Icon: LayoutDashboard },
   { label: "Inbox", href: "/intake", Icon: Inbox },
   { label: "Entities", href: "/settings/entities", Icon: Building2 },
-  { label: "Expenses", href: "/expenses", Icon: Wallet },
-  { label: "Receipts", href: "/receipts", Icon: Receipt },
-  { label: "Invoices", href: "/invoices", Icon: FileText },
+  { label: "Expenses", href: "/settings/expenses", Icon: Wallet },
+  { label: "Receipts", href: "/settings/receipts", Icon: Receipt },
+  { label: "Invoices", href: "/settings/invoices", Icon: FileText },
+  { label: "Parties", href: "/settings/parties", Icon: Users },
   { label: "Reports", href: "/reports", Icon: BookOpen },
   { label: "Agent", href: "/agent", Icon: MessageSquare },
   { label: "Settings", href: "/settings", Icon: Settings },

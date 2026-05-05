@@ -13,23 +13,12 @@ import {
   type Expense,
   type ExpenseVersion,
 } from "@/db/schema";
+import { escapeLikePattern } from "@/lib/utils";
 
 import { NotFoundError } from "../errors";
 
 export type ExpensePaidBy = "entity" | "personal_reimbursable" | "personal_no_reimburse";
 export type ReimbursementStatus = "not_applicable" | "pending" | "paid_back";
-
-/**
- * Escape LIKE/ILIKE wildcards in user-supplied search input. Without
- * this, `%` matches everything and `_` matches any single char, so a
- * user typing "20%" or "foo_bar" gets unrelated rows back. We
- * backslash-escape the three SQL LIKE specials (\, %, _). Postgres
- * uses backslash as the LIKE escape char by default — no ESCAPE clause
- * needed.
- */
-function escapeLikePattern(input: string): string {
-  return input.replace(/[\\%_]/g, "\\$&");
-}
 
 export interface ListExpensesOptions {
   /**

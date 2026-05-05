@@ -71,6 +71,13 @@
       "when": 1777281546515,
       "tag": "0009_mushy_thunderbolt",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1777934208495,
+      "tag": "0010_narrow_sunset_bain",
+      "breakpoints": true
     }
   ]
 }

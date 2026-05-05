@@ -32,6 +32,7 @@
     "@aws-sdk/lib-storage": "^3.700.0",
     "@aws-sdk/s3-request-presigner": "^3.700.0",
     "@paralleldrive/cuid2": "^3.3.0",
+    "@react-pdf/renderer": "^4.5.1",
     "@sentry/nextjs": "^10.49.0",
     "@sentry/profiling-node": "^10.49.0",
     "@smithy/node-http-handler": "^4.0.0",
