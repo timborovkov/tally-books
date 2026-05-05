@@ -8,11 +8,15 @@ Source of truth: [`src/lib/ai/`](../../src/lib/ai).
 
 One interface exists today: `VisionProvider`, used by the intake-inbox OCR pipeline. Chat + embedding providers land in v0.5 when the agent framework ships. The pattern is already established so the v0.5 work is additive, not a retrofit.
 
+## Model registry
+
+Model names live in [`src/lib/ai/models.ts`](../../src/lib/ai/models.ts) — one constant per use case. Not env-driven on purpose: model choice is a product decision coupled to a prompt + an output schema, so bumps go through code review like any other product change. Today there's just `VISION_OCR_MODEL`; chat and embedding constants land in v0.5 alongside their providers.
+
 ## `VisionProvider`
 
 ```ts
 interface VisionProvider {
-  readonly id: string; // "openai:gpt-4o-2024-08-06"
+  readonly id: string; // "openai:gpt-5-mini"
   extractReceipt(input: { bytes: Buffer; contentType: string }): Promise<ReceiptExtraction>;
 }
 ```
@@ -39,8 +43,9 @@ Today `getVisionProvider()` returns the OpenAI instance unconditionally. When a 
 
 ```
 OPENAI_API_KEY=sk-…            # required when vision is actually used
-OPENAI_VISION_MODEL=gpt-4o-2024-08-06
 ```
+
+The model name is **not** an env var — see [Model registry](#model-registry) above.
 
 Missing API key is not a boot error. The app starts clean; the OCR handler surfaces a clear `ocrError` on affected intake items and the UI shows the failed badge. Operators see the error per-item, not as a boot failure that would block every other app feature.
 
@@ -57,4 +62,4 @@ interface ChatProvider  { chat(...): …Stream; }
 interface EmbeddingProvider { embed(text): Vector; }
 ```
 
-Same selection pattern: `getChatProvider()`, `getEmbeddingProvider()`. See [`TODO.md`](../../TODO.md) §v0.5 "Provider abstraction" for the full shape.
+Same selection pattern: `getChatProvider()`, `getEmbeddingProvider()`. Model names get added to [`models.ts`](../../src/lib/ai/models.ts) — `AGENT_CHAT_MODEL`, `EMBEDDING_MODEL` — alongside the providers that use them. The embedding-model constant gates a real migration (changing it means re-embedding every document), so its choice gets locked in deliberately at the time the embeddings table lands. See [`TODO.md`](../../TODO.md) §v0.5 "Provider abstraction" for the full shape.

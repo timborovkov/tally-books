@@ -131,11 +131,11 @@ const serverSchema = z.object({
   // jobs fail fast with a clear ocrError when the key is absent, which
   // is surfaced in the intake UI. Provide a real key in production /
   // any environment where you want extraction to actually run.
+  //
+  // Model choice is a product decision, not infrastructure config —
+  // it lives in `@/lib/ai/models`, coupled to the prompt + schema it's
+  // used with. Bumps go through code review.
   OPENAI_API_KEY: optionalString,
-  // Vision-capable model. Left overridable so we can bump without a deploy.
-  // 2024-08-06 + later support structured outputs / response_format with
-  // json_schema; we default to the current recommended model.
-  OPENAI_VISION_MODEL: z.string().trim().default("gpt-4o-2024-08-06"),
 });
 
 export type Env = z.infer<typeof serverSchema>;
