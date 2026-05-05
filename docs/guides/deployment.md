@@ -71,7 +71,7 @@ The env schema lives in [`src/lib/env.ts`](../../src/lib/env.ts) — anything mi
 Tally is a standard Next.js app. A production deploy wants:
 
 - **App container** — this repo's [`Dockerfile`](../../Dockerfile) produces a multi-stage build: deps → build → runtime. Runtime is Next standalone, runs as non-root `nextjs:nodejs`, port 3000, health-checked at `/api/health`.
-- **Postgres with pgvector** — managed or self-hosted Postgres 16 *with the `vector` extension available*. See [Postgres image](#postgres-image) below. The schema lives in `src/db/migrations/`. Run `pnpm db:migrate` on deploy.
+- **Postgres with pgvector** — managed or self-hosted Postgres 16 _with the `vector` extension available_. See [Postgres image](#postgres-image) below. The schema lives in `src/db/migrations/`. Run `pnpm db:migrate` on deploy.
 - **Blob store** — RustFS, AWS S3, or any S3-compatible host. Use an `https://` `S3_ENDPOINT` for hosted; set `S3_FORCE_PATH_STYLE=false` only when the provider uses vhost-style URLs (AWS S3 itself). v0.1 doesn't write blobs yet; v0.2 does.
 - **Outbound email** — a Resend account with a verified sending domain.
 
