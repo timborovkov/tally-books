@@ -4,7 +4,12 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { createCategory } from "@/domains/categories";
 import { createEntity } from "@/domains/entities";
 import { createExpense, transitionExpense } from "@/domains/expenses";
-import { createInvoice, markInvoicePaid, transitionInvoice } from "@/domains/invoices";
+import {
+  createInternalInvoice,
+  createInvoice,
+  markInvoicePaid,
+  transitionInvoice,
+} from "@/domains/invoices";
 import { createParty } from "@/domains/parties";
 import {
   getCashFlow,
@@ -383,5 +388,55 @@ describe("getJournal", () => {
     for (const r of page2.rows) {
       expect(ids1.has(`${r.source}-${r.id}`)).toBe(false);
     }
+  });
+
+  it("includes both sides of internal invoices in their respective entity journals", async () => {
+    // Regression: a copy-pasted `mirrorInvoiceId IS NULL` filter from
+    // the income/cashflow CTEs used to hide BOTH sides of an internal-
+    // invoice pair from the journal (each side has the FK set, so both
+    // got filtered). Each entity should see its own side as a real
+    // entry — that's what makes the journal an honest record.
+    const sellerId = await seedEntity("Seller OÜ");
+    // Force a brand-new jurisdiction so seedEntity reuses it.
+    const buyerId = await seedEntity("Buyer OÜ");
+
+    await createInternalInvoice(h.db, h.actor, {
+      sellerEntityId: sellerId,
+      buyerEntityId: buyerId,
+      issueDate: new Date("2026-05-15T00:00:00Z"),
+      currency: "EUR",
+      lineItems: [
+        {
+          description: "Internal service",
+          quantity: "1",
+          unitPrice: "200",
+          unit: "h",
+          vatRate: "0",
+        },
+      ],
+    });
+
+    const sellerJournal = await getJournal(h.db, h.actor, {
+      entityIds: [sellerId],
+      from: FY2026.startUtc,
+      to: FY2026.endUtc,
+      sources: ["invoice"],
+      limit: 100,
+      offset: 0,
+    });
+    const buyerJournal = await getJournal(h.db, h.actor, {
+      entityIds: [buyerId],
+      from: FY2026.startUtc,
+      to: FY2026.endUtc,
+      sources: ["invoice"],
+      limit: 100,
+      offset: 0,
+    });
+
+    expect(sellerJournal.rows.map((r) => r.entityId)).toEqual([sellerId]);
+    expect(buyerJournal.rows.map((r) => r.entityId)).toEqual([buyerId]);
+    // Same amount on both sides (mirror).
+    expect(sellerJournal.rows[0]!.amount).toBe("200.0000");
+    expect(buyerJournal.rows[0]!.amount).toBe("200.0000");
   });
 });

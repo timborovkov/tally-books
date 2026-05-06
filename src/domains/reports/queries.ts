@@ -475,6 +475,14 @@ function invoiceArmSql(entityIds: string[], from: Date, to: Date) {
   const fromIso = from.toISOString();
   const toIso = to.toISOString();
   const ids = entityIdInList(entityIds);
+  // Note: no `mirrorInvoiceId IS NULL` filter here. The income
+  // statement and cash flow exclude mirror invoices because they're
+  // computing aggregates and a paired internal invoice would double-
+  // count if both sides of the pair were ever queried together. The
+  // journal is a per-row chronological list scoped to one entity at a
+  // time, so each side of an internal-invoice pair is a legitimate
+  // entry in its owner's journal — filtering them out would hide real
+  // transactions and break the "honest record" contract.
   return sql`SELECT
       ${invoices.issueDate} AS date,
       'invoice' AS source,
@@ -492,8 +500,7 @@ function invoiceArmSql(entityIds: string[], from: Date, to: Date) {
       AND ${invoices.issueDate} IS NOT NULL
       AND ${invoices.total} IS NOT NULL
       AND ${invoices.issueDate} >= ${fromIso}::timestamptz
-      AND ${invoices.issueDate} <= ${toIso}::timestamptz
-      AND ${invoices.mirrorInvoiceId} IS NULL`;
+      AND ${invoices.issueDate} <= ${toIso}::timestamptz`;
 }
 
 function receiptArmSql(entityIds: string[], from: Date, to: Date) {
