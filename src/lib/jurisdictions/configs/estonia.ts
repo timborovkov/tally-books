@@ -60,6 +60,35 @@ export const estoniaConfig: JurisdictionConfig = {
     dividend: "Dividend",
     board_comp: "Board member fee",
   },
+  // Estonian raamatupidamise seadus uses a 4-digit account scheme;
+  // 4xxx = goods/materials, 5xxx = operating expenses. Bilingual names
+  // (Estonian / English) so the user sees both — the seeded rows are
+  // editable, so anyone who prefers one language can rename freely.
+  defaultCategories: [
+    { key: "ee_materials", kind: "expense", code: "4000", name: "Materjalid / Materials" },
+    { key: "ee_personnel", kind: "expense", code: "5000", name: "Tööjõukulud / Personnel" },
+    { key: "ee_rent", kind: "expense", code: "5100", name: "Üür / Rent" },
+    {
+      key: "ee_communications",
+      kind: "expense",
+      code: "5200",
+      name: "Kommunikatsioon / Communications",
+    },
+    { key: "ee_travel", kind: "expense", code: "5300", name: "Reisikulud / Travel" },
+    { key: "ee_bank_fees", kind: "expense", code: "5400", name: "Pangateenused / Bank fees" },
+    {
+      key: "ee_accounting_legal",
+      kind: "expense",
+      code: "5500",
+      name: "Raamatupidamine / Accounting & legal",
+    },
+    {
+      key: "ee_other_operating",
+      kind: "expense",
+      code: "5900",
+      name: "Muud tegevuskulud / Other operating expenses",
+    },
+  ],
 };
 
 export const estoniaFreeformContextMd = `# Estonia (EE)

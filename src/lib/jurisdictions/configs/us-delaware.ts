@@ -50,6 +50,23 @@ export const usDelawareConfig: JurisdictionConfig = {
     distribution: "Member distribution",
     dividend: "Dividend",
   },
+  // Standard small-business expense CoA. No nationally-mandated scheme
+  // in the US, so codes are omitted — users can map to their own CPA's
+  // chart later. COGS first (Schedule C line 4 territory) then SG&A
+  // categories most US small businesses report on Schedule C / 1120-S.
+  defaultCategories: [
+    { key: "us_cogs", kind: "expense", name: "Cost of Goods Sold" },
+    { key: "us_salaries", kind: "expense", name: "Salaries & Wages" },
+    { key: "us_rent", kind: "expense", name: "Rent" },
+    { key: "us_utilities", kind: "expense", name: "Utilities" },
+    { key: "us_office_supplies", kind: "expense", name: "Office Supplies" },
+    { key: "us_travel", kind: "expense", name: "Travel" },
+    { key: "us_meals", kind: "expense", name: "Meals" },
+    { key: "us_professional_fees", kind: "expense", name: "Professional Fees" },
+    { key: "us_software", kind: "expense", name: "Software & Subscriptions" },
+    { key: "us_bank_fees", kind: "expense", name: "Bank Charges" },
+    { key: "us_other", kind: "expense", name: "Other Expenses" },
+  ],
 };
 
 export const usDelawareFreeformContextMd = `# Delaware (US-DE)

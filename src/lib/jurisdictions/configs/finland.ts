@@ -73,6 +73,25 @@ export const finlandConfig: JurisdictionConfig = {
     dividend: "Osinko",
     yksittaisotto: "Yksittäisotto",
   },
+  // Subset of Kirjanpitoasetus expense classes. No account codes here —
+  // the Finnish CoA isn't a single national scheme (each chart of
+  // accounts vendor numbers them slightly differently), so leaving
+  // codes blank lets the user fill them to match their bookkeeper's
+  // chart.
+  defaultCategories: [
+    { key: "fi_materials", kind: "expense", name: "Aine- ja tarvikeostot / Materials" },
+    { key: "fi_personnel", kind: "expense", name: "Henkilöstökulut / Personnel" },
+    { key: "fi_premises", kind: "expense", name: "Toimitilat / Premises" },
+    { key: "fi_travel", kind: "expense", name: "Matkakulut / Travel" },
+    { key: "fi_marketing", kind: "expense", name: "Markkinointi / Marketing" },
+    {
+      key: "fi_bank_fees",
+      kind: "expense",
+      name: "Pankki- ja rahoituskulut / Bank & finance fees",
+    },
+    { key: "fi_admin", kind: "expense", name: "Hallinto / Administration" },
+    { key: "fi_other", kind: "expense", name: "Muut liikekulut / Other operating expenses" },
+  ],
 };
 
 export const finlandFreeformContextMd = `# Finland (FI)

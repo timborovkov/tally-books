@@ -15,6 +15,7 @@ import type { CurrentActor } from "@/lib/auth-shim";
 import { assertCan } from "@/lib/iam/permissions";
 import { jurisdictionConfigSchema } from "@/lib/jurisdictions/types";
 
+import { seedDefaultCategoriesForEntity } from "../categories/seed-defaults";
 import { ConflictError, NotFoundError, ValidationError } from "../errors";
 
 import {
@@ -105,6 +106,35 @@ export async function createEntity(
     action: "entity.created",
     payload: { entityId: row.id, kind: row.kind, jurisdictionId: row.jurisdictionId },
   });
+
+  // Seed jurisdiction default categories so the entity has a usable
+  // starter chart of accounts on day one. Best-effort: a malformed
+  // config in one jurisdiction shouldn't block entity creation in
+  // another. Failures are recorded in the audit log and the user can
+  // recover later via the categories UI.
+  //
+  // Wrapped in a transaction so a partial failure (e.g., DB hiccup
+  // mid-loop) rolls back to "no categories seeded" instead of leaving a
+  // half-seeded chart of accounts. The entity itself is already
+  // committed at this point, so the user still gets their entity even
+  // if seeding fails.
+  try {
+    const parsedConfig = jurisdictionConfigSchema.parse(j.config);
+    await db.transaction(async (tx) => {
+      await seedDefaultCategoriesForEntity(tx, row.id, parsedConfig);
+    });
+  } catch (err) {
+    await recordAudit(db, {
+      actorId: actor.userId,
+      actorKind: actor.kind,
+      action: "entity.default_categories_seed_failed",
+      payload: {
+        entityId: row.id,
+        jurisdictionId: row.jurisdictionId,
+        error: err instanceof Error ? err.message : String(err),
+      },
+    });
+  }
 
   return row;
 }
